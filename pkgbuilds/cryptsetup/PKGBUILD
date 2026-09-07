@@ -1,0 +1,51 @@
+# Maintainer:  Bartłomiej Piotrowski <bpiotrowski@archlinux.org>
+# Contributor: Thomas Bächler <thomas@archlinux.org>
+
+pkgname=cryptsetup
+pkgver=2.8.7
+pkgrel=1
+pkgdesc='Userspace setup tool for transparent encryption of block devices using dm-crypt'
+arch=('x86_64')
+license=('GPL-2.0-or-later')
+url='https://gitlab.com/cryptsetup/cryptsetup/'
+depends=('device-mapper' 'libdevmapper.so'
+         'glibc'
+         'openssl' 'libcrypto.so'
+         'popt'
+         'util-linux-libs' 'libblkid.so' 'libuuid.so'
+         'json-c' 'libjson-c.so')
+makedepends=('util-linux' 'asciidoctor')
+checkdepends=('jq' 'procps-ng' 'xxd')
+conflicts=('mkinitcpio<38-1')
+provides=('libcryptsetup.so')
+options=('!emptydirs')
+validpgpkeys=('2A2918243FDE46648D0686F9D9B0577BD93E98FC') # Milan Broz <gmazyland@gmail.com>
+source=("https://www.kernel.org/pub/linux/utils/cryptsetup/v${pkgver%.*}/${pkgname}-${pkgver}.tar."{xz,sign})
+sha256sums=('e776f0d381e86ca61042c457069491fe8e0ac286780c7c3b1e4f9921abc961da'
+            'SKIP')
+
+build() {
+  cd "${srcdir}"/$pkgname-${pkgver}
+
+  ./configure \
+    --prefix=/usr \
+    --sbindir=/usr/bin \
+    --disable-ssh-token \
+    --disable-static
+  sed -i -e 's/ -shared / -Wl,-O1,--as-needed\0/g' libtool
+  make
+}
+
+check() {
+  cd "${srcdir}"/$pkgname-${pkgver}
+  make check
+}
+
+package() {
+  cd "${srcdir}"/$pkgname-${pkgver}
+
+  make DESTDIR="${pkgdir}" install
+
+  # install docs
+  install -D -m0644 -t "${pkgdir}"/usr/share/doc/cryptsetup/ FAQ.md docs/{Keyring,LUKS2-locking}.txt
+}

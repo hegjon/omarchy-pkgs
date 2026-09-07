@@ -1,0 +1,103 @@
+# Maintainer: Sébastien "Seblu" Luttringer <seblu@archlinux.org>
+# Maintainer: Tobias Powalowski <tpowa@archlinux.org>
+# Contributor: Tom Gundersen <teg@jklm.no>
+
+pkgname=btrfs-progs
+pkgver=7.1
+pkgrel=1
+pkgdesc='Btrfs filesystem utilities'
+arch=('x86_64')
+makedepends=(
+  asciidoc
+  e2fsprogs
+  git
+  python
+  python-setuptools
+  python-sphinx
+  python-sphinx_rtd_theme
+  systemd
+  xmlto
+)
+depends=(
+  glibc
+  libgcrypt
+  lzo
+  systemd-libs
+  util-linux-libs
+  zlib
+  zstd
+)
+checkdepends=(
+  libaio
+  liburing
+  ripgrep
+)
+optdepends=(
+  'python: libbtrfsutil python bindings'
+  'e2fsprogs: btrfs-convert'
+)
+url='https://btrfs.readthedocs.io'
+replaces=('btrfs-progs-unstable')
+conflicts=('btrfs-progs-unstable')
+provides=('btrfs-progs-unstable')
+license=('GPL-2.0-only')
+validpgpkeys=('F2B41200C54EFB30380C1756C565D5F9D76D583B') # David Sterba <kdave@kernel.org>
+source=(
+  git+https://git.kernel.org/pub/scm/linux/kernel/git/kdave/btrfs-progs.git?signed#tag=v${pkgver}
+  initcpio-install-btrfs
+  initcpio-hook-btrfs
+  btrfs-scrub@.service
+  btrfs-scrub@.timer
+)
+install=btrfs-progs.install
+b2sums=('52e892f32a2d1895ea36b6c58f2107ad891e8fdc83898c4519c58daac3824e5ff4973551d8b082b47d461921dfa0d99dc866e8d1ea04b8bc108a039786f21292'
+        '75659665a24f92bba1175a2fcae942d9851495c9cff88570b88a98dced4eb98fcc9879de044bfc7d560dbe1c71a20d7ae51ca4b7c2649f90d646b414e0864b6e'
+        '0d3c25d0cb6fdb8e8777723b5e199835fac25573bc8f7fcb248ccfeea7268752b7100dd2c8284529812f0b1d3943eceb5785f119959f89bffedcf30472a915db'
+        '4408d0f81634c99f874a2dde8fc289f61d9e00d5c2d2efd465bcc90db69112604ec987a46858f48c0c2ce1cb4499de1355ad4baf847a74b40c148f8d7a516d22'
+        '9601b31936e1c4b69e6be517f545c6520302fa946eb3203e2d50bd85e918c87a9512e3b40d4e8cee6b9ae4a3fe9fbde26052305beec10fa2c49732a08d1f6753')
+
+prepare() {
+  cd "${pkgname}"
+  # apply patch from the source array (should be a pacman feature)
+  local src
+  for src in "${source[@]}"; do
+    src="${src%%::*}"
+    src="${src##*/}"
+    [[ $src = *.patch ]] || continue
+    echo "Applying patch ${src}..."
+    patch -Np1 < "../${src}"
+  done
+}
+
+build() {
+  cd "${pkgname}"
+  ./autogen.sh
+  ./configure --prefix=/usr --with-crypto=libgcrypt
+  make
+}
+
+check() {
+  cd "${pkgname}"
+  # remove all tests, which requires real root 
+  rm -r $(dirname $(rg -t sh -l -e SUDO_HELPER -e mount -e prepare_test) | rg 'tests/')
+  # -j1 for running tests chronological
+  make -j1 -C tests test
+}
+
+package() {
+  cd "${pkgname}"
+  make DESTDIR="$pkgdir" install install_python
+
+  # install bash completion (FS#44618)
+  install -Dm644 btrfs-completion "${pkgdir}/usr/share/bash-completion/completions/btrfs"
+
+  # install mkinitcpio hooks
+  cd "${srcdir}"
+  install -Dm644 initcpio-install-btrfs "${pkgdir}/usr/lib/initcpio/install/btrfs"
+  install -Dm644 initcpio-hook-btrfs "${pkgdir}/usr/lib/initcpio/hooks/btrfs"
+
+  # install scrub service/timer
+  install -Dm644 btrfs-scrub@.service "${pkgdir}/usr/lib/systemd/system/btrfs-scrub@.service"
+  install -Dm644 btrfs-scrub@.timer "${pkgdir}/usr/lib/systemd/system/btrfs-scrub@.timer"
+}
+
