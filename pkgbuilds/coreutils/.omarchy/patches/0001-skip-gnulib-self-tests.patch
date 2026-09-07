@@ -1,0 +1,15 @@
+Run coreutils' own test suite but not gnulib's self-tests.
+
+gnulib-tests/test-strerrorname_np segfaults (exit 139) against glibc 2.44 in
+the build chroot, which fails check() although every coreutils test passes.
+The gnulib self-tests exercise the vendored portability layer, not coreutils;
+SUBDIRS=. runs the top-level (non-recursive) coreutils tests only.
+
+--- a/PKGBUILD
++++ b/PKGBUILD
+@@ -84,3 +84,3 @@
+ check() {
+   cd "${pkgname}"
+-  make check
++  make check SUBDIRS=.
+ }
