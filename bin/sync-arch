@@ -1,0 +1,247 @@
+#!/bin/bash
+set -euo pipefail
+
+BUILD_ROOT=$(realpath "${BASH_SOURCE[0]%/*}/..")
+source "$BUILD_ROOT/helpers/message-helpers.sh"
+source "$BUILD_ROOT/helpers/paths.sh"
+source "$BUILD_ROOT/helpers/package-metadata.sh"
+source "$BUILD_ROOT/helpers/sync-helpers.sh"
+source "$BUILD_ROOT/helpers/arch-packaging.sh"
+
+TEMP_DIR=$(mktemp -d)
+trap 'rm -rf "$TEMP_DIR"' EXIT
+
+SPECIFIC_PACKAGES=()
+
+usage() {
+  cat <<USAGE
+Usage: $0 [PACKAGE...]
+
+Sync packages from Arch Linux's packaging repositories into pkgbuilds/<package>/.
+
+Arch's packaging/state repository lists the released version and commit of
+every package in core, extra and multilib. Each selected package is checked out
+at that commit, the .omarchy/ customizations (patches, post-sync.sh, pkgrel
+metadata) are applied on top, and the result replaces the package directory.
+Arch's state is only a candidate feed: nothing is built until the change is
+reviewed and merged here.
+
+Package selection is driven by pkgbuilds/<package>/.omarchy/package.json:
+  { "source": "arch" }                          # synced from the same pkgbase
+  { "source": "arch", "pkgbase": "linux" }      # synced from a different pkgbase (split packages)
+  { "source": "arch", "sync": false }           # Arch-origin, but not auto-synced
+  { "source": "arch", "upstream": { ... } }     # version owned by bin/sync-upstream;
+                                                # only synced when named explicitly
+
+Environment:
+  OMARCHY_ARCH_STATE_DIR      Reuse an existing packaging/state clone
+  OMARCHY_ARCH_STATE_URL      packaging/state repository (default: gitlab.archlinux.org)
+  OMARCHY_ARCH_PACKAGES_URL   packaging/packages namespace (default: gitlab.archlinux.org)
+
+Arguments:
+  PACKAGE    One or more package names to sync (optional)
+
+Examples:
+  $0                    # Sync all Arch packages with sync enabled
+  $0 jq linux-firmware  # Sync specific packages
+USAGE
+}
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    -h|--help)
+      usage
+      exit 0
+      ;;
+    --*)
+      print_error "Unknown option: $1"
+      exit 1
+      ;;
+    *)
+      SPECIFIC_PACKAGES+=("$1")
+      shift
+      ;;
+  esac
+done
+
+for tool in git jq vercmp patch; do
+  if ! command -v "$tool" >/dev/null 2>&1; then
+    print_error "Missing required tool: $tool"
+    exit 1
+  fi
+done
+
+print_header "Arch Linux Package Sync"
+mkdir -p "$PKGBUILDS_DIR"
+
+SYNCED=0
+SKIPPED=0
+FAILED=0
+SYNCED_PACKAGES=()
+SPECIFIC_MODE=false
+
+sync_package() {
+  local package="$1"
+  local package_dir="$PKGBUILDS_DIR/$package"
+  local metadata="$package_dir/.omarchy/package.json"
+
+  if [[ ! -f "$metadata" ]]; then
+    if [[ "$SPECIFIC_MODE" == true ]]; then
+      print_error "Package $package is missing .omarchy/package.json"
+      ((++FAILED))
+    else
+      print_warning "Skipping $package: missing .omarchy/package.json"
+      ((++SKIPPED))
+    fi
+    return 0
+  fi
+
+  if [[ "$(jq -r '.source // ""' "$metadata")" != "arch" ]]; then
+    print_info "Skipping $package: source is not Arch Linux"
+    ((++SKIPPED))
+    return 0
+  fi
+
+  if [[ "$(jq -r 'if has("sync") then .sync else true end' "$metadata")" == "false" ]]; then
+    print_info "Skipping $package: Arch sync disabled"
+    ((++SKIPPED))
+    return 0
+  fi
+
+  # A package that watches its vendor's release feed decides its own version
+  # through bin/sync-upstream. Replacing its PKGBUILD from Arch on a schedule
+  # would hand that decision back to Arch, so the scheduled sync leaves it
+  # alone; naming it explicitly rebases its packaging onto Arch's current one.
+  if [[ "$SPECIFIC_MODE" == false ]] &&
+    { package_has_upstream_hook "$package_dir" || package_has_upstream_provider "$package_dir"; }; then
+    print_info "Skipping $package: version is owned by its upstream feed (run: $0 $package to rebase onto Arch packaging)"
+    ((++SKIPPED))
+    return 0
+  fi
+
+  local pkgbase
+  pkgbase=$(jq -r --arg package "$package" '.pkgbase // $package' "$metadata")
+
+  local state repo version tag commit
+  if ! state=$(arch_state_lookup "$pkgbase"); then
+    print_error "Arch Linux does not ship $pkgbase in core, extra or multilib"
+    ((++FAILED))
+    return 0
+  fi
+  read -r repo version tag commit <<< "$state"
+
+  if [[ "$pkgbase" == "$package" ]]; then
+    print_info "Syncing $package from Arch $repo ($version @ ${commit:0:12})..."
+  else
+    print_info "Syncing $package from Arch $repo pkgbase $pkgbase ($version @ ${commit:0:12})..."
+  fi
+
+  local upstream_dir="$TEMP_DIR/$pkgbase"
+  if ! arch_fetch_package "$pkgbase" "$commit" "$tag" "$upstream_dir"; then
+    ((++FAILED))
+    return 0
+  fi
+
+  if [[ ! -f "$upstream_dir/PKGBUILD" ]]; then
+    print_warning "Arch packaging repository for $pkgbase has no PKGBUILD at ${commit:0:12}"
+    ((++FAILED))
+    return 0
+  fi
+
+  local work_dir="$TEMP_DIR/${package}.work"
+  local arch_pkgrel previous_pkgver
+  arch_pkgrel=$(get_pkgbuild_field "$upstream_dir" pkgrel)
+  previous_pkgver=$(get_pkgbuild_field "$package_dir" pkgver || true)
+
+  rm -rf "$work_dir"
+  copy_upstream_contents "$upstream_dir" "$work_dir"
+  rm -rf "$work_dir/.omarchy"
+  cp -a "$package_dir/.omarchy" "$work_dir/.omarchy"
+
+  local customized=false
+
+  if apply_omarchy_patches "$work_dir"; then
+    customized=true
+  else
+    local patch_status=$?
+    if [[ $patch_status -eq 2 ]]; then
+      ((++FAILED))
+      return 0
+    fi
+  fi
+
+  if run_omarchy_post_sync_hook "$work_dir" \
+    PACKAGE_NAME="$package" ARCH_PKGBASE="$pkgbase" ARCH_REPO="$repo" \
+    ARCH_VERSION="$version" ARCH_PKGREL="$arch_pkgrel" ARCH_COMMIT="$commit"; then
+    customized=true
+  else
+    local hook_status=$?
+    if [[ $hook_status -eq 2 ]]; then
+      ((++FAILED))
+      return 0
+    fi
+  fi
+
+  local pkgrel_overridden=false
+  set +e
+  apply_pkgrel_override "$work_dir" "$arch_pkgrel" "$previous_pkgver"
+  local pkgrel_status=$?
+  set -e
+  case "$pkgrel_status" in
+    0) pkgrel_overridden=true ;;
+    1) ;;
+    *) ((++FAILED)); return 0 ;;
+  esac
+
+  if [[ "$customized" == true && "$pkgrel_overridden" == false ]]; then
+    apply_pkgrel_suffix_if_customized "$work_dir" "$arch_pkgrel"
+  fi
+
+  # .nvchecker.toml drives Arch's own new-version check; this repository
+  # watches versions through packaging/state and bin/sync-upstream instead.
+  remove_upstream_only_files "$work_dir" .nvchecker.toml
+
+  set_upstream_commit "$work_dir" "$commit"
+  set_metadata_string "$work_dir" arch_repo "$repo"
+  if ! commit_synced_worktree "$work_dir" "$package_dir"; then
+    ((++FAILED))
+    return 0
+  fi
+
+  SYNCED_PACKAGES+=("$package")
+  ((++SYNCED))
+}
+
+if [[ ${#SPECIFIC_PACKAGES[@]} -gt 0 ]]; then
+  SPECIFIC_MODE=true
+  packages=("${SPECIFIC_PACKAGES[@]}")
+else
+  mapfile -t packages < <(packages_for_arch_sync)
+fi
+
+if [[ ${#packages[@]} -eq 0 ]]; then
+  print_info "No Arch Linux packages to sync"
+  exit 0
+fi
+
+print_info "Syncing Arch packaging state..."
+arch_state_sync "$TEMP_DIR"
+
+for package in "${packages[@]}"; do
+  sync_package "$package"
+done
+
+echo ""
+if [[ $FAILED -gt 0 ]]; then
+  print_error "Sync completed with failures"
+else
+  print_success "Sync complete!"
+fi
+echo "  Target: $PKGBUILDS_DIR"
+echo "  Synced: $SYNCED"
+echo "  Skipped: $SKIPPED"
+echo "  Failed: $FAILED"
+
+if [[ $FAILED -gt 0 ]]; then
+  exit 1
+fi

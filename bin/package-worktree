@@ -5,6 +5,7 @@ BUILD_ROOT=$(realpath "${BASH_SOURCE[0]%/*}/..")
 source "$BUILD_ROOT/helpers/message-helpers.sh"
 source "$BUILD_ROOT/helpers/paths.sh"
 source "$BUILD_ROOT/helpers/package-metadata.sh"
+source "$BUILD_ROOT/helpers/arch-packaging.sh"
 
 PACKAGE=""
 DEST_DIR=""
@@ -14,16 +15,17 @@ usage() {
   cat <<EOF
 Usage: $0 <package> [OPTIONS]
 
-Create a scratch workspace for inspecting an AUR-backed package.
+Create a scratch workspace for inspecting an AUR- or Arch Linux-backed package.
 
 The workspace contains:
-  upstream/  Raw AUR package at .omarchy/package.json upstream_commit, or HEAD
-  patched/   Raw AUR package with Omarchy .omarchy patches/hooks/pkgrel applied
+  upstream/  Raw upstream package at .omarchy/package.json upstream_commit
+             (AUR HEAD or Arch's released commit when unset)
+  patched/   Raw upstream package with Omarchy .omarchy patches/hooks/pkgrel applied
   current/   Current checked-in package directory
 
 Options:
   --dir <path>       Workspace directory (default: mktemp under /tmp)
-  --commit <sha>     Use a specific AUR commit instead of upstream_commit
+  --commit <sha>     Use a specific upstream commit instead of upstream_commit
   -h, --help         Show this help message
 
 Examples:
@@ -75,12 +77,17 @@ if [[ ! -f "$METADATA" ]]; then
   exit 1
 fi
 
-if [[ "$(jq -r '.source // ""' "$METADATA")" != "aur" ]]; then
-  print_error "package-worktree only supports AUR-backed packages"
-  exit 1
-fi
+SOURCE=$(jq -r '.source // ""' "$METADATA")
+case "$SOURCE" in
+  aur|arch) ;;
+  *)
+    print_error "package-worktree only supports AUR- and Arch Linux-backed packages"
+    exit 1
+    ;;
+esac
 
 AUR_PACKAGE=$(jq -r --arg package "$PACKAGE" '.aur // $package' "$METADATA")
+PKGBASE=$(jq -r --arg package "$PACKAGE" '.pkgbase // $package' "$METADATA")
 UPSTREAM_COMMIT=${COMMIT_OVERRIDE:-$(jq -r '.upstream_commit // ""' "$METADATA")}
 
 if [[ -z "$DEST_DIR" ]]; then
@@ -137,7 +144,7 @@ copy_aur_contents() {
 remove_aur_only_files() {
   local package_dir="$1"
 
-  rm -f "$package_dir/.SRCINFO" "$package_dir/.gitignore"
+  rm -f "$package_dir/.SRCINFO" "$package_dir/.gitignore" "$package_dir/.nvchecker.toml"
 }
 
 apply_omarchy_patches() {
@@ -172,14 +179,15 @@ run_post_sync_hook() {
 
   [[ -f "$hook" ]] || return 1
 
+  local -a hook_env=(PACKAGE_NAME="$PACKAGE")
+  if [[ "$SOURCE" == "arch" ]]; then
+    hook_env+=(ARCH_PKGBASE="$PKGBASE" ARCH_REPO="$ARCH_REPO" ARCH_VERSION="$ARCH_VERSION" ARCH_PKGREL="$aur_pkgrel" ARCH_COMMIT="$UPSTREAM_COMMIT")
+  else
+    hook_env+=(AUR_PACKAGE_NAME="$AUR_PACKAGE" AUR_PKGREL="$aur_pkgrel")
+  fi
+
   print_info "  Running post-sync.sh"
-  if ! (
-    cd "$package_dir"
-    PACKAGE_NAME="$PACKAGE" \
-      AUR_PACKAGE_NAME="$AUR_PACKAGE" \
-      AUR_PKGREL="$aur_pkgrel" \
-      bash ".omarchy/post-sync.sh"
-  ); then
+  if ! (cd "$package_dir" && env "${hook_env[@]}" bash ".omarchy/post-sync.sh"); then
     print_error "post-sync.sh failed"
     return 2
   fi
@@ -219,19 +227,41 @@ apply_auto_pkgrel_suffix() {
 
 print_header "Package Worktree: $PACKAGE"
 print_info "Workspace: $DEST_DIR"
-print_info "AUR package: $AUR_PACKAGE"
-
-if [[ -n "$UPSTREAM_COMMIT" ]]; then
-  print_info "Upstream commit: $UPSTREAM_COMMIT"
-else
-  print_warning "No upstream_commit recorded; using AUR HEAD"
-fi
 
 rm -rf "$UPSTREAM_DIR" "$PATCHED_DIR" "$CURRENT_DIR"
 
-git clone "https://aur.archlinux.org/${AUR_PACKAGE}.git" "$UPSTREAM_DIR" >/dev/null 2>&1
-if [[ -n "$UPSTREAM_COMMIT" ]]; then
-  git -C "$UPSTREAM_DIR" checkout --detach "$UPSTREAM_COMMIT" >/dev/null 2>&1
+ARCH_REPO=""
+ARCH_VERSION=""
+if [[ "$SOURCE" == "arch" ]]; then
+  print_info "Arch pkgbase: $PKGBASE"
+  STATE_SCRATCH=$(mktemp -d "${TMPDIR:-/tmp}/omarchy-arch-state.XXXXXX")
+  trap 'rm -rf "$STATE_SCRATCH"' EXIT
+  arch_state_sync "$STATE_SCRATCH"
+  if ! state=$(arch_state_lookup "$PKGBASE"); then
+    print_error "Arch Linux does not ship $PKGBASE in core, extra or multilib"
+    exit 1
+  fi
+  read -r _ ARCH_VERSION ARCH_TAG ARCH_COMMIT <<< "$state"
+  ARCH_REPO=${state%% *}
+  if [[ -n "$UPSTREAM_COMMIT" ]]; then
+    print_info "Upstream commit: $UPSTREAM_COMMIT"
+    [[ "$UPSTREAM_COMMIT" == "$ARCH_COMMIT" ]] || ARCH_TAG=""
+  else
+    print_warning "No upstream_commit recorded; using Arch's released $ARCH_VERSION"
+    UPSTREAM_COMMIT="$ARCH_COMMIT"
+  fi
+  arch_fetch_package "$PKGBASE" "$UPSTREAM_COMMIT" "$ARCH_TAG" "$UPSTREAM_DIR"
+else
+  print_info "AUR package: $AUR_PACKAGE"
+  if [[ -n "$UPSTREAM_COMMIT" ]]; then
+    print_info "Upstream commit: $UPSTREAM_COMMIT"
+  else
+    print_warning "No upstream_commit recorded; using AUR HEAD"
+  fi
+  git clone "https://aur.archlinux.org/${AUR_PACKAGE}.git" "$UPSTREAM_DIR" >/dev/null 2>&1
+  if [[ -n "$UPSTREAM_COMMIT" ]]; then
+    git -C "$UPSTREAM_DIR" checkout --detach "$UPSTREAM_COMMIT" >/dev/null 2>&1
+  fi
 fi
 rm -rf "$UPSTREAM_DIR/.git"
 
@@ -278,8 +308,8 @@ remove_aur_only_files "$CURRENT_DIR"
 cat <<EOF
 
 Created package workspace:
-  $DEST_DIR/upstream  raw AUR package
-  $DEST_DIR/patched   AUR + Omarchy customizations
+  $DEST_DIR/upstream  raw upstream package
+  $DEST_DIR/patched   upstream + Omarchy customizations
   $DEST_DIR/current   checked-in package
 
 Useful diffs:

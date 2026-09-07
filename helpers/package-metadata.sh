@@ -11,6 +11,10 @@
 #   { "source": "aur", "skip_build": true }
 #   { "source": "aur", "pkgrel": { "suffix": 1, "offset": 1 } }
 #   { "source": "aur", "rebuild_on": ["qt6-base"] }
+#   { "source": "arch" }
+#   { "source": "arch", "pkgbase": "linux" }
+#   { "source": "arch", "sync": false }
+#   { "source": "arch", "upstream": { "github": "owner/repo", "sources": { "any": ["https://example/archive/{tag}.tar.gz"] } } }
 #   { "source": "local" }
 #   { "source": "local", "channels": ["edge"] }
 #   { "source": "local", "channels": ["edge", "rc", "stable"] }
@@ -21,7 +25,8 @@
 #   { "source": "local", "upstream": { "npm": "@scope/package", "sources": { "any": ["{npm_tarball}"] } } }
 #   { "source": "local", "upstream": { "debian": "https://example/debian/dists/stable/main/binary-amd64/Packages", "package": "example", "sources": { "any": ["https://example/releases/{pkgver}.tar.gz"] } } }
 #
-# bin/sync-aur also writes upstream_commit for AUR-backed packages, and
+# bin/sync-aur writes upstream_commit for AUR-backed packages, bin/sync-arch
+# writes upstream_commit and arch_repo for Arch-backed packages, and
 # bin/sync-rebuilds writes rebuilt_against for packages declaring rebuild_on.
 
 if [[ -z "${PKGBUILDS_DIR:-}" ]]; then
@@ -62,6 +67,14 @@ package_metadata_value() {
   jq -r --arg default "$default" "$jq_filter // \$default" "$metadata"
 }
 
+package_source() {
+  local pkgdir="$1"
+  package_metadata_value "$pkgdir" '.source' ""
+}
+
+# True when a sync replaces this package's PKGBUILD wholesale (AUR or Arch
+# Linux origin with sync not disabled), so local edits only survive as
+# .omarchy/ customizations.
 package_sync_enabled() {
   local pkgdir="$1"
   local metadata source sync
@@ -70,10 +83,22 @@ package_sync_enabled() {
   [[ -f "$metadata" ]] || return 1
 
   source=$(jq -r '.source // ""' "$metadata")
-  [[ "$source" == "aur" ]] || return 1
+  case "$source" in
+    aur|arch) ;;
+    *) return 1 ;;
+  esac
 
   sync=$(jq -r 'if has("sync") then .sync else true end' "$metadata")
   [[ "$sync" != "false" ]]
+}
+
+# package_synced_from <pkgdir> <aur|arch>
+package_synced_from() {
+  local pkgdir="$1"
+  local wanted="$2"
+
+  package_sync_enabled "$pkgdir" || return 1
+  [[ "$(package_source "$pkgdir")" == "$wanted" ]]
 }
 
 package_release_ring() {
@@ -284,7 +309,15 @@ package_dirs() {
 
 packages_for_aur_sync() {
   package_dirs | while IFS= read -r pkgdir; do
-    if package_sync_enabled "$pkgdir"; then
+    if package_synced_from "$pkgdir" aur; then
+      basename "$pkgdir"
+    fi
+  done
+}
+
+packages_for_arch_sync() {
+  package_dirs | while IFS= read -r pkgdir; do
+    if package_synced_from "$pkgdir" arch; then
       basename "$pkgdir"
     fi
   done
@@ -441,7 +474,7 @@ package_git_upstream_hash() {
 
 validate_package_metadata() {
   local pkgdir="$1"
-  local metadata source sync skip_build aur ring pkgrel_type
+  local metadata source sync skip_build aur pkgbase ring pkgrel_type
 
   metadata=$(metadata_file_for_dir "$pkgdir")
   [[ -f "$metadata" ]] || { echo "missing metadata: $metadata"; return 1; }
@@ -450,7 +483,7 @@ validate_package_metadata() {
 
   source=$(jq -r '.source // ""' "$metadata")
   case "$source" in
-    aur|local) ;;
+    aur|arch|local) ;;
     *) echo "invalid source for $(basename "$pkgdir"): $source"; return 1 ;;
   esac
 
@@ -470,6 +503,12 @@ validate_package_metadata() {
   case "$aur" in
     string|missing) ;;
     *) echo "invalid aur for $(basename "$pkgdir"): must be string"; return 1 ;;
+  esac
+
+  pkgbase=$(jq -r 'if has("pkgbase") then .pkgbase | type else "missing" end' "$metadata")
+  case "$pkgbase" in
+    string|missing) ;;
+    *) echo "invalid pkgbase for $(basename "$pkgdir"): must be string"; return 1 ;;
   esac
 
   ring=$(jq -r '.release_ring // ""' "$metadata")

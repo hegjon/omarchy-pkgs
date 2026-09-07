@@ -5,6 +5,7 @@ BUILD_ROOT=$(realpath "${BASH_SOURCE[0]%/*}/..")
 source "$BUILD_ROOT/helpers/message-helpers.sh"
 source "$BUILD_ROOT/helpers/paths.sh"
 source "$BUILD_ROOT/helpers/package-metadata.sh"
+source "$BUILD_ROOT/helpers/sync-helpers.sh"
 
 TEMP_DIR=$(mktemp -d)
 trap 'rm -rf "$TEMP_DIR"' EXIT
@@ -60,220 +61,6 @@ SKIPPED=0
 FAILED=0
 SYNCED_PACKAGES=()
 SPECIFIC_MODE=false
-
-get_pkgbuild_field() {
-  local package_dir="$1"
-  local field="$2"
-  local value=""
-
-  if [[ -f "$package_dir/PKGBUILD" ]]; then
-    value=$(grep -m1 "^${field}=" "$package_dir/PKGBUILD" | cut -d= -f2- | tr -d "\"'") || true
-    if [[ -n "$value" ]]; then
-      echo "$value"
-      return
-    fi
-  fi
-
-  if [[ -f "$package_dir/.SRCINFO" ]]; then
-    awk -F' = ' -v field="$field" '$1 ~ "^[[:space:]]*" field "$" { print $2; exit }' "$package_dir/.SRCINFO"
-  fi
-}
-
-set_pkgrel() {
-  local package_dir="$1"
-  local pkgrel="$2"
-  local pkgbuild="$package_dir/PKGBUILD"
-
-  if [[ -f "$pkgbuild" ]]; then
-    sed -i "s/^pkgrel=.*/pkgrel=$pkgrel/" "$pkgbuild"
-  fi
-}
-
-display_package_name() {
-  local package_dir="$1"
-  local name
-  name=$(basename "$package_dir")
-  echo "${name%.work}"
-}
-
-remove_aur_only_files() {
-  local package_dir="$1"
-
-  rm -f "$package_dir/.SRCINFO" "$package_dir/.gitignore"
-}
-
-copy_aur_contents() {
-  local aur_dir="$1"
-  local target_dir="$2"
-
-  mkdir -p "$target_dir"
-
-  shopt -s dotglob nullglob
-  local item base
-  for item in "$aur_dir"/*; do
-    base=$(basename "$item")
-    [[ "$base" == ".git" ]] && continue
-    cp -a "$item" "$target_dir/"
-  done
-  shopt -u dotglob nullglob
-}
-
-commit_synced_worktree() {
-  local work_dir="$1"
-  local target_dir="$2"
-  local parent base staged_dir backup_root backup_dir
-
-  parent=$(dirname "$target_dir")
-  base=$(basename "$target_dir")
-  staged_dir=$(mktemp -d "$parent/.${base}.staged.XXXXXX")
-  backup_root=$(mktemp -d "$parent/.${base}.backup.XXXXXX")
-  backup_dir="$backup_root/$base"
-
-  # Copy to the package filesystem before swapping. This keeps the original
-  # package directory intact if copying from /tmp fails or is interrupted.
-  if ! cp -a "$work_dir/." "$staged_dir/"; then
-    print_error "Failed to stage synced package for $base"
-    rm -rf "$staged_dir" "$backup_root"
-    return 1
-  fi
-
-  if [[ -e "$target_dir" ]]; then
-    if ! mv "$target_dir" "$backup_dir"; then
-      print_error "Failed to back up existing package directory: $target_dir"
-      rm -rf "$staged_dir" "$backup_root"
-      return 1
-    fi
-  fi
-
-  if ! mv "$staged_dir" "$target_dir"; then
-    print_error "Failed to install synced package directory: $target_dir"
-    if [[ -e "$backup_dir" ]]; then
-      mv "$backup_dir" "$target_dir" || true
-    fi
-    rm -rf "$staged_dir" "$backup_root"
-    return 1
-  fi
-
-  rm -rf "$backup_root" "$work_dir"
-}
-
-set_upstream_commit() {
-  local package_dir="$1"
-  local commit="$2"
-  local metadata="$package_dir/.omarchy/package.json"
-  local tmpfile
-
-  tmpfile=$(mktemp)
-  jq --arg commit "$commit" '.upstream_commit = $commit' "$metadata" > "$tmpfile"
-  mv "$tmpfile" "$metadata"
-}
-
-apply_omarchy_patches() {
-  local package_dir="$1"
-  local patches_dir="$package_dir/.omarchy/patches"
-  local applied=false
-
-  [[ -d "$patches_dir" ]] || return 1
-
-  shopt -s nullglob
-  local patch_files=("$patches_dir"/*.patch)
-  local patch_dir_files=("$patches_dir"/*)
-  shopt -u nullglob
-
-  if [[ ${#patch_files[@]} -eq 0 ]]; then
-    if [[ ${#patch_dir_files[@]} -gt 0 ]]; then
-      print_warning "No .patch files found in $patches_dir"
-    fi
-    return 1
-  fi
-
-  print_info "Applying Omarchy patches for $(display_package_name "$package_dir")..."
-  local patch_file
-  for patch_file in "${patch_files[@]}"; do
-    print_info "  $(basename "$patch_file")"
-    if ! (cd "$package_dir" && patch -p1 --forward --batch --no-backup-if-mismatch < "$patch_file"); then
-      print_error "Failed to apply patch: $patch_file"
-      return 2
-    fi
-    applied=true
-  done
-
-  [[ "$applied" == true ]]
-}
-
-run_omarchy_post_sync_hook() {
-  local package_dir="$1"
-  local package="$2"
-  local aur_package="$3"
-  local aur_pkgrel="$4"
-  local hook="$package_dir/.omarchy/post-sync.sh"
-
-  [[ -f "$hook" ]] || return 1
-
-  print_info "Running Omarchy post-sync hook for $(display_package_name "$package_dir")..."
-  if ! (
-    cd "$package_dir"
-    PACKAGE_NAME="$package" \
-      AUR_PACKAGE_NAME="$aur_package" \
-      AUR_PKGREL="$aur_pkgrel" \
-      bash ".omarchy/post-sync.sh"
-  ); then
-    print_error "Failed to run post-sync hook: $hook"
-    return 2
-  fi
-
-  return 0
-}
-
-apply_pkgrel_suffix_if_customized() {
-  local package_dir="$1"
-  local aur_pkgrel="$2"
-
-  [[ -n "$aur_pkgrel" ]] || return 0
-
-  print_info "Applying Omarchy pkgrel suffix for $(display_package_name "$package_dir"): pkgrel=$aur_pkgrel.1"
-  set_pkgrel "$package_dir" "$aur_pkgrel.1"
-}
-
-apply_pkgrel_override() {
-  local package_dir="$1"
-  local aur_pkgrel="$2"
-  local previous_pkgver="$3"
-  local metadata="$package_dir/.omarchy/package.json"
-  local pkgbuild="$package_dir/PKGBUILD"
-
-  [[ -f "$metadata" ]] || return 1
-  jq -e 'has("pkgrel")' "$metadata" >/dev/null || return 1
-
-  local current_pkgver suffix offset base rel tmpfile
-  # Read through the same accessor that produced previous_pkgver. Parsing it a
-  # second time here let a quoted pkgver= compare unequal to itself, which threw
-  # away the pkgrel metadata of an unchanged package on every sync.
-  current_pkgver=$(get_pkgbuild_field "$package_dir" pkgver)
-
-  if [[ -n "$previous_pkgver" && "$current_pkgver" != "$previous_pkgver" ]]; then
-    print_info "Removing stale pkgrel metadata for $(display_package_name "$package_dir") (pkgver changed: $previous_pkgver -> $current_pkgver)"
-    tmpfile=$(mktemp)
-    jq 'del(.pkgrel)' "$metadata" > "$tmpfile"
-    mv "$tmpfile" "$metadata"
-    return 1
-  fi
-
-  suffix=$(jq -r '.pkgrel.suffix // 1' "$metadata")
-  offset=$(jq -r '.pkgrel.offset // 0' "$metadata")
-
-  if [[ ! "$offset" =~ ^[0-9]+$ || ! "$aur_pkgrel" =~ ^[0-9]+$ ]]; then
-    print_error "pkgrel offset requires numeric AUR pkgrel for $(display_package_name "$package_dir")"
-    return 2
-  fi
-
-  base=$((aur_pkgrel + offset))
-  rel="$base.$suffix"
-
-  print_info "Applying pkgrel suffix for $(display_package_name "$package_dir"): AUR pkgrel=$aur_pkgrel, offset=$offset, suffix=$suffix -> pkgrel=$rel"
-  set_pkgrel "$package_dir" "$rel"
-  return 0
-}
 
 clone_aur_package() {
   local aur_package="$1"
@@ -354,7 +141,7 @@ sync_package() {
   upstream_commit=$(git -C "$aur_dir" rev-parse HEAD)
 
   rm -rf "$work_dir"
-  copy_aur_contents "$aur_dir" "$work_dir"
+  copy_upstream_contents "$aur_dir" "$work_dir"
   rm -rf "$work_dir/.omarchy"
   cp -a "$package_dir/.omarchy" "$work_dir/.omarchy"
 
@@ -370,7 +157,8 @@ sync_package() {
     fi
   fi
 
-  if run_omarchy_post_sync_hook "$work_dir" "$package" "$aur_package" "$aur_pkgrel"; then
+  if run_omarchy_post_sync_hook "$work_dir" \
+    PACKAGE_NAME="$package" AUR_PACKAGE_NAME="$aur_package" AUR_PKGREL="$aur_pkgrel"; then
     customized=true
   else
     local hook_status=$?
@@ -395,7 +183,7 @@ sync_package() {
     apply_pkgrel_suffix_if_customized "$work_dir" "$aur_pkgrel"
   fi
 
-  remove_aur_only_files "$work_dir"
+  remove_upstream_only_files "$work_dir"
 
   set_upstream_commit "$work_dir" "$upstream_commit"
   if ! commit_synced_worktree "$work_dir" "$package_dir"; then

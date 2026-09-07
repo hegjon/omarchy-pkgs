@@ -10,6 +10,7 @@ SOURCE="aur"
 SYNC="true"
 RELEASE_RING=""
 AUR_PACKAGE=""
+PKGBASE=""
 FORCE=false
 SCAFFOLD=false
 
@@ -17,14 +18,16 @@ usage() {
   cat <<EOF
 Usage: $0 <package> [OPTIONS]
 
-Create pkgbuilds/<package> with Omarchy metadata. AUR packages are synced
-immediately after metadata is written.
+Create pkgbuilds/<package> with Omarchy metadata. AUR and Arch Linux packages
+are synced immediately after metadata is written.
 
 Options:
-  --source <aur|local>       Package source (default: aur)
+  --source <aur|arch|local>  Package source (default: aur)
   --local                    Shortcut for --source local
+  --arch                     Shortcut for --source arch (Arch Linux's own packaging)
   --aur <name>               AUR package name when different from local directory
-  --no-sync                  For AUR packages, mark sync disabled after initial setup
+  --pkgbase <name>           Arch pkgbase when different from local directory (split packages)
+  --no-sync                  For AUR/Arch packages, mark sync disabled after initial setup
   --fast                     Put package in the fast release ring
   --release-ring <ring>      Release ring (currently: fast)
   --scaffold                 For local packages, create a starter PKGBUILD
@@ -36,6 +39,8 @@ Examples:
   $0 spotify --fast
   $0 signal-desktop --no-sync
   $0 omarchy-zsh --local --scaffold
+  $0 jq --arch
+  $0 linux-headers --arch --pkgbase linux
 EOF
 }
 
@@ -49,8 +54,16 @@ while [[ $# -gt 0 ]]; do
       SOURCE="local"
       shift
       ;;
+    --arch)
+      SOURCE="arch"
+      shift
+      ;;
     --aur)
       AUR_PACKAGE="$2"
+      shift 2
+      ;;
+    --pkgbase)
+      PKGBASE="$2"
       shift 2
       ;;
     --no-sync)
@@ -99,8 +112,8 @@ if [[ -z "$PACKAGE" ]]; then
 fi
 
 case "$SOURCE" in
-  aur|local) ;;
-  *) print_error "Invalid source: $SOURCE (must be aur or local)"; exit 1 ;;
+  aur|arch|local) ;;
+  *) print_error "Invalid source: $SOURCE (must be aur, arch or local)"; exit 1 ;;
 esac
 
 case "$RELEASE_RING" in
@@ -133,7 +146,12 @@ if [[ "$SOURCE" == "aur" && -n "$AUR_PACKAGE" && "$AUR_PACKAGE" != "$PACKAGE" ]]
   jq_filter="$jq_filter + {aur: \$aur}"
 fi
 
-if [[ "$SOURCE" == "aur" && "$SYNC" == "false" ]]; then
+if [[ "$SOURCE" == "arch" && -n "$PKGBASE" && "$PKGBASE" != "$PACKAGE" ]]; then
+  jq_args+=(--arg pkgbase "$PKGBASE")
+  jq_filter="$jq_filter + {pkgbase: \$pkgbase}"
+fi
+
+if [[ "$SOURCE" != "local" && "$SYNC" == "false" ]]; then
   jq_filter="$jq_filter + {sync: false}"
 fi
 
@@ -145,18 +163,19 @@ fi
 jq -n "${jq_args[@]}" "$jq_filter" > "$METADATA_FILE"
 print_success "Wrote $METADATA_FILE"
 
-if [[ "$SOURCE" == "aur" ]]; then
+if [[ "$SOURCE" != "local" ]]; then
+  sync_script="$BUILD_ROOT/bin/sync-$SOURCE"
   if [[ "$SYNC" == "false" ]]; then
     # Temporarily sync once, then restore sync=false so future automated syncs skip it.
     tmpfile=$(mktemp)
     jq 'del(.sync)' "$METADATA_FILE" > "$tmpfile"
     mv "$tmpfile" "$METADATA_FILE"
-    "$BUILD_ROOT/bin/sync-aur" "$PACKAGE"
+    "$sync_script" "$PACKAGE"
     jq '. + {sync: false}' "$METADATA_FILE" > "$tmpfile"
     mv "$tmpfile" "$METADATA_FILE"
-    print_info "AUR sync disabled for future runs"
+    print_info "Sync disabled for future runs"
   else
-    "$BUILD_ROOT/bin/sync-aur" "$PACKAGE"
+    "$sync_script" "$PACKAGE"
   fi
 else
   if [[ "$SCAFFOLD" == true && ! -f "$PACKAGE_DIR/PKGBUILD" ]]; then

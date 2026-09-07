@@ -22,8 +22,8 @@ List package source metadata from pkgbuilds/<package>/.omarchy/package.json.
 
 Options:
   --json                     Output JSON for agents/scripts
-  --source <aur|local>       Filter by source
-  --sync <true|false>        Filter by AUR sync state
+  --source <aur|arch|local>  Filter by source
+  --sync <true|false>        Filter by AUR/Arch sync state
   --release-ring <ring>      Filter by release ring, e.g. fast
   --repo                     List packages from the published repo database instead
   --arch <arch>              Target architecture for --repo (default: x86_64)
@@ -127,7 +127,7 @@ package_matches_filters() {
   [[ -z "$RING_FILTER" || "$ring" == "$RING_FILTER" ]] || return 1
 
   if [[ -n "$SYNC_FILTER" ]]; then
-    [[ "$source" == "aur" ]] || return 1
+    [[ "$source" == "aur" || "$source" == "arch" ]] || return 1
     [[ "$sync" == "$SYNC_FILTER" ]] || return 1
   fi
 
@@ -135,12 +135,13 @@ package_matches_filters() {
 }
 
 emit_package_json() {
-  local name="$1" source="$2" aur="$3" sync="$4" skip_build="$5" ring="$6" pkgrel="$7" upstream_commit="$8" patches="$9" hook="${10}" version="${11}" path="${12}"
+  local name="$1" source="$2" aur="$3" sync="$4" skip_build="$5" ring="$6" pkgrel="$7" upstream_commit="$8" patches="$9" hook="${10}" version="${11}" path="${12}" pkgbase="${13}"
 
   jq -n \
     --arg name "$name" \
     --arg source "$source" \
     --arg aur "$aur" \
+    --arg pkgbase "$pkgbase" \
     --arg sync "$sync" \
     --arg skip_build "$skip_build" \
     --arg release_ring "$ring" \
@@ -150,7 +151,7 @@ emit_package_json() {
     --arg hook "$hook" \
     --arg version "$version" \
     --arg path "$path" \
-    '{name: $name, source: $source, aur: $aur, sync: (if $sync == "" then null else $sync == "true" end), skip_build: ($skip_build == "true"), release_ring: $release_ring, pkgrel: $pkgrel, upstream_commit: $upstream_commit, patches: $patches, post_sync_hook: ($hook == "true"), version: $version, path: $path}'
+    '{name: $name, source: $source, aur: $aur, pkgbase: $pkgbase, sync: (if $sync == "" then null else $sync == "true" end), skip_build: ($skip_build == "true"), release_ring: $release_ring, pkgrel: $pkgrel, upstream_commit: $upstream_commit, patches: $patches, post_sync_hook: ($hook == "true"), version: $version, path: $path}'
 }
 
 if [[ "$LIST_REPO" == true ]]; then
@@ -171,10 +172,11 @@ while IFS= read -r pkgdir; do
   source=$(jq -r '.source // ""' "$metadata")
   ring=$(jq -r '.release_ring // ""' "$metadata")
   aur=$(jq -r --arg name "$name" '.aur // $name' "$metadata")
+  pkgbase=$(jq -r --arg name "$name" '.pkgbase // $name' "$metadata")
   aur_display="$aur"
   [[ "$aur_display" == "$name" ]] && aur_display=""
 
-  if [[ "$source" == "aur" ]]; then
+  if [[ "$source" == "aur" || "$source" == "arch" ]]; then
     sync=$(jq -r 'if has("sync") then .sync else true end' "$metadata")
   else
     sync=""
@@ -210,7 +212,7 @@ while IFS= read -r pkgdir; do
   if [[ "$first_json" == false ]]; then
     printf ',\n' >> "$json_file"
   fi
-  emit_package_json "$name" "$source" "$aur" "$sync" "$skip_build" "$ring" "$pkgrel" "$upstream_commit" "$patches" "$hook" "$version" "$relpath" >> "$json_file"
+  emit_package_json "$name" "$source" "$aur" "$sync" "$skip_build" "$ring" "$pkgrel" "$upstream_commit" "$patches" "$hook" "$version" "$relpath" "$pkgbase" >> "$json_file"
   first_json=false
 done < <(package_dirs)
 

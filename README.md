@@ -24,6 +24,9 @@ The filesystem no longer encodes release policy. Instead:
   shipped pins can never overwrite an in-flight RC. The dev pair
   (`omarchy-dev`, `omarchy-settings-dev`) is pinned to `edge`
 - AUR sync behavior is controlled by `source`, `sync`, `aur`, patches, and hooks in `.omarchy/`
+- packages taken from Arch Linux's own packaging (`source: arch`) are refreshed by `bin/sync-arch` from
+  Arch's [packaging/state](https://gitlab.archlinux.org/archlinux/packaging/state) overview, with the same
+  patches and hooks on top; what is built is what gets merged here, never Arch's repository directly
 - packages can opt out of unscoped builds with `skip_build`; explicit `--package` builds remain available
 - packages that follow a vendor release feed instead of the AUR carry an `.omarchy/upstream.sh` hook
 
@@ -330,6 +333,43 @@ bin/sync-aur yay v4l2-relayd            # Sync specific packages
 
 AUR sync is metadata-driven. It preserves `.omarchy/`, replaces the package root with AUR contents, applies `.omarchy/patches/*.patch`, runs `.omarchy/post-sync.sh` when present, applies pkgrel metadata, removes AUR-only `.SRCINFO` and `.gitignore` files, and records `upstream_commit`.
 
+### Sync Arch Linux PKGBUILDs
+
+```bash
+bin/sync-arch                           # Sync all Arch-backed packages with sync enabled
+bin/sync-arch jq linux-firmware         # Sync specific packages
+```
+
+Packages with `source: arch` carry Arch Linux's own packaging. Arch publishes an
+overview of every released package in
+[packaging/state](https://gitlab.archlinux.org/archlinux/packaging/state): one
+file per package holding the released version, tag and commit of its packaging
+repository. `bin/sync-arch` reads that overview for `core`, `extra` and
+`multilib`, checks the packaging repository out at that commit, and then treats
+it exactly like an AUR checkout: `.omarchy/` is preserved, patches and
+`post-sync.sh` are applied, pkgrel metadata is honoured, Arch-only `.SRCINFO`,
+`.gitignore` and `.nvchecker.toml` files are removed, and `upstream_commit` and
+`arch_repo` are recorded. Split packages name their `pkgbase`; `keys/pgp/` is
+kept so `validpgpkeys` keep working.
+
+Arch's state is a candidate feed, not a trigger. The sync opens a pull request,
+the checked-in PKGBUILD is the manifest of what this repository ships, and the
+build reads that PKGBUILD, never Arch's repository. Two knobs move the version
+decision further away from Arch:
+
+- `"sync": false` freezes a package at whatever was last merged;
+  `bin/sync-arch <package>` rebases it by hand.
+- an `upstream` declaration (or `.omarchy/upstream.sh`) hands the version to
+  `bin/sync-upstream`, which watches the vendor's own release feed exactly as it
+  does for `local` packages. The scheduled Arch sync skips such packages;
+  `bin/sync-arch <package>` run explicitly rebases the packaging onto Arch's
+  current one, after which `sync-upstream` moves the version again from the
+  vendor feed.
+
+The hook receives `PACKAGE_NAME`, `ARCH_PKGBASE`, `ARCH_REPO`, `ARCH_VERSION`,
+`ARCH_PKGREL` and `ARCH_COMMIT`. Set `OMARCHY_ARCH_STATE_DIR` to reuse one
+packaging/state clone across runs.
+
 ### Sync Upstream Releases
 
 ```bash
@@ -546,6 +586,7 @@ bin/add-package <package>            # Add an AUR/local package with metadata
 bin/package-worktree <package>       # Create upstream/patched/current scratch workspace
 bin/repo remove <package>            # Remove package
 bin/sync-upstream                    # Update packages that track a vendor release feed
+bin/sync-arch                        # Refresh packages carried from Arch Linux's own packaging
 bin/sync-rebuilds                    # Bump pkgrel for packages whose dependencies moved
 bin/clean-docker                     # Clear Docker images/cache (forces fresh rebuild)
 ```
@@ -724,11 +765,13 @@ Minimal examples:
 
 Fields:
 
-- `source`: `aur` or `local`. A `local` package can still follow an upstream release, either declaratively via `upstream` or with an `.omarchy/upstream.sh` hook.
+- `source`: `aur`, `arch` (Arch Linux's own packaging, see [Sync Arch Linux PKGBUILDs](#sync-arch-linux-pkgbuilds)) or `local`. A `local` or `arch` package can still follow an upstream release, either declaratively via `upstream` or with an `.omarchy/upstream.sh` hook.
 - `upstream`: optional for `local` packages following GitHub releases, git tags, npm dist-tags, or a Debian `Packages` index. GitHub architecture assets may be a string or an ordered array, and can be combined with disjoint versioned `sources` — see [Sync Upstream Releases](#sync-upstream-releases). Mutually exclusive with `.omarchy/upstream.sh`.
 - `min_release_age`: optional quarantine for upstream releases (`"24h"`, `"2d"`, or bare seconds). The newest release older than the window ships; anything younger waits, and a release whose age cannot be proven fails the sync. Bypass deliberately with `BYPASS_MIN_RELEASE_AGE=1 bin/sync-upstream <package>`.
-- `sync`: optional for AUR packages; defaults to `true`. Set `false` for AUR-origin packages that Omarchy maintains manually.
+- `sync`: optional for AUR and Arch packages; defaults to `true`. Set `false` for packages that Omarchy maintains manually from that origin.
 - `aur`: optional AUR package name when it differs from the local package directory, usually for split packages.
+- `pkgbase`: optional Arch `pkgbase` when it differs from the local package directory, for split packages such as `linux-headers` from `linux`.
+- `arch_repo`: written by `bin/sync-arch`. The Arch repository (`core`, `extra` or `multilib`) the synced packaging was released in.
 - `release_ring`: optional. `fast` means the package is built directly for stable as well as edge, with the artifacts replicated into rc for parity. Packages without a ring build in edge and reach stable through the pipeline (`bin/repo advance`).
 - `channels`: optional array bounding where the package may be built (`edge`, `rc`, `stable`). Without the key a package is a member of every channel and follows the default build rules above; `bin/repo advance` refuses to carry a package anywhere it isn't a member.
 - `pinned`: optional boolean. A pinned package's version is set per release by `omarchy-release` on the `rc` branch, so it is never built for stable (promotion only) and is built for rc only from that branch's worktree (`OMARCHY_RC_PINS=1`). Used by `omarchy` and `omarchy-settings`.
@@ -736,7 +779,7 @@ Fields:
 - `pkgrel`: optional Omarchy pkgrel suffix for a version-pinned rebuild bump. This emits `<aur pkgrel>.<suffix>` instead of replacing AUR's pkgrel. `offset` can be used only when preserving monotonic upgrades from old absolute pkgrel bumps. The metadata is removed automatically when AUR sync changes `pkgver`; the current package version is read from the checked-in PKGBUILD, so the version is not duplicated in JSON.
 - `rebuild_on`: optional array of package names this package links against closely enough that it must be rebuilt when they change, independent of its own source. Read by `bin/sync-rebuilds`.
 - `rebuilt_against`: written by `bin/sync-rebuilds`. Maps each published architecture to the versions of its `rebuild_on` packages that the current pkgrel was bumped for.
-- `upstream_commit`: set by `bin/sync-aur` for AUR packages. Used by `bin/package-worktree` to recreate the exact raw AUR package that Omarchy last synced.
+- `upstream_commit`: set by `bin/sync-aur` for AUR packages and `bin/sync-arch` for Arch packages. Used by `bin/package-worktree` to recreate the exact raw upstream package that Omarchy last synced.
 
 ### Build Matrix
 
@@ -769,9 +812,20 @@ bin/repo release --mirror stable --package package-name
 bin/add-package package-name --no-sync
 ```
 
-### Local Customizations for AUR Packages
+### From Arch Linux
 
-For static changes, create `pkgbuilds/package-name/.omarchy/patches/*.patch` to maintain modifications across AUR syncs.
+```bash
+bin/add-package jq --arch
+bin/add-package linux-headers --arch --pkgbase linux   # split package
+bin/repo release --package jq
+```
+
+`--no-sync` works the same way as for the AUR: the package is imported once and
+then left alone until `bin/sync-arch <package>` is run by hand.
+
+### Local Customizations for AUR and Arch Packages
+
+For static changes, create `pkgbuilds/package-name/.omarchy/patches/*.patch` to maintain modifications across AUR and Arch syncs. This is also where an Arch package picks up the changes it needs for another architecture.
 
 The recommended workflow is to use a scratch workspace:
 
@@ -782,8 +836,8 @@ bin/package-worktree package-name --dir /tmp/package-name-worktree
 This creates:
 
 ```text
-upstream/  # raw AUR package at upstream_commit
-patched/   # AUR + existing Omarchy .omarchy customizations
+upstream/  # raw upstream package at upstream_commit
+patched/   # upstream + existing Omarchy .omarchy customizations
 current/   # current checked-in package directory
 ```
 
@@ -883,6 +937,7 @@ The repository includes GitHub workflows and systemd services for automated rele
 1. **sync-aur.yml** (Every 6 hours): Syncs AUR packages according to `.omarchy/package.json` and opens a PR when changes are found.
 2. **sync-upstream.yml** (Every 6 hours): Runs `.omarchy/upstream.sh` for packages that track a vendor release feed and opens a PR when a newer version is out.
 3. **sync-rebuilds.yml** (Every 6 hours): Bumps pkgrel for packages whose `rebuild_on` dependencies have moved in the official repositories and opens a PR.
+4. **sync-arch.yml** (Every 6 hours): Syncs `source: arch` packages from Arch Linux's packaging/state overview and opens a PR when their packaging changed.
 
 #### Systemd Services
 
