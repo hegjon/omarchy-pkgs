@@ -1,0 +1,17 @@
+Build with -std=gnu17.
+
+gpm's headers declare functions without prototypes (extern int
+Gpm_Wgetch(); in src/headers/gpm.h) while the definitions take
+arguments. GCC 15+ defaults to C23, where an empty parameter list means
+(void), so these are conflicting-type errors. The code is fine under C17.
+
+--- a/PKGBUILD	2026-09-08 05:59:27.185086931 +0200
++++ b/PKGBUILD	2026-09-08 05:59:27.190349570 +0200
+@@ -39,6 +39,7 @@
+ 
+ build() {
+   cd "${srcdir}/${pkgname}"
++  export CFLAGS+=' -std=gnu17'
+   
+   ./configure \
+     --prefix=/usr \
