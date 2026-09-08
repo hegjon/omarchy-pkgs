@@ -1,0 +1,31 @@
+# Maintainer: Dan McGee <dan@archlinux.org>
+# Contributor: Geoffroy Carrier <geoffroy.carrier@koon.fr>
+
+pkgname=nilfs-utils
+pkgver=2.3.1
+pkgrel=1
+pkgdesc="A log-structured file system supporting continuous snapshotting (userspace utils)"
+arch=('x86_64')
+url="http://nilfs.sourceforge.net/"
+license=('GPL-2.0-or-later' 'LGPL-2.1-or-later')
+backup=('etc/nilfs_cleanerd.conf')
+depends=('util-linux')
+source=(http://nilfs.sourceforge.net/download/$pkgname-$pkgver.tar.bz2)
+sha256sums=('bf89d7ff4579c0df294b3493ed412cd4970b0a1eaaecb658e8f6c730153f0148')
+
+prepare() {
+  cd $pkgname-$pkgver
+  autoreconf -fiv
+}
+
+build() {
+  cd $pkgname-$pkgver
+  sed -i -e 's#root_sbindir=/sbin#root_sbindir=/usr/bin#' configure
+  ./configure --sbindir=/usr/bin --with-libmount
+  make
+}
+
+package() {
+  cd $pkgname-$pkgver
+  make DESTDIR="$pkgdir" sbindir=/usr/bin install LDCONFIG=/bin/true
+}

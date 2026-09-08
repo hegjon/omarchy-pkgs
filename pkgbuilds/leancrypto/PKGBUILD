@@ -1,0 +1,37 @@
+# Maintainer: Andreas Radke <andyrtr@archlinux.org> 
+# Contributor: Pan Lanlan <abbypan@gmail.com>
+
+pkgname=leancrypto
+pkgver=1.9.0
+pkgrel=1
+pkgdesc="Lean cryptographic library usable for bare-metal environments"
+arch=('x86_64')
+license=('GPL-2.0-or-later'
+         'LicenseRef-BSDvariant'
+         'LicenseRef-leancrypto')
+url="https://leancrypto.org"
+depends=('glibc')
+makedepends=('meson')
+source=("$pkgname-$pkgver.tar.gz::https://github.com/smuellerDD/leancrypto/archive/refs/tags/v$pkgver.tar.gz")
+sha256sums=('677462e29f8942ea85a269658d71842ea87ee34cc597b0e193805ef23a8592bd')
+
+build() {
+  arch-meson $pkgname-$pkgver build
+
+  # Print config
+  meson configure build
+
+  meson compile -C build
+}
+
+check() {
+  # may take pretty long
+  meson test -C build --print-errorlogs
+}
+
+package() {
+  meson install -C build --destdir "$pkgdir"
+
+  install -Dm644 -t "$pkgdir/usr/share/licenses/$pkgname/" $pkgname-$pkgver/LICENSE{,.bsd,.gplv2}
+}
+

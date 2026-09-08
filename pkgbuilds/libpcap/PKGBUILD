@@ -1,0 +1,55 @@
+# Maintainer: David Runge <dvzrv@archlinux.org>
+# Contributor: Bartłomiej Piotrowski <bpiotrowski@mirantis.com>
+# Contributor: Thomas Bächler <thomas@archlinux.org>
+
+pkgname=libpcap
+pkgver=1.10.6
+pkgrel=1
+pkgdesc='A system-independent interface for user-level packet capture'
+arch=(x86_64)
+url='https://www.tcpdump.org/'
+_url=https://github.com/the-tcpdump-group/libpcap
+license=(BSD-3-Clause)
+depends=(
+  glibc
+  libnl
+  sh
+)
+makedepends=(
+  bluez-libs
+  dbus
+  git
+)
+provides=(libpcap.so)
+source=(git+$_url?signed#tag=$pkgname-$pkgver)
+sha512sums=('2eefea34a799a8332460f1f367c9089c2392d1e1f4618553911e5905873c213b62c21c8f684d30c3a6d357ec58662faf2d7b9d8486196a5236feeec77f61b6de')
+b2sums=('1a8c4cfe387b1636d121355e730ad373e53e995885a68756d9655ca99665fc82d1a9be63e81fe55395928bd22d1ced89a5eb77150d45659c91d6c976ce83a8c0')
+validpgpkeys=('1F166A5742ABB9E0249A8D30E089DEF1D9C15D0D') # The Tcpdump Group
+
+prepare() {
+  cd $pkgname
+  autoreconf -fiv
+}
+
+build() {
+  local configure_options=(
+    --prefix=/usr
+    --enable-ipv6
+    --enable-bluetooth
+    --enable-usb
+    --with-libnl
+  )
+
+  cd $pkgname
+  ./configure "${configure_options[@]}"
+  make
+}
+
+package() {
+  depends+=(libdbus-1.so)
+
+  cd $pkgname
+  make DESTDIR="$pkgdir" install
+  install -vDm 644 LICENSE -t "$pkgdir/usr/share/licenses/$pkgname/"
+  install -vDm 644 {CHANGES,{CONTRIBUTING,README}.md} -t "$pkgdir/usr/share/doc/$pkgname/"
+}

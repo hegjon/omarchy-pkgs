@@ -1,0 +1,10 @@
+--- rpcbind-1.2.8/systemd/rpcbind.service.in	2025-07-27 01:22:11.000000000 +0200
++++ rpcbind-1.2.8/systemd/rpcbind.service.in.new	2025-08-13 19:31:16.359400226 +0200
+@@ -26,6 +26,7 @@
+ EnvironmentFile=-/etc/rpcbind.conf
+ EnvironmentFile=-/etc/default/rpcbind
+ EnvironmentFile=-/etc/sysconfig/rpcbind
++EnvironmentFile=/etc/conf.d/rpcbind
+ ExecStart=@_sbindir@/rpcbind $RPCBIND_OPTIONS @warmstarts_opt@ -f
+ 
+ [Install]

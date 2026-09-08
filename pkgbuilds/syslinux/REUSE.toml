@@ -1,0 +1,41 @@
+version = 1
+
+[[annotations]]
+path = [
+    "PKGBUILD",
+    "README.md",
+    "keys/**",
+    "syslinux.cfg",
+    "syslinux-install_update",
+    ".SRCINFO",
+    ".nvchecker.toml",
+    "*.install",
+    "*.sysusers",
+    "*.tmpfiles",
+    "*.logrotate",
+    "*.pam",
+    "*.service",
+    "*.socket",
+    "*.timer",
+    "*.desktop",
+    "*.hook",
+]
+SPDX-FileCopyrightText = "Arch Linux contributors"
+SPDX-License-Identifier = "0BSD"
+
+[[annotations]]
+path = [
+    "0002-gfxboot-menu-label.patch",
+    "0004-gnu-efi-from-arch.patch",
+    "0005-gnu-efi-version-compatibility.patch",
+    "0005-Workaround-multiple-definition-of-symbol-errors.patch",
+    "0006-Replace-builtin-strlen-that-appears-to-get-optimized.patch",
+    "0016-strip-gnu-property.patch",
+    "0017-single-load-segment.patch",
+    "0018-prevent-pow-optimization.patch",
+    "0025-reproducible-build.patch",
+    "0026-add-missing-include.patch",
+    "0027-use-correct-type-for-size.patch",
+]
+SPDX-FileCopyrightText = "syslinux contributors"
+SPDX-License-Identifier = "GPL-2.0-or-later"

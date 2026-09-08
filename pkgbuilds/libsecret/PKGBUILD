@@ -1,0 +1,114 @@
+# Maintainer: Jan Alexander Steffens (heftig) <heftig@archlinux.org>
+# Contributor: Jan de Groot <jgc@archlinux.org>
+
+pkgbase=libsecret
+pkgname=(
+  libsecret
+  libsecret-docs
+)
+pkgver=0.21.7
+pkgrel=1
+pkgdesc="Library for storing and retrieving passwords and other secrets"
+url="https://gnome.pages.gitlab.gnome.org/libsecret/"
+arch=(x86_64)
+license=(LGPL-2.1-or-later)
+depends=(
+  glib2
+  glibc
+  libgcrypt
+  tpm2-tss
+)
+makedepends=(
+  bash-completion
+  gi-docgen
+  git
+  glib2-devel
+  gobject-introspection
+  meson
+  vala
+)
+checkdepends=(
+  gjs
+  python-dbus
+  python-gobject
+  swtpm
+  tpm2-abrmd
+)
+source=(
+  "git+https://gitlab.gnome.org/GNOME/libsecret.git?signed#tag=$pkgver"
+  0001-meson-Put-test-setup-behind-a-feature-option.patch
+)
+b2sums=('d84ec019a383309169e2ec5817e4e3e0c7d6c29dc72af3226436ee604cd9219edf9600af513a4a12790192bc24387aaa77ec4f88fc4d410466da0980f09ba27f'
+        '5a332781d4ba6cacb2b0ca6908d246f243d104dc19cb62fc5772a6524937fc7d447aa3e2e3443a866b71c9b152847d23a13604a9380457ef69e66385fe6e41d0')
+validpgpkeys=(
+  A7C626E13F9AD776776BD9CA1D8A57CF2E8D36A3 # Niels De Graef <nielsdegraef@gmail.com>
+)
+
+prepare() {
+  cd $pkgbase
+
+  # Use our test dbus-run-session; needed for communication with Tabrmd
+  # https://gitlab.gnome.org/GNOME/libsecret/-/issues/101
+  # https://gitlab.gnome.org/GNOME/libsecret/-/merge_requests/162
+  git apply -3 ../0001-meson-Put-test-setup-behind-a-feature-option.patch
+
+  # Secure memory tests fail in containers
+  sed -i '/test-secmem/d' egg/meson.build
+}
+
+build() {
+  local meson_options=(
+    -D test_setup=disabled
+    -D tpm2=true
+  )
+
+  arch-meson $pkgbase build "${meson_options[@]}"
+  meson compile -C build
+}
+
+_check() (
+  export TPM_PATH="$PWD/tpm"
+  mkdir -p "$TPM_PATH"
+
+  swtpm_setup --create-config-files
+  swtpm_setup --tpm2 --tpm-state "$TPM_PATH" --createek --allow-signing \
+    --decryption --overwrite --display
+
+  swtpm socket --tpm2 --flags startup-clear \
+    --server type=unixio,path="$TPM_PATH/socket" \
+    --ctrl type=unixio,path="$TPM_PATH/socket.ctrl" &
+  _p1=$!
+
+  tpm2-abrmd --tcti=swtpm:path="$TPM_PATH/socket" \
+    --session --flush-all &
+  _p2=$!
+
+  trap "kill $_p1 $_p2; wait" EXIT
+
+  export TCTI=tabrmd:bus_type=session
+
+  meson test -C build --print-errorlogs
+)
+
+check() {
+  dbus-run-session bash -c "$(declare -f _check); _check"
+}
+
+package_libsecret() {
+  optdepends=('org.freedesktop.secrets: secret storage backend')
+  provides=(libsecret-1.so)
+
+  meson install -C build --destdir "$pkgdir"
+
+  mkdir -p doc/usr/share
+  mv {"$pkgdir",doc}/usr/share/doc
+}
+
+package_libsecret-docs() {
+  pkgdesc+=" (documentation)"
+  depends=()
+
+  mv doc/* "$pkgdir"
+}
+
+# vim:set sw=2 sts=-1 et:
