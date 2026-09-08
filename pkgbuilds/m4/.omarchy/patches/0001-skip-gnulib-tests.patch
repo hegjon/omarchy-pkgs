@@ -9,7 +9,7 @@ the variable).
 
 --- a/PKGBUILD
 +++ b/PKGBUILD
-@@ -48,3 +48,3 @@
+@@ -48,4 +48,4 @@
  check() {
  	cd "$pkgname"
 -	make check
