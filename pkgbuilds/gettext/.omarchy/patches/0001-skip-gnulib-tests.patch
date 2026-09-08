@@ -1,0 +1,17 @@
+Run gettext's own test suites but not gnulib's self-tests.
+
+gettext-tools/gnulib-tests hangs in the build chroot right after
+test-error.sh, holding the worker until its timeout, although the gettext
+tests pass. Those tests exercise the vendored portability layer, not
+gettext. gettext is several automake trees deep, so a command-line SUBDIRS
+override would break the recursion; dropping gnulib-tests from the one
+SUBDIRS line that lists it does the same thing precisely.
+
+--- a/PKGBUILD
++++ b/PKGBUILD
+@@ -61,4 +61,5 @@
+ check() {
+   cd ${pkgname}-${pkgver}
++  sed -i '/^SUBDIRS = /s/ gnulib-tests//' gettext-tools/Makefile
+   make check
+ }

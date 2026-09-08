@@ -1,0 +1,17 @@
+Run m4's own test suite (checks/) but not gnulib's self-tests (tests/).
+
+gnulib's tests hang in the build chroot right after test-error.sh, holding
+the worker until its timeout, although every m4 test passes. They exercise
+the vendored portability layer, not m4. The top-level SUBDIRS is
+". examples lib src doc checks po tests"; the override runs everything but
+tests (a command-line SUBDIRS reaches the sub-makes too, none of which uses
+the variable).
+
+--- a/PKGBUILD
++++ b/PKGBUILD
+@@ -48,3 +48,3 @@
+ check() {
+ 	cd "$pkgname"
+-	make check
++	make check SUBDIRS='. examples lib src doc checks po'
+ }

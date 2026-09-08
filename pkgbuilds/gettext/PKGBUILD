@@ -60,6 +60,7 @@ build() {
 
 check() {
   cd ${pkgname}-${pkgver}
+  sed -i '/^SUBDIRS = /s/ gnulib-tests//' gettext-tools/Makefile
   make check
 }
 

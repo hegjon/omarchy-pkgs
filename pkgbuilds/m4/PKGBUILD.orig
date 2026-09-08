@@ -47,7 +47,7 @@ build() {
 
 check() {
 	cd "$pkgname"
-	make check SUBDIRS='. examples lib src doc checks po'
+	make check
 }
 
 package() {
