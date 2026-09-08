@@ -294,6 +294,11 @@ package_builds_for_mirror() {
 package_moves_to_channel() {
   local pkgdir="$1" channel="$2"
   package_in_channel "$pkgdir" "$channel" || return 1
+  # Pinned packages build natively in rc from the release pin. That the
+  # advancing environment lacks OMARCHY_RC_PINS (so *it* may not build them)
+  # does not make the edge copy movable over the pin's artifact — edge's
+  # version can be ahead of the in-flight RC.
+  [[ "$channel" == "rc" ]] && package_is_pinned "$pkgdir" && return 1
   ! package_builds_for_mirror "$pkgdir" "$channel"
 }
 
