@@ -1,0 +1,17 @@
+Build with -std=gnu17.
+
+dmraid 1.0.0.rc16 passes callbacks through an unprototyped pointer,
+int (*f) (), and calls it with two arguments (activate/activate.c:877).
+GCC 15+ defaults to C23, where an empty parameter list means (void), so
+the call and the incompatible function pointers are hard errors. The code
+is fine under C17.
+
+--- a/PKGBUILD
++++ b/PKGBUILD
+@@ -33,5 +33,6 @@
+ build() {
+   cd "$pkgname/1.0.0.rc16-3/$pkgname"
++  export CFLAGS+=' -std=gnu17'
+   ./configure --enable-led --enable-intel_led
+   make -j1
+ }
