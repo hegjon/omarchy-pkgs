@@ -1,0 +1,8 @@
+{
+  "source": "local",
+  "upstream": {
+    "git_tags": "https://github.com/hegjon/archci.git",
+    "tag_pattern": "v{pkgver}",
+    "sources": { "any": ["https://github.com/hegjon/archci/archive/refs/tags/v{pkgver}.tar.gz"] }
+  }
+}
