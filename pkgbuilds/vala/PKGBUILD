@@ -1,0 +1,69 @@
+# Maintainer: Levente Polyak <anthraxx[at]archlinux[dot]org>
+# Maintainer: Jan Alexander Steffens (heftig) <heftig@archlinux.org>
+# Contributor: Ionut Biru <ibiru@archlinux.org>
+# Contributor: Timm Preetz <timm@preetz.us>
+
+pkgname=vala
+pkgver=0.56.19
+pkgrel=2
+pkgdesc='Compiler for the GObject type system'
+url='https://wiki.gnome.org/Projects/Vala'
+arch=(x86_64)
+license=(LGPL-2.1-or-later)
+depends=(
+  bash
+  gcc
+  glib2
+  glibc
+  graphviz
+  gtk-doc
+  pkg-config
+  ttf-font
+)
+makedepends=(
+  autoconf-archive
+  git
+  help2man
+  libxslt
+  vala
+)
+checkdepends=(
+  dbus
+  gobject-introspection
+  libx11
+)
+provides=(
+  libvala{,doc}-${pkgver%.*}.so
+  valadoc
+)
+source=(
+  "git+https://gitlab.gnome.org/GNOME/vala.git?signed#tag=$pkgver"
+)
+b2sums=('e0128b51a581dc9132104921632413b745c3cddc84689d135ac9f4b56322f1b288016992c2ae067b0abcccef2c45268601aae97e12baf9d5ad057a1a2ccc1eaa')
+validpgpkeys=(
+  E4884AEEDE4CC02043C3D8045DECDBA89270E723 # Rico Tzschichholz <ricotz@ubuntu.com>
+)
+
+prepare() {
+  cd vala
+
+  NOCONFIGURE=1 ./autogen.sh
+}
+
+build() {
+  cd vala
+
+  ./configure --prefix=/usr
+  sed -i -e 's/ -shared / -Wl,-O1,--as-needed\0/g' libtool
+  make
+}
+
+check() {
+  make -C vala check
+}
+
+package() {
+  make -C vala DESTDIR="$pkgdir" install
+}
+
+# vim:set sw=2 sts=-1 et:

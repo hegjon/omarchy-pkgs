@@ -1,0 +1,65 @@
+# Maintainer: Jan Alexander Steffens (heftig) <heftig@archlinux.org>
+# Maintainer: Laurent Carlier <lordheavym@gmail.com>
+# Maintainer: Robin Candau <antiz@archlinux.org>
+
+pkgname=vulkan-headers
+pkgver=1.4.357.0
+pkgrel=1
+epoch=1
+pkgdesc="Vulkan header files and API registry"
+url="https://www.vulkan.org/"
+arch=(any)
+license=("Apache-2.0 OR MIT")
+depends=()
+makedepends=(
+  cmake
+  git
+  ninja
+  python
+)
+optdepends=(
+  "python: Registry tools"
+)
+provides=("vulkan-hpp=$pkgver")
+groups=(vulkan-devel)
+source=(
+  "git+https://github.com/KhronosGroup/Vulkan-Headers#tag=vulkan-sdk-$pkgver"
+  0001-Remove-Werror.patch
+)
+b2sums=('73717522cacce5885d5f2e514387a79be04cae69001cc114cf9b1a629b736a3d511de847a222039e4879ee01bb646bb7cfb5bcb8281f3a2fe749aa0057d6a934'
+        'f40a6ca5aa9d80b598b0d04ae9171062152ede95d663189ae2617bf86a23a6885cc8bcf2923e3b75fa1eb8f9c8403eb79a6d9b33019a10261abc6707b76f0c29')
+
+prepare() {
+  cd Vulkan-Headers
+
+  # GCC 15 fix
+  git apply -3 ../0001-Remove-Werror.patch
+}
+
+build() {
+  local cmake_options=(
+    -D CMAKE_BUILD_TYPE=Release
+    -D CMAKE_INSTALL_PREFIX=/usr
+    -D CMAKE_INSTALL_SYSCONFDIR=/etc
+    -D CMAKE_SKIP_INSTALL_RPATH=ON
+  )
+
+  cmake -S Vulkan-Headers -B build -G Ninja "${cmake_options[@]}"
+  cmake --build build
+}
+
+check() {
+  ctest --test-dir build --output-on-failure --stop-on-failure
+}
+
+package() {
+  DESTDIR="$pkgdir" cmake --install build
+
+  python -m compileall -d /usr "$pkgdir/usr"
+  python -O -m compileall -d /usr "$pkgdir/usr"
+
+  install -Dm644 Vulkan-Headers/LICENSES/MIT.txt \
+    -t "$pkgdir/usr/share/licenses/$pkgname"
+}
+
+# vim:set sw=2 sts=-1 et:

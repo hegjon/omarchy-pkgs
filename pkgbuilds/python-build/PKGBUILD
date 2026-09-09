@@ -1,0 +1,123 @@
+# Maintainer: Filipe Laíns (FFY00) <lains@archlinux.org>
+# Maintainer: Daniel M. Capella <polyzen@archlinux.org>
+
+_bootstrap=0
+_bootstrap_version=3.14.0
+_pkgname=build
+pkgname=python-$_pkgname
+pkgver=1.6.0
+pkgrel=1
+pkgdesc='A simple, correct Python build frontend'
+arch=(any)
+url='https://github.com/pypa/build'
+license=(MIT)
+depends=(
+  python
+)
+if (( _bootstrap == 0 )); then
+  depends+=(
+    python-packaging
+    python-pyproject-hooks
+  )
+fi
+makedepends=(
+  git
+)
+if (( _bootstrap == 0 )); then
+  makedepends+=(
+    python-build
+    python-flit-core
+    python-installer
+  )
+fi
+checkdepends=(
+  python-filelock
+  python-pip
+  python-pytest
+  python-pytest-mock
+  python-pytest-rerunfailures
+  python-setuptools
+  python-setuptools-scm
+  python-uv
+  python-virtualenv
+  python-wheel
+)
+optdepends=(
+  'python-pip: to use as the Python package installer (default)'
+  'python-uv: to use as the Python package installer'
+  'python-virtualenv: to use virtualenv for build isolation'
+)
+if (( _bootstrap == 0 )); then
+  source=("$pkgname::git+$url#tag=$pkgver")
+else
+  source=(
+    "python-bootstrap::git+https://gitlab.archlinux.org/archlinux/python-bootstrap.git#tag=$_bootstrap_version"
+    python-build::git+https://github.com/pypa/build.git
+    python-flit::git+https://github.com/pypa/flit.git
+    python-installer::git+https://github.com/pypa/installer.git
+    python-wheel::git+https://github.com/pypa/wheel.git
+    python-packaging::git+https://github.com/pypa/packaging
+    python-pyproject-hooks::git+https://github.com/pypa/pyproject-hooks
+    python-setuptools::git+https://github.com/pypa/setuptools.git
+  )
+fi
+#validpgpkeys=(
+#  3DCE51D60930EBA47858BA4146F633CBB0EB4BF2 # Filipe Laíns (FFY00) <lains@archlinux.org>
+#  2FDEC9863E5E14C7BC429F27B9D0E45146A241E8 # Henry Schreiner <henryschreineriii@gmail.com>
+#)
+b2sums=('c4a5cf148fb6f23241d0079dde14ceb41c754d563df05497b39ea25322d5bb5bd65945805da23303358ebf9a686b42eb8ae8a885cd9715480bf79b069fd1b638')
+
+prepare() {
+  if (( _bootstrap == 0 )); then
+    cd $pkgname
+  else
+    cd python-bootstrap
+    git submodule init
+
+    git config submodule."external/build".url ../python-build
+    git config submodule."external/flit".url ../python-flit
+    git config submodule."external/installer".url ../python-installer
+    git config submodule."external/wheel".url ../python-wheel
+    git config submodule."external/packaging".url ../python-packaging
+    git config submodule."external/pyproject-hooks".url ../python-pyproject-hooks
+    git config submodule."external/setuptools".url ../python-setuptools
+
+    git -c protocol.file.allow=always submodule update
+    git submodule update --init --recursive
+  fi
+}
+
+build() {
+  if (( _bootstrap == 0 )); then
+    cd $pkgname
+    python -m build --wheel --skip-dependency-check --no-isolation
+  else
+    cd python-bootstrap
+    python -m bootstrap.build
+  fi
+}
+
+check() {
+  cd $pkgname
+
+  PYTHONPATH=src pytest -v -k 'not test_check_dependencies'
+}
+
+package() {
+  local site_packages=$(python -c "import site; print(site.getsitepackages()[0])")
+  install -d "$pkgdir"/usr/share/licenses/$pkgname
+  ln -s "$site_packages"/$_pkgname-$pkgver.dist-info/licenses/LICENSE \
+    "$pkgdir"/usr/share/licenses/$pkgname
+
+  if (( _bootstrap == 0 )); then
+    cd $pkgname
+    python -m installer --destdir="$pkgdir" dist/*.whl
+  else
+    depends+=(
+      python-packaging
+      python-pyproject-hooks
+    )
+    cd python-bootstrap
+    python -m bootstrap.install dist/build-*-py3-none-any.whl -d "$pkgdir"
+  fi
+}

@@ -1,0 +1,59 @@
+# Maintainer: Jan Alexander Steffens (heftig) <heftig@archlinux.org>
+# Contributor: Jan de Groot <jgc@archlinux.org>
+
+pkgname=gtk-doc
+pkgver=1.36.1
+pkgrel=1
+pkgdesc="Documentation tool for public library API"
+url="https://gitlab.gnome.org/GNOME/gtk-doc"
+arch=(any)
+license=(
+  GFDL-1.1-or-later
+  GPL-2.0-or-later
+)
+depends=(
+  docbook-xml
+  docbook-xsl
+  glib2-docs
+  python
+  python-lxml
+  python-pygments
+  sh
+)
+makedepends=(
+  dblatex
+  git
+  meson
+  yelp-tools
+)
+checkdepends=(
+  bc
+  gtk3
+  python-parameterized
+)
+optdepends=(
+  'dblatex: PDF support'
+)
+source=(
+  "git+$url.git#tag=$pkgver"
+)
+b2sums=('b8df01f6507a3ddf68ddee993f0377aa5e8bebf2158d79cabb6d955b56a53276e74c4578245af563459117a4b60d11a0ec62712cb066ab50a86c7c6637e86f7e')
+
+prepare() {
+  cd gtk-doc
+}
+
+build() {
+  arch-meson gtk-doc build
+  meson compile -C build
+}
+
+check() {
+  meson test -C build --print-errorlogs
+}
+
+package() {
+  meson install -C build --destdir "$pkgdir"
+}
+
+# vim:set sw=2 sts=-1 et:

@@ -1,0 +1,46 @@
+# Maintainer: Jan Alexander Steffens (heftig) <heftig@archlinux.org>
+
+pkgname=gi-docgen
+pkgver=2026.1
+pkgrel=1
+pkgdesc="Documentation generator for GObject-based libraries"
+url="https://gnome.pages.gitlab.gnome.org/gi-docgen/"
+arch=(any)
+license=("Apache-2.0 OR GPL-3.0-or-later")
+depends=(
+  graphviz
+  python
+  python-jinja
+  python-magic
+  python-markdown
+  python-markupsafe
+  python-packaging
+  python-pygments
+  python-typogrify
+)
+makedepends=(
+  git
+  python-build
+  python-installer
+  python-setuptools
+  python-wheel
+)
+source=("git+https://gitlab.gnome.org/GNOME/gi-docgen.git#tag=$pkgver")
+b2sums=('a912c5b89d3dae1c6480183d701579f539ef87807a38585f48fd36e5f90e38edf6b11c920156aab4e87236fe559bd1754d25cf752d724fdcd583d5785ae1a95e')
+validpgpkeys=(
+  53EF3DC3B63E2899271BD26322E8091EEA11BBB7 # Emmanuele Bassi (GNOME) <ebassi@gnome.org>
+)
+
+prepare() {
+  cd $pkgname
+}
+
+build() {
+  python -m build --wheel --no-isolation $pkgname
+}
+
+package() {
+  python -m installer --destdir="$pkgdir" $pkgname/dist/*.whl
+}
+
+# vim:set sw=2 sts=-1 et:

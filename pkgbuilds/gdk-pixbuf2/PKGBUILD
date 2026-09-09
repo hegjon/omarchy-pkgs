@@ -1,0 +1,87 @@
+# Maintainer: Jan Alexander Steffens (heftig) <heftig@archlinux.org>
+# Contributor: Ionut Biru <ibiru@archlinux.org>
+
+pkgbase=gdk-pixbuf2
+pkgname=(
+  gdk-pixbuf2
+  gdk-pixbuf2-docs
+)
+pkgver=2.44.7
+pkgrel=1
+pkgdesc="An image loading library"
+url="https://gitlab.gnome.org/GNOME/gdk-pixbuf"
+arch=(x86_64)
+license=(LGPL-2.0-or-later)
+depends=(
+  glib2
+  glibc
+  glycin
+  shared-mime-info
+)
+makedepends=(
+  gi-docgen
+  git
+  glib2-devel
+  gobject-introspection
+  meson
+  python-docutils
+)
+source=(
+  "git+https://gitlab.gnome.org/GNOME/gdk-pixbuf.git#tag=$pkgver"
+  gdk-pixbuf-query-loaders.hook
+)
+b2sums=('0a0c801939c6cc6f647714962491bc0d4673349899fb99c4760782c99f56ca3cc16c1159a2de389372f5b6eab12ad9eb7c9f6521ee9b983a4c8435a70da22639'
+        '5a00d34888e207d70d02369015d029f4c0450fc5a02b4b257de8e5df04380dc550723f351433859224c96c3c6390896f2166673af65e8a09eb57024f5a34301b')
+
+prepare() {
+  cd gdk-pixbuf
+}
+
+build() {
+  local meson_options=(
+    -D android=disabled
+    -D builtin_loaders=all
+    -D documentation=true
+    -D gif=disabled
+    -D glycin=enabled
+    -D gtk_doc=true
+    -D installed_tests=false
+    -D introspection=enabled
+    -D jpeg=disabled
+    -D legacy_xpm=enabled
+    -D man=true
+    -D others=enabled
+    -D png=disabled
+    -D thumbnailer=disabled
+    -D tiff=disabled
+  )
+
+  arch-meson gdk-pixbuf build "${meson_options[@]}"
+  meson compile -C build
+}
+
+package_gdk-pixbuf2() {
+  optdepends=(
+    "libheif: Load .avif, .heic and .heif"
+    "libopenraw: Load .arw, .cr2, .crw, .dng, .erf, .mrw, .nef, .orf, .pef and .raf"
+    "libwmf: Load .apm and .wmf"
+  )
+  provides=(libgdk_pixbuf-2.0.so)
+  install=gdk-pixbuf2.install
+
+  meson install -C build --destdir "$pkgdir"
+
+  mkdir -p doc/usr/share
+  mv {"$pkgdir",doc}/usr/share/doc
+
+  install -Dt "$pkgdir/usr/share/libalpm/hooks" -m644 *.hook
+}
+
+package_gdk-pixbuf2-docs() {
+  pkgdesc+=" (documentation)"
+  depends=()
+
+  mv doc/* "$pkgdir"
+}
+
+# vim:set sw=2 sts=-1 et:

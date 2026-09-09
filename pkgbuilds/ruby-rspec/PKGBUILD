@@ -1,0 +1,91 @@
+# Maintainer: Levente Polyak <anthraxx[at]archlinux[dot]org>
+# Maintainer: Andreas 'Segaja' Schleifer <segaja at archlinux dot org>
+# Contributor: Artem Vorotnikov <artem@vorotnikov.me>
+
+_gemname=rspec
+pkgname=ruby-${_gemname}
+pkgver=3.13.2
+pkgrel=1
+pkgdesc='RSpec meta-gem that depends on the other components'
+url='https://github.com/rspec/rspec'
+arch=('any')
+license=('MIT')
+depends=(
+  ruby
+  ruby-rspec-core
+  ruby-rspec-expectations
+  ruby-rspec-mocks
+)
+makedepends=(
+  git
+  ruby-rdoc
+)
+options=('!emptydirs')
+source=(
+  "${pkgname}::git+${url}#tag=${_gemname}-v${pkgver}"
+  "${pkgname}_no_version_constraints.patch"
+)
+sha512sums=('c5c18343f6ec064af7b4f08fee72e27b065a67acfab5bebc6b4755c23899c47b73a31c010404e099e7356834da5171faacdbe20b285e973c4a3372adda599eaa'
+            'cfca36d1ea714da84516975bb89b60f0adae7ca7473b7abef5b1b2e54c3269ee74293be8f5676c6cb55066acde14739b792d434e392b9b8dea81b7ac21fdcf47')
+b2sums=('e37308be9ff990c1e891ab37be0b85542562d87b3cdaf0e97b62a594ba5c5b4e72e2fab88ff2e127a7ba37f212d52d0f4a85b15194384f1b0d3998ed6871c798'
+        '956919f5fa862fdcda34716277250b2266cfcc3e8b18596533bc6c8f08fd1d16f504905db1b5cb529a539d7707cfb14c737f1e6a9860505f16c735c3a7adb06e')
+
+prepare() {
+  cd "${pkgname}"
+
+  patch --verbose --strip=1 --input="../${pkgname}_no_version_constraints.patch"
+}
+
+build() {
+  cd "${pkgname}/${_gemname}"
+
+  local _gemdir="$(gem env gemdir)"
+
+  gem build --verbose "${_gemname}.gemspec"
+
+  gem install \
+    --local \
+    --verbose \
+    --ignore-dependencies \
+    --no-user-install \
+    --install-dir "tmp_install${_gemdir}" \
+    --bindir "tmp_install/usr/bin" \
+    "${_gemname}-${pkgver}.gem"
+
+  # remove unreproducible files
+  rm --force --recursive --verbose \
+    "tmp_install${_gemdir}/cache/" \
+    "tmp_install${_gemdir}/gems/${_gemname}-${pkgver}/vendor/" \
+    "tmp_install${_gemdir}/doc/${_gemname}-${pkgver}/ri/ext/"
+
+  find "tmp_install${_gemdir}/gems/" \
+    -type f \
+    \( \
+      -iname "*.o" -o \
+      -iname "*.c" -o \
+      -iname "*.so" -o \
+      -iname "*.time" -o \
+      -iname "gem.build_complete" -o \
+      -iname "Makefile" \
+    \) \
+    -delete
+
+  find "tmp_install${_gemdir}/extensions/" \
+    -type f \
+    \( \
+      -iname "mkmf.log" -o \
+      -iname "gem_make.out" \
+    \) \
+    -delete
+}
+
+package() {
+  cd "${pkgname}/${_gemname}"
+
+  cp --archive --verbose tmp_install/* "${pkgdir}"
+
+  install --verbose -D --mode=0644 LICENSE* --target-directory "${pkgdir}/usr/share/licenses/${pkgname}"
+  install --verbose -D --mode=0644 *.md --target-directory "${pkgdir}/usr/share/doc/${pkgname}"
+}
+
+# vim: tabstop=2 shiftwidth=2 expandtab:

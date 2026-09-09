@@ -1,0 +1,42 @@
+# Maintainer: George Rawlinson <grawlinson@archlinux.org>
+# Contributor: Maxime Gauduin <alucryd@archlinux.org>
+# Contributor: Daniel M. Capella <polyzen@archlinux.org>
+# Contributor: Michael Yeatts <mwyeatts@gmail.com>
+
+pkgname=python-typing_extensions
+pkgver=4.16.0
+pkgrel=1
+pkgdesc='Backported and Experimental Type Hints for Python 3.8+'
+arch=(any)
+url=https://github.com/python/typing_extensions
+license=(Python-2.0.1)
+depends=(python)
+makedepends=(
+  git
+  python-build
+  python-flit-core
+  python-installer
+)
+checkdepends=(python-tests)
+source=("$pkgname::git+$url.git#tag=$pkgver")
+sha512sums=('ade3b372e03636cdc4d73dbf127c3ceee5622b3573f357fa66149fec0290841eb5871e1edbbcfe68a241a4e53b003c9a52483751c766d9fe9eb32702c7731a04')
+b2sums=('1146939beea5efd59c0a847ec5ec49ec4993a45b45a04e442725e8ac0f3cc801ad0f79571043873a3a5e5e4ca1aaa1ab5dc7d3942534698ab38379e4ddd63063')
+
+build() {
+  cd "$pkgname"
+  python -m build --wheel --skip-dependency-check --no-isolation
+}
+
+check() {
+  cd "$pkgname"
+  PYTHONPATH="$PWD/src" python -m unittest discover src
+}
+
+package() {
+  cd "$pkgname"
+
+  python -m installer --destdir="$pkgdir" dist/*.whl
+
+  # license
+  install -vDm644 -t "$pkgdir/usr/share/licenses/$pkgname" LICENSE
+}

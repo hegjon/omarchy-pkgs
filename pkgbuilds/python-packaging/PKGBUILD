@@ -1,0 +1,86 @@
+# Maintainer: Felix Yan <felixonmars@archlinux.org>
+
+_bootstrap=0
+_bootstrap_version=3.14.0
+pkgname=python-packaging
+_name=${pkgname#python-}
+pkgver=26.3
+pkgrel=1
+pkgdesc="Core utilities for Python packages"
+arch=('any')
+url="https://github.com/pypa/packaging"
+license=('Apache-2.0 OR BSD-2-Clause')
+depends=('python')
+if (( _bootstrap == 0 )); then
+  makedepends=(
+    'python-build'
+    'python-flit-core'
+    'python-installer'
+  )
+else
+  makedepends=('git')
+fi
+checkdepends=('python-pytest' 'python-pretend' 'python-tomli-w' 'python-hypothesis')
+if (( _bootstrap == 0 )); then
+  source=("https://github.com/pypa/packaging/archive/$pkgver/$pkgname-$pkgver.tar.gz")
+else
+  source=(
+    python-bootstrap::git+https://gitlab.archlinux.org/archlinux/python-bootstrap.git#tag=$_bootstrap_version
+    python-build::git+https://github.com/pypa/build.git
+    python-flit::git+https://github.com/pypa/flit.git
+    python-installer::git+https://github.com/pypa/installer.git
+    python-wheel::git+https://github.com/pypa/wheel.git
+    python-packaging::git+https://github.com/pypa/packaging
+    python-pyproject-hooks::git+https://github.com/pypa/pyproject-hooks
+    python-setuptools::git+https://github.com/pypa/setuptools.git
+  )
+fi
+sha512sums=('7559e4f0376c775f57c362394ba276451bee0952012fc461458ee450e86fe89909166bb11c217be100b7909f0958f4ee9df4b51c3019e664186fda06a48d810d')
+
+prepare() {
+  if (( _bootstrap == 0 )); then
+    cd $_name-$pkgver
+  else
+    cd python-bootstrap
+    git submodule init
+
+    git config submodule."external/build".url ../python-build
+    git config submodule."external/flit".url ../python-flit
+    git config submodule."external/installer".url ../python-installer
+    git config submodule."external/wheel".url ../python-wheel
+    git config submodule."external/packaging".url ../python-packaging
+    git config submodule."external/pyproject-hooks".url ../python-pyproject-hooks
+    git config submodule."external/setuptools".url ../python-setuptools
+
+    git -c protocol.file.allow=always submodule update
+    git submodule update --init --recursive
+  fi
+}
+
+build() {
+  if (( _bootstrap == 0 )); then
+    cd $_name-$pkgver
+    python -m build -wn --skip-dependency-check
+  else
+    cd python-bootstrap
+    python -m bootstrap.build
+  fi
+}
+
+check() {
+  cd packaging-$pkgver
+  PYTHONPATH=src pytest
+}
+
+package() {
+  if (( _bootstrap == 0 )); then
+    cd $_name-$pkgver
+    python -m installer --destdir="$pkgdir" dist/*.whl
+  else
+    cd python-bootstrap
+    python -m bootstrap.install dist/$_name-*-py3-none-any.whl -d "$pkgdir"
+  fi
+
+  # license
+  install -vDm644 -t "$pkgdir/usr/share/licenses/$pkgname" $srcdir/$_name-$pkgver/LICENSE*
+}

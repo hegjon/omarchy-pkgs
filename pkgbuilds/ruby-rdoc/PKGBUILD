@@ -1,0 +1,113 @@
+# Maintainer: Anatol Pomozov <anatol.pomozov@gmail.com>
+# Maintainer: Andreas 'Segaja' Schleifer <segaja at archlinux dot org>
+
+_gemname='rdoc'
+pkgname="ruby-${_gemname}"
+pkgver=6.14.0
+pkgrel=1
+pkgdesc='Command-line documentation generator for Ruby projects'
+arch=('any')
+url='https://ruby.github.io/rdoc/'
+license=(
+	Ruby
+)
+depends=(
+  ruby
+  ruby-erb
+  ruby-psych
+)
+makedepends=(
+  ruby-bundler
+  ruby-kpeg
+  ruby-racc
+  ruby-rake
+  ruby-rdoc
+)
+checkdepends=(
+  ruby-test-unit
+  ruby-test-unit-ruby-core
+)
+options=('!emptydirs')
+source=("https://github.com/ruby/rdoc/archive/v${pkgver}/${pkgname}-${pkgver}.tar.gz")
+sha512sums=('cbf69eb8abfee455a7090f7a6f767be2e3b1ee46a5effb86a97c1407a9fcd26c968c51af1ffc685add1c4e66e9fbe171aad4514a5fca9268b60fa0a732a0a8e7')
+b2sums=('13d31b5ed5b7c1ed7cce0d4fc328dbca6d857c248b151d55fef0959395466744ed8f9dae9b3eb60a58783951125a762c878a697bf0f3e1a9e462cc64287b6073')
+
+prepare() {
+  cd "${_gemname}-${pkgver}"
+
+  # update gemspec/Gemfile to allow newer version of the dependencies
+  sed --in-place --regexp-extended 's|~>|>=|g' "${_gemname}.gemspec"
+}
+
+build() {
+  cd "${_gemname}-${pkgver}"
+
+  local _gemdir="$(gem env gemdir)"
+
+  # rake build - can't be used as it requires rubocop: https://github.com/ruby/rdoc/blob/v6.4.0/Rakefile#L99-L107
+  rake generate
+  gem build --verbose "${_gemname}.gemspec"
+  rake rdoc
+
+  gem install \
+    --local \
+    --verbose \
+    --ignore-dependencies \
+    --no-user-install \
+    --install-dir "tmp_install${_gemdir}" \
+    --bindir "tmp_install/usr/bin" \
+    "${_gemname}-${pkgver}.gem"
+
+  # remove unreproducible files
+    rm --force --recursive --verbose \
+      "tmp_install${_gemdir}/cache/" \
+      "tmp_install${_gemdir}/gems/${_gemname}-${pkgver}/vendor/" \
+      "tmp_install${_gemdir}/doc/${_gemname}-${pkgver}/ri/ext/"
+
+    find "tmp_install${_gemdir}/gems/" \
+      -type f \
+      \( \
+        -iname "*.o" -o \
+        -iname "*.c" -o \
+        -iname "*.so" -o \
+        -iname "*.time" -o \
+        -iname "gem.build_complete" -o \
+        -iname "Makefile" \
+      \) \
+      -delete
+
+    find "tmp_install${_gemdir}/extensions/" \
+      -type f \
+      \( \
+        -iname "mkmf.log" -o \
+        -iname "gem_make.out" \
+      \) \
+      -delete
+}
+
+check() {
+  cd "${_gemname}-${pkgver}"
+
+  local _gemdir="\$(gem env gemdir)"
+
+  GEM_HOME="tmp_install\${_gemdir}" rake normal_test rubygems_test
+}
+
+package() {
+  cd "${_gemname}-${pkgver}"
+
+  cp --archive --verbose tmp_install/* "${pkgdir}"
+
+  install --verbose -D --mode=0644 man/ri.1 --target-directory "${pkgdir}/usr/share/man/man1"
+  install --verbose -D --mode=0644 LEGAL.rdoc LICENSE.rdoc --target-directory "${pkgdir}/usr/share/licenses/${pkgname}"
+  install --verbose -D --mode=0644 *.md *.rdoc --target-directory "${pkgdir}/usr/share/doc/${pkgname}"
+
+  # install rubygems plugin
+  local _gemdir="$(gem env gemdir)"
+  local _rubygems_plugin_path="${pkgdir}${_gemdir}/plugins"
+
+  mkdir --parents ${_rubygems_plugin_path}
+  echo "require_relative '../gems/rdoc-${pkgver}/lib/rubygems_plugin.rb'" > "${_rubygems_plugin_path}/rdoc_plugin.rb"
+}
+
+# vim: ts=2 sw=2 et:

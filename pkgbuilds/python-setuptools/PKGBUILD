@@ -1,0 +1,167 @@
+# Maintainer: Felix Yan <felixonmars@archlinux.org>
+# Maintainer: Daniel M. Capella <polyzen@archlinux.org>
+# Contributor: Angel Velasquez <angvp@archlinux.org>
+# Contributor: Eli Schwartz <eschwartz@archlinux.org>
+
+_bootstrap=0
+_bootstrap_version=3.14.0
+pkgname=python-setuptools
+_name=${pkgname#python-}
+pkgver=84.0.0
+pkgrel=1
+epoch=1
+pkgdesc="Easily download, build, install, upgrade, and uninstall Python packages"
+arch=('any')
+url="https://pypi.org/project/setuptools/"
+license=('MIT')
+groups=(python-build-backend)
+depends=(
+  'python'
+)
+if (( _bootstrap == 0 )); then
+  depends+=(
+    'python-jaraco.collections'
+    'python-jaraco.functools'
+    'python-jaraco.text'
+    'python-more-itertools'
+    'python-packaging'
+    'python-platformdirs'
+    'python-wheel'
+  )
+fi
+makedepends=(
+  'git'
+)
+if (( _bootstrap == 0 )); then
+  makedepends+=(
+    'python-build'
+    'python-installer'
+    'python-setuptools'
+  )
+fi
+checkdepends=(
+  'python-build'
+  'python-ini2toml'
+  'python-jaraco.envs'
+  'python-jaraco.path'
+  'python-jaraco.test'
+  'python-path'
+  'python-pip'
+  'python-pytest-home'
+  'python-pytest-subprocess'
+  'python-pytest-timeout'
+  'python-tests'
+  'python-tomli-w'
+  'python-wheel'
+  'python-coverage'
+)
+provides=('python-distribute')
+replaces=('python-distribute')
+if (( _bootstrap == 0 )); then
+  source=(
+    "git+https://github.com/pypa/setuptools.git#tag=v$pkgver"
+    build-no-isolation.patch
+  )
+else
+  source=(
+    "python-bootstrap::git+https://gitlab.archlinux.org/archlinux/python-bootstrap.git#tag=$_bootstrap_version"
+    python-build::git+https://github.com/pypa/build.git
+    python-flit::git+https://github.com/pypa/flit.git
+    python-installer::git+https://github.com/pypa/installer.git
+    python-wheel::git+https://github.com/pypa/wheel.git
+    python-packaging::git+https://github.com/pypa/packaging
+    python-pyproject-hooks::git+https://github.com/pypa/pyproject-hooks
+    python-setuptools::git+https://github.com/pypa/setuptools.git
+  )
+fi
+b2sums=('f02e3374cf7c180da3be60e33c1b441291a73cf65f2383ea399d5bcf5dcfeb716002cbd912b78fb9c99ca58b3d8f4303ae42bafea7df5f118d6fd2ec8c5636b4'
+        'ff0caf384def8ba8aa1c7fbb29077f2bc14c42935f7f81b6c4993ebe835053207b6773865158ad3143147234b311b95033b266f9b4c34a78a67f0b7e83bb5537')
+#validpgpkeys=('CE380CF3044959B8F377DA03708E6CB181B4C47E') # Jason R. Coombs <jaraco@jaraco.com>
+
+prepare() {
+  if (( _bootstrap == 0 )); then
+    cd "$_name"
+    # Populate dependencies list for devendored deps
+    sed '/^core =/,/]/!d' pyproject.toml > ../requirements.txt
+    sed -i '1d;$d' ../requirements.txt
+    sed -i '/^dependencies =/ {
+  r ../requirements.txt
+  s/^core =/dependencies =/
+  }' pyproject.toml
+
+    # Fix tests invoking python-build
+    patch -p1 -i ../build-no-isolation.patch
+
+    # validate-pyproject is still vendored for its pregenerated validations
+    rm -r "$_name"/_vendor
+  else
+    cd python-bootstrap
+    git submodule init
+
+    git config submodule."external/build".url ../python-build
+    git config submodule."external/flit".url ../python-flit
+    git config submodule."external/installer".url ../python-installer
+    git config submodule."external/wheel".url ../python-wheel
+    git config submodule."external/packaging".url ../python-packaging
+    git config submodule."external/pyproject-hooks".url ../python-pyproject-hooks
+    git config submodule."external/setuptools".url ../python-setuptools
+
+    git -c protocol.file.allow=always submodule update
+    git submodule update --init --recursive
+  fi
+}
+
+build() {
+  export SETUPTOOLS_INSTALL_WINDOWS_SPECIFIC_FILES=0
+
+  if (( _bootstrap == 0 )); then
+    cd "$_name"
+    python -m build --wheel --skip-dependency-check --no-isolation
+  else
+    cd python-bootstrap
+    python -m bootstrap.build
+  fi
+}
+
+check() { (
+  # Workaround UTF-8 tests by setting LC_CTYPE
+  export LC_CTYPE=en_US.UTF-8
+
+  # https://github.com/pypa/setuptools/pull/810
+  export PYTHONDONTWRITEBYTECODE=1
+
+  cd "$_name"
+  local pytest_args=(
+    --verbose
+    --ignore tools/finalize.py # jaraco.develop is not packaged
+    --ignore tools/vendored.py # jaraco.packaging is not packaged
+    # devendoring
+    --deselect "$_name"/tests/test_"$_name".py::test_wheel_includes_vendored_metadata
+    --deselect "$_name"/tests/test_virtualenv.py::test_no_missing_dependencies
+    # ?
+    --deselect "$_name"/tests/test_dist.py::test_dist_fetch_build_egg
+    # system site packages
+    --deselect "$_name"/tests/test_virtualenv.py::test_pip_upgrade_from_source
+  )
+
+  PYTHONPATH="$PWD/build/lib" python -m pytest "${pytest_args[@]}"
+)}
+
+package() {
+  local site_packages=$(python -c "import site; print(site.getsitepackages()[0])")
+
+  if (( _bootstrap == 0 )); then
+    install -d "$pkgdir"/usr/share/licenses/$pkgname
+    ln -s "$site_packages"/"$_name"-$pkgver.dist-info/licenses/LICENSE \
+      "$pkgdir"/usr/share/licenses/$pkgname
+
+    cd "$_name"
+    python -m installer --destdir="$pkgdir" dist/*.whl
+  else
+    cd python-bootstrap
+    python -m bootstrap.install dist/"$_name"-*-py3-none-any.whl -d "$pkgdir"
+    install -Dm644 -t "$pkgdir"/usr/share/licenses/$pkgname external/"$_name"/LICENSE
+  fi
+
+  rm "$pkgdir/$site_packages/$_name"/*.exe
+}
