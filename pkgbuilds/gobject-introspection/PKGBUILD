@@ -39,7 +39,7 @@ source=(
   "git+https://gitlab.gnome.org/GNOME/gobject-introspection-tests.git"
 )
 b2sums=('46007e1c426ebfde0d94b84398a1d99e0fc516f1b5a78590d0d1ddec76b90d19a9c6f4f9959a6d243cbb3601390763bbdd7d05d1d1c3d4fb9746f453b40ea849'
-        'c384d8196e7966261d78245b59a0d14a061d49f7fb15faebd6e10527eb58c2893bffaee30f894b45feaeb1e1d8ccfc65e79958c42458b298e1e9675f68202780'
+        '9239e87c1133864340fda4ba99c53cd1684f421f7fb9a90299b6a25f582db3f70e7aab6988a7943934ece0d48246bc61c764cd08ef98f6bec3d4383a3f1bf679'
         'SKIP')
 validpgpkeys=(
   923B7025EE03C1C59F42684CF0942E894B2EAFA0  # Philip Withnall <philip@tecnocode.co.uk>
