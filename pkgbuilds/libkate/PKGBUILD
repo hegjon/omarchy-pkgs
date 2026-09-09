@@ -1,0 +1,58 @@
+# Maintainer: David Runge <dvzrv@archlinux.org>
+# Contributor: Giovanni Scafora <giovanni@archlinux.org>
+# Contributor: N30N <archlinux@alunamation.com>
+# Contributor: linkmauve <linkmauve@linkmauve.fr>
+# Contributor: mokkurkalve <xenofil@gmail.com>
+
+pkgname=libkate
+_name="${pkgname/lib}"
+pkgver=0.4.3
+pkgrel=4
+pkgdesc="A karaoke and text codec for embedding in ogg"
+license=(BSD-3-Clause)
+url="https://gitlab.xiph.org/xiph/kate"
+arch=(x86_64)
+depends=(
+  glibc
+  libogg
+  libpng
+)
+makedepends=(
+  liboggz
+  python-wxpython
+)
+optdepends=(
+  'liboggz: for KateDJ'
+  'python-wxpython: for KateDJ'
+)
+provides=(
+  libkate.so
+  liboggkate.so
+)
+source=(
+  $url/-/archive/$_name-$pkgver/$_name-$_name-$pkgver.tar.gz
+)
+sha512sums=('3946bcf87d3f00bcf76d2ea7498274ee71c17ca0d78817fd1e41ee61dc6771b42279f6bbd1788bce6617b14f50517afa097a8b8556f55adc9312e8da52c0e371')
+b2sums=('52c26664dc8aa284aa39b82cf32e54739207ed10077a6ceb574ee5e2de2bf14335b8a4099bb1a973a881d98ab1630328725d70b54e0b59ca88ae9c03466b2cc6')
+
+prepare() {
+  cd $_name-$_name-$pkgver
+  autoreconf -fiv
+}
+
+build() {
+  local configure_options=(
+    --prefix=/usr
+    --disable-static
+    --disable-doc
+  )
+
+  cd $_name-$_name-$pkgver
+  ./configure "${configure_options[@]}"
+  make
+}
+
+package() {
+  make DESTDIR="$pkgdir" install -C $_name-$_name-$pkgver
+  install -vDm 644 $_name-$_name-$pkgver/COPYING -t "$pkgdir/usr/share/licenses/$pkgname"
+}

@@ -1,0 +1,41 @@
+# Maintainer: Levente Polyak <anthraxx[at]archlinux[dot]org>
+# Maintainer: Carl Smedstad <carsme@archlinux.org>
+# Contributor: Moritz Kiefer <moritz.kiefer@purelyfunctional.org>
+
+pkgname=libcbor
+pkgver=0.14.0
+pkgrel=1
+pkgdesc='C library for parsing and generating CBOR, the general-purpose schema-less binary data format'
+url='https://github.com/PJK/libcbor'
+arch=('x86_64')
+license=('MIT')
+depends=('glibc')
+makedepends=(
+  'cmake'
+  'cmocka'
+)
+provides=('libcbor.so')
+source=("${url}/archive/v${pkgver}/${pkgname}-${pkgver}.tar.gz")
+sha512sums=('e580543d9cb567d484e14c3057c5c1672f012879abe3f04ead64bf0f14b95b986fcc26602b0ffc2b247e9bfbd8a914d676c25d4f62230ac8fd5a6727f7d34595')
+b2sums=('c95ce44fd602f53efd6ef1d537f765e9addff0a61cfda0ae852c525692311b4e01725d085ca7700d3018d69ba3e25422168d903cb5e4e53a2c3c277fe63a3518')
+
+build() {
+  cmake -S ${pkgname}-${pkgver} -B build \
+    -DCMAKE_BUILD_TYPE=None \
+    -DCMAKE_INSTALL_PREFIX=/usr \
+    -Wno-dev \
+    -DBUILD_SHARED_LIBS=ON \
+    -DWITH_TESTS=1
+  cmake --build build
+}
+
+check() {
+  ctest --test-dir build --output-on-failure
+}
+
+package() {
+  DESTDIR="${pkgdir}" cmake --install build
+  cd "${pkgname}-${pkgver}"
+  install -vDm 644 -t "${pkgdir}/usr/share/doc/${pkgname}" README.md CHANGELOG.md
+  install -vDm 644 -t "${pkgdir}/usr/share/licenses/${pkgname}" LICENSE.md
+}

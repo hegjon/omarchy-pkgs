@@ -1,0 +1,32 @@
+# Maintainer: Felix Yan <felixonmars@archlinux.org>
+
+pkgname=python-hatch-vcs
+pkgver=0.5.0
+pkgrel=4
+pkgdesc="Hatch plugin for versioning with your preferred VCS"
+url="https://github.com/ofek/hatch-vcs"
+license=('MIT')
+arch=('any')
+depends=('python-hatchling' 'python-setuptools-scm')
+makedepends=('git' 'python-build' 'python-installer')
+checkdepends=('python-pytest')
+source=("git+https://github.com/ofek/hatch-vcs.git#tag=v$pkgver")
+sha512sums=('c987b4e50bd3c53503fb09add9b06d0464b1b75f195906146f5253737f44a7967a83730bc6132c5335ec6ce71554bca47fa3956b08196963fa953395730e689d')
+
+build() {
+  cd hatch-vcs
+  python -m build -nw
+}
+
+check() {
+  cd hatch-vcs
+  local site_packages=$(python -c "import site; print(site.getsitepackages()[0])")
+  python -m installer --destdir=tmp_install dist/*.whl
+  PYTHONPATH="$PWD/tmp_install$site_packages" pytest
+}
+
+package() {
+  cd hatch-vcs
+  python -m installer --destdir="$pkgdir" dist/*.whl
+  install -Dm644 LICENSE.txt -t "$pkgdir"/usr/share/licenses/$pkgname/
+}

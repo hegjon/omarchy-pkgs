@@ -1,0 +1,44 @@
+# Maintainer: Evangelos Foutras <foutrelis@archlinux.org>
+# Maintainer: Robin Candau <antiz@archlinux.org>
+# Contributor: Andreas Radke <andyrtr@archlinux.org>
+# Contributor: Tobias Kieslich <tobias funnychar archlinux.org>
+
+pkgname=xfce4-dev-tools
+pkgver=4.20.0
+pkgrel=2
+pkgdesc="Xfce developer tools"
+arch=('x86_64')
+url="https://docs.xfce.org/xfce/xfce4-dev-tools/start"
+license=('GPL-2.0-or-later')
+depends=('glib2' 'gtk-doc')
+makedepends=('git' 'meson')
+optdepends=('docker: xfce-build helper script')
+source=("git+https://gitlab.xfce.org/xfce/xfce4-dev-tools.git#tag=$pkgname-$pkgver")
+sha256sums=('21723980448db541948f4138e445c6c9f136f8271930a3c7d2e3ccf66b2f5923')
+
+prepare() {
+  cd $pkgname
+  NOCONFIGURE=1 ./autogen.sh
+}
+
+build() {
+  cd $pkgname
+  ./configure \
+    --prefix=/usr \
+    --sysconfdir=/etc \
+    --localstatedir=/var \
+    --enable-maintainer-mode
+  make
+}
+
+check() {
+  cd $pkgname
+  make check
+}
+
+package() {
+  cd $pkgname
+  make DESTDIR="$pkgdir" install
+}
+
+# vim:set ts=2 sw=2 et:

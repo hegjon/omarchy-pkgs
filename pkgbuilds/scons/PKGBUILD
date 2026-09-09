@@ -1,0 +1,62 @@
+# Maintainer: David Runge <dvzrv@archlinux.org>
+# Contributor: Ray Rashif <schiv@archlinux.org>
+# Contributor: damir <damir@archlinux.org>
+# Contributor: Lukas Sabota <punkrockguy318@comcast.net>
+# Contributor: Brice Carpentier <brice@dlfp.org>
+
+_name=SCons
+pkgname=scons
+pkgver=4.11.1
+pkgrel=1
+pkgdesc="Extensible Python-based build utility"
+arch=(any)
+url="https://scons.org"
+license=(MIT)
+depends=(
+  python
+)
+makedepends=(
+  git
+  python-build
+  python-installer
+  python-setuptools
+  python-wheel
+)
+checkdepends=(
+  python-psutil
+  python-pytest
+)
+optdepends=(
+  'python-psutil: to wait for processes to exit'
+)
+source=(
+  $pkgname::git+https://github.com/$pkgname/$pkgname.git#tag=$pkgver
+  https://downloads.sourceforge.net/project/scons/scons/$pkgver/$_name-$pkgver.tar.gz
+)
+sha512sums=('254d474e371e76e4fdf473b75e41fe02cab6fe3af042f2bbbb8e81727a5f33f45887f0a628114d7a149dedb611b27879a022c96bdccbbbd29e3a891f6224c314'
+            '44ec5a45e6adc39de167c42e8e85c2e506f922af82d6d8459caf91b301e5a789c038ce41818df20e311127def35da2f860fb62bcb6ff6cae344134f6c767a537')
+b2sums=('ae51d6ed13765d08d9a72f753da81de62bec344210f17a52df4c91798571cd6a417c734948252c263ff90b16fa5837b794e63f0238ec87eac226717a2dec6a8e'
+        '6090c9206f005e4c318e84f267de63ae9dcfbb5f8d4b0de5bbc30ee022882e4357358c4e90e36fd809218db80f00bb93167ff52eb8a0ef983ea0fa49be0dfd3e')
+
+build() {
+  cd $pkgname
+  python -m build --wheel --no-isolation
+}
+
+check() {
+  cd $pkgname
+  python runtest.py --all --unit-only
+}
+
+package() {
+  # install man pages from prebuilt sources
+  install -vDm 644 $pkgname-$pkgver/*.1 -t "$pkgdir/usr/share/man/man1/"
+
+  cd $pkgname
+  python -m installer --destdir="$pkgdir" dist/*.whl
+  install -vDm 644 LICENSE -t "$pkgdir/usr/share/licenses/$pkgname/"
+  install -vDm 644 {{CHANGES,RELEASE}.txt,README.rst} -t "$pkgdir/usr/share/doc/$pkgname/"
+
+  # remove docbook dirs
+  find "$pkgdir" -name 'docbook' -type d -exec rm -frv {} +
+}

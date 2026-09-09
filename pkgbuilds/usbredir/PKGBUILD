@@ -1,0 +1,51 @@
+# Maintainer: Anatol Pomozov
+# Maintainer: Carl Smedstad <carsme@archlinux.org>
+# Contributor: Sergej Pupykin <pupykin.s+arch@gmail.com>
+# Contributor: Stefano Facchini <stefano.facchini@gmail.com>
+
+pkgname=usbredir
+pkgver=0.15.0
+pkgrel=1
+pkgdesc="USB traffic redirection protocol"
+arch=(x86_64)
+url="https://www.spice-space.org/usbredir.html"
+license=(
+  GPL-2.0-or-later
+  LGPL-2.1-or-later
+)
+depends=(
+  glib2
+  glibc
+  libusb
+)
+makedepends=(
+  git
+  meson
+)
+provides=(
+  libusbredirhost.so
+  libusbredirparser.so
+)
+source=("git+https://gitlab.freedesktop.org/spice/usbredir.git#tag=$pkgname-$pkgver")
+sha256sums=('60e71d25edbd9e0d1078b5ff48d091a1563ff069193f99c2045611951c60afd6')
+
+prepare() {
+  cd $pkgname
+  sed -i '/-D_FORTIFY_SOURCE=2/d' meson.build
+}
+
+build() {
+  cd $pkgname
+  arch-meson . build
+  meson compile -C build
+}
+
+check() {
+  cd $pkgname
+  meson test -C build --print-errorlogs
+}
+
+package() {
+  cd $pkgname
+  meson install -C build --destdir="$pkgdir"
+}

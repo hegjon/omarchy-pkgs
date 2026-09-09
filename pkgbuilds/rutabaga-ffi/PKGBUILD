@@ -1,0 +1,39 @@
+# Maintainer: Sven-Hendrik Haase <svenstaro@archlinux.org>
+# Contributor: envolution
+# Contributor: David Garfias <dgarfiasme at gmail dot com>
+# shellcheck shell=bash disable=SC2034,SC2154
+pkgname=rutabaga-ffi
+pkgver=0.1.85
+pkgrel=1
+pkgdesc="Cross-platform, open-source, Rust-based GPU paravirtualization"
+arch=("x86_64")
+url="https://github.com/magma-gpu/rutabaga_gfx"
+license=(BSD-3-Clause)
+source=("$pkgname-$pkgver.tar.gz::https://github.com/magma-gpu/rutabaga_gfx/archive/refs/tags/v${pkgver}.tar.gz")
+depends=(
+  glibc
+  libgcc
+  virglrenderer
+  gfxstream
+)
+makedepends=(rust meson git cmake rust-bindgen)
+sha256sums=('ad71947f028786eb33f3248ea91a427b2b0a2e5f539182e03b690abf939a64ab')
+
+# Use debug
+export CARGO_PROFILE_RELEASE_DEBUG=2 CARGO_PROFILE_RELEASE_STRIP=false
+
+# Use LTO
+export CARGO_PROFILE_RELEASE_LTO=true CARGO_PROFILE_RELEASE_CODEGEN_UNITS=1
+
+build() {
+  cd rutabaga_gfx-$pkgver
+  arch-meson . build -Dfeatures=gfxstream -Dffi=true --buildtype=release --wrap-mode=forcefallback
+  meson compile -C build
+}
+
+package() {
+  cd rutabaga_gfx-$pkgver
+  meson install -C build --destdir "$pkgdir"
+  install -Dm644 LICENSE "$pkgdir"/usr/share/licenses/$pkgname/LICENSE
+}
+# vim:set ts=2 sw=2 et:

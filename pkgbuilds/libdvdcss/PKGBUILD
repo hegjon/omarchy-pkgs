@@ -1,0 +1,26 @@
+# Maintainer: Jan de Groot <jgc@archlinux.org>
+# Contributor: Stéphane Gaudreault <stephane@archlinux.org>
+# Contributor: arjan <arjan@archlinux.org>
+# Contributor Sarah Hay <sarahhay@mb.sympatico.ca>
+
+pkgname=libdvdcss
+pkgver=1.6.0
+pkgrel=1
+pkgdesc="Portable abstraction library for DVD decryption"
+url="https://www.videolan.org/developers/libdvdcss.html"
+arch=('x86_64')
+license=('GPL-2.0-or-later')
+depends=('glibc')
+makedepends=('git' 'meson')
+options=('!docs' '!emptydirs')
+source=("git+https://code.videolan.org/videolan/libdvdcss.git#tag=$pkgver")
+sha256sums=('1e8a8c73aa113f5d9a9d943a48f729796a16691aabe76225fe4e147f3391a136')
+
+build() {
+    arch-meson "$pkgname" build
+    meson compile -C build
+}
+
+package() {
+    meson install -C build --destdir "$pkgdir"
+}

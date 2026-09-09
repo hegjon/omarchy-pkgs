@@ -1,0 +1,27 @@
+# Maintainer: Morten Linderud <foxboron@archlinux.org>
+# Contributor: David Runge <dvzrv@archlinux.org>
+# Contributor: Bartłomiej Piotrowski <bpiotrowski@archlinux.org>
+
+pkgname=libslirp
+pkgver=4.9.4
+pkgrel=1
+pkgdesc='General purpose TCP-IP emulator'
+arch=(x86_64)
+url='https://gitlab.freedesktop.org/slirp/libslirp'
+license=(BSD MIT)
+depends=(glib2)
+makedepends=(meson)
+provides=('libslirp.so')
+source=("${url}/-/archive/v${pkgver}/libslirp-v${pkgver}.tar.gz")
+sha512sums=('0c54aa1eee49e95964cac7fa0fcdf8876fc18fd7418ac759071030599aefbcffd76c0d702ef2bab7185a68ccb3064f31022fb74a5b0a0bafea7c58ec268d17b5')
+b2sums=('5e6bb41d187eb2a0cee377216a1db326bf3298023aa61d233666863b3c0e74a5fc81e64eb9f37816fced1f43bda1f9ec83e48c9d5de2f7d51c67374920146603')
+
+build() {
+  arch-meson "$pkgname-v${pkgver}" build
+  ninja -C build
+}
+
+package() {
+  DESTDIR="$pkgdir" meson install -C build
+  install -vDm 644 "$pkgname-v${pkgver}"/COPYRIGHT "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+}

@@ -1,0 +1,56 @@
+# Maintainer: Jan Alexander Steffens (heftig) <heftig@archlinux.org>
+
+pkgname=cbindgen
+pkgver=0.29.4
+pkgrel=1
+pkgdesc="A tool for generating C bindings to Rust code"
+url="https://github.com/mozilla/cbindgen"
+arch=(x86_64)
+license=(MPL-2.0)
+depends=(
+  glibc
+  libgcc
+)
+makedepends=(
+  cargo
+  git
+)
+checkdepends=(
+  cmake
+  cython
+  python
+)
+options=(!lto)
+source=("git+$url#tag=v$pkgver")
+b2sums=('7c9e9ddc495362afdae393e7a44dd8f49b42363df9f7e36403abd2838d23c950c59a63b86df8832842eee5be26ebd1381c13203e106e1c66c62e65aaaa183b1f')
+
+# Use debug
+export CARGO_PROFILE_RELEASE_DEBUG=2 CARGO_PROFILE_RELEASE_STRIP=false
+
+# Use LTO
+export CARGO_PROFILE_RELEASE_LTO=true CARGO_PROFILE_RELEASE_CODEGEN_UNITS=1
+
+prepare() {
+  cd cbindgen
+  cargo fetch --locked --target host-tuple
+}
+
+build() {
+  cd cbindgen
+  cargo build --release --frozen
+}
+
+check() {
+  cd cbindgen
+  # Tests need nightly features
+  RUSTC_BOOTSTRAP=1 cargo test --frozen
+}
+
+package() {
+  cd cbindgen
+  install -Dt "$pkgdir/usr/bin" target/release/cbindgen
+  install -Dt "$pkgdir/usr/share/doc/$pkgname" -m644 CHANGES \
+    {README,docs,internals}.md
+}
+
+# vim:set sw=2 sts=-1 et:

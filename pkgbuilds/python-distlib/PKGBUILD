@@ -1,0 +1,55 @@
+# Maintainer: George Rawlinson <grawlinson@archlinux.org>
+# Contributor: Eli Schwartz <eschwartz@archlinux.org>
+
+pkgname=python-distlib
+pkgver=0.4.3
+pkgrel=1
+pkgdesc='Low-level functions that relate to packaging and distribution of Python software'
+arch=(any)
+url='https://distlib.readthedocs.io'
+license=(PSF-2.0)
+depends=(python)
+makedepends=(
+  git
+  python-build
+  python-installer
+  python-setuptools
+  python-wheel
+)
+checkdepends=(python-tests)
+source=("$pkgname::git+https://github.com/pypa/distlib.git#tag=$pkgver")
+sha512sums=('00ae23e0636d917eb0a912574fcc343db0429755659467f1168c07f679a40386734350dcce464a6e47c9dc031854d2bdee05b258c8809a122d774a8e783a341c')
+b2sums=('b8f6d2cc71396cae29f33d0450d7cd39b45ce20ea2e2a850af46786849a29aff20f541579293e9d7db76e8c746f0b3b2079a9c577e06d56bf953ce214e431fbc')
+
+prepare() {
+  cd "$pkgname"
+
+  # do not bundle executables of unknown provenance
+  rm distlib/*.exe
+}
+
+build() {
+  cd "$pkgname"
+
+  python -m build --wheel --no-isolation
+}
+
+check() {
+  cd "$pkgname"
+
+  python -m installer --destdir="$PWD/tmp_install" dist/*.whl
+  local site_packages=$(python -c "import site; print(site.getsitepackages()[0])")
+  export PYTHONPATH="$PWD/tmp_install$site_packages"
+
+  # if it's not relevant, why does it exist?
+  # https://github.com/pypa/distlib/commit/93baffeaa1773796d802bb761607a6466790dcba
+  export SKIP_EXT_PACKAGE_DATA=1
+
+  python tests/test_all.py
+}
+
+package() {
+  cd "$pkgname"
+
+  python -m installer --destdir="$pkgdir" dist/*.whl
+}

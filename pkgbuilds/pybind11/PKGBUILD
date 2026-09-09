@@ -1,0 +1,65 @@
+# Maintainer : Daniel Bermond <dbermond@archlinux.org>
+# Maintainer : Santiago Torres-Arias <santiago@archlinux.org>
+# Contributor: Matthew Ellison <matt+aur@arroyonetworks.com>
+
+pkgname=pybind11
+pkgver=3.1.0
+pkgrel=1
+pkgdesc='A lightweight header-only library that exposes C++ types in Python and vice versa'
+arch=('any')
+url='https://pybind11.readthedocs.org/'
+license=('BSD-3-Clause')
+depends=(
+    'python')
+optdepends=(
+    'python-setuptools: for setup_helpers')
+makedepends=(
+    'boost'
+    'cmake'
+    'eigen'
+    'python-build'
+    'python-installer'
+    'python-pytest'
+    'python-scikit-build-core'
+    'python-setuptools' # for satisfying namcap
+    'python-wheel')
+checkdepends=(
+    'python-numpy'
+    'python-scipy')
+source=("https://github.com/pybind/pybind11/archive/v${pkgver}/${pkgname}-${pkgver}.tar.gz")
+sha256sums=('ef712655692a2e9bf7bb7874c022564a45f91d847ddee987e720cd9e28849665')
+
+build () {
+    cd "${pkgname}-${pkgver}"
+    python -m build --wheel --no-isolation
+    
+    # tests
+    cmake \
+        -G 'Unix Makefiles' \
+        -B "${srcdir}/build-tests" \
+        -S "${srcdir}/${pkgname}-${pkgver}" \
+        -DCMAKE_BUILD_TYPE:STRING='None' \
+        -DCMAKE_INSTALL_PREFIX:PATH='/usr' \
+        -DDOWNLOAD_CATCH:BOOL='ON' \
+        -Wno-author
+    cmake --build "${srcdir}/build-tests"
+}
+
+check() {
+    make -C build-tests check
+}
+
+package() {
+    python -m installer --destdir="$pkgdir" "${pkgname}-${pkgver}/dist"/*.whl
+    
+    local _sitepkgs
+    _sitepkgs="$(python -c 'import site; print(site.getsitepackages()[0])')"
+    
+    install -d -m755 "${pkgdir}/usr/share/licenses/${pkgname}"
+    ln -sr "${pkgdir}${_sitepkgs}/pybind11-${pkgver}.dist-info/licenses/LICENSE" "${pkgdir}/usr/share/licenses/${pkgname}/LICENSE"
+    
+    install -d -m755 "${pkgdir}/usr"/{include,lib/{cmake,pkgconfig}}
+    ln -sr "${pkgdir}${_sitepkgs}/pybind11/include/pybind11" "${pkgdir}/usr/include/pybind11"
+    ln -sr "${pkgdir}${_sitepkgs}/pybind11/share/cmake/pybind11" "${pkgdir}/usr/lib/cmake/pybind11"
+    ln -sr "${pkgdir}${_sitepkgs}/pybind11/share/pkgconfig/pybind11.pc" "${pkgdir}/usr/lib/pkgconfig/pybind11.pc"
+}

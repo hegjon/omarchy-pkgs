@@ -1,0 +1,33 @@
+# Maintainer: Felix Yan <felixonmars@archlinux.org>
+
+pkgname=ndctl
+pkgver=85
+pkgrel=1
+pkgdesc='Utility library for managing the libnvdimm (non-volatile memory device) sub-system in the Linux kernel'
+arch=('x86_64')
+url="https://github.com/pmem/ndctl"
+license=('LGPL-2.1-only' 'GPL-2.0-only' 'CC0-1.0' 'MIT')
+depends=('iniparser' 'json-c' 'keyutils' 'kmod' 'libtraceevent' 'libtracefs' 'systemd-libs'
+         'util-linux-libs')
+makedepends=('git' 'asciidoctor' 'bash-completion' 'cmake' 'meson' 'systemd' 'xmlto')
+source=("git+https://github.com/pmem/ndctl.git#tag=v$pkgver")
+sha512sums=('1ccc9ce6b440cc54e9da20c293134fcbeee02cbd23e223417c24ecd13577382efa382602419c69b2a4541a1a28244f62c85f67d09b72127c71c9777d41b5e1f0')
+
+prepare() {
+  cd ndctl
+  # fix location of modprobe.d conf
+  sed -i "s|^modprobedatadir =.*|modprobedatadir = '/usr/lib/modprobe.d/'|" contrib/meson.build
+}
+
+build() {
+  arch-meson ndctl build
+  meson compile -C build
+}
+
+check() {
+  meson test -C build --print-errorlogs
+}
+
+package() {
+  meson install -C build --destdir "$pkgdir"
+}

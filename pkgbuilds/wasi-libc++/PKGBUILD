@@ -1,0 +1,144 @@
+# Maintainer: Frederik Schwan <freswa at archlinux dot org>
+
+pkgbase=wasi-libc++
+pkgname=(wasi-libc++ wasi-libc++abi)
+pkgver=22.1.0
+pkgrel=1
+pkgdesc="LLVM C++ standard library (WASI)"
+url="https://libcxx.llvm.org/"
+license=('Apache-2.0 WITH LLVM-exception')
+arch=('any')
+depends=('wasi-libc' 'wasi-compiler-rt')
+makedepends=('clang' 'cmake' 'ninja' 'python' 'llvm' 'lld' 'wasm-component-ld')
+options=('!buildflags' 'staticlibs')
+source=("https://github.com/llvm/llvm-project/releases/download/llvmorg-$pkgver/llvm-project-$pkgver.src.tar.xz"{,.sig})
+sha512sums=('588753a26742cfc76ca179398eaac6a31e68b1fa5bfaf7300ce710a89bba1dc9bfe41229bb9277663a3cde4468e74922153e5d1529eb7c6fe4de5ba3cb62ba45'
+            'SKIP')
+validpgpkeys=('474E22316ABF4785A88C6E8EA2C794A986419D8A'  # Tom Stellard <tstellar@redhat.com>
+              'D574BD5D1D0E98895E3BF90044F2485E45D59042'  # Tobias Hieta <tobias@hieta.se>
+              'FFB3368980F3E6BB5737145A316C56D064CACBA5'  # Douglas Yung <douglas.yung@sony.com>
+              '71046D1E9C6656BDD61171873E83BABF4A4F9E85'  # Cullen Rhodes <cullen.rhodes@arm.com>
+)
+
+_targets=(wasm32-wasi wasm32-wasip1 wasm32-wasip1-threads wasm32-wasip2)
+
+prepare() {
+  cd llvm-project-$pkgver.src
+
+  # Platform files have been copied from
+  # https://github.com/WebAssembly/wasi-sdk/tree/main/cmake/Platform
+  cd cmake
+  mkdir Platform
+  echo 'set(WASI 1)' > Platform/WASI.cmake
+}
+
+build() {
+  # Build options are derived from
+  # https://github.com/WebAssembly/wasi-sdk/blob/main/cmake/wasi-sdk-sysroot.cmake
+
+  local target pic_flag extra_cflags
+  for target in "${_targets[@]}"; do
+    pic_flag=ON
+    extra_cflags="-Wno-deprecated -fno-exceptions --target=$target --sysroot /usr/share/wasi-sysroot"
+
+    if [[ ${target} = *threads* ]]; then
+      pic_flag=OFF
+      extra_cflags+=" -pthread"
+    fi
+
+    local cmake_options=(
+      -S llvm-project-$pkgver.src/runtimes
+      -B build-$target
+      -G Ninja
+      -DCMAKE_AR=/usr/bin/llvm-ar
+      -DCMAKE_ASM_COMPILER=/usr/bin/clang
+      -DCMAKE_BUILD_TYPE=RelWithDebInfo
+      -DCMAKE_CXX_COMPILER=/usr/bin/clang++
+      -DCMAKE_CXX_COMPILER_WORKS=ON
+      -DCMAKE_CXX_FLAGS=-fno-exceptions
+      -DCMAKE_CXX_LINKER_DEPFILE_SUPPORTED=OFF
+      -DCMAKE_C_COMPILER=/usr/bin/clang
+      -DCMAKE_C_COMPILER_WORKS=ON
+      -DCMAKE_C_FLAGS=-fno-exceptions
+      -DCMAKE_C_LINKER_DEPFILE_SUPPORTED=OFF
+      -DCMAKE_INSTALL_PREFIX=/usr/share/wasi-sysroot
+      -DCMAKE_RANLIB=/usr/bin/llvm-ranlib
+      -DCMAKE_SYSROOT=/usr/share/wasi-sysroot
+      -DCMAKE_SYSTEM_NAME=WASI
+      -DCMAKE_SYSTEM_PROCESSOR=wasm32
+      -DCMAKE_SYSTEM_VERSION=1
+      -DCMAKE_ASM_COMPILER_TARGET=$target
+      -DCMAKE_CXX_COMPILER_TARGET=$target
+      -DCMAKE_C_COMPILER_TARGET=$target
+      -DCMAKE_INSTALL_INCLUDEDIR=/usr/share/wasi-sysroot/include/$target
+      -DCMAKE_STAGING_PREFIX=/usr/share/wasi-sysroot
+      -DCMAKE_POSITION_INDEPENDENT_CODE=$pic_flag
+      -DLIBCXX_ENABLE_THREADS=ON
+      -DLIBCXX_HAS_PTHREAD_API=ON
+      -DLIBCXX_HAS_EXTERNAL_THREAD_API=OFF
+      -DLIBCXX_HAS_WIN32_THREAD_API=OFF
+      -DLLVM_COMPILER_CHECKED=ON
+      -DLIBCXX_ENABLE_SHARED=$pic_flag
+      -DLIBCXX_ENABLE_EXCEPTIONS=OFF
+      -DLIBCXX_ENABLE_FILESYSTEM=ON
+      -DLIBCXX_ENABLE_ABI_LINKER_SCRIPT=OFF
+      -DLIBCXX_CXX_ABI=libcxxabi
+      -DLIBCXX_HAS_MUSL_LIBC=OFF
+      -DLIBCXX_ABI_VERSION=2
+      -DLIBCXXABI_ENABLE_EXCEPTIONS=OFF
+      -DLIBCXXABI_ENABLE_SHARED=$pic_flag
+      -DLIBCXXABI_SILENT_TERMINATE=ON
+      -DLIBCXXABI_ENABLE_THREADS=ON
+      -DLIBCXXABI_HAS_PTHREAD_API=ON
+      -DLIBCXXABI_HAS_EXTERNAL_THREAD_API=OFF
+      -DLIBCXXABI_HAS_WIN32_THREAD_API=OFF
+      -DLIBCXXABI_USE_LLVM_UNWINDER=OFF
+      -DUNIX=ON
+      -DCMAKE_C_FLAGS="$extra_cflags"
+      -DCMAKE_ASM_FLAGS="$extra_cflags"
+      -DCMAKE_CXX_FLAGS="$extra_cflags"
+      -DLIBCXX_LIBDIR_SUFFIX=/$target
+      -DLIBCXXABI_LIBDIR_SUFFIX=/$target
+      -DLIBCXX_INCLUDE_TESTS=OFF
+      -DLIBCXX_INCLUDE_BENCHMARKS=OFF
+      -DLLVM_ENABLE_RUNTIMES="libcxx;libcxxabi"
+    )
+
+    cmake "${cmake_options[@]}"
+    ninja -C build-$target
+  done
+}
+
+# Do not remove the space before the () or commitpkg will
+# accidentally to run this function on the system (!!!)
+package_wasi-libc++ () {
+  depends+=("wasi-libc++abi=$pkgver-$pkgrel")
+
+  mkdir -p "$pkgdir/usr/share/wasi-sysroot/include/c++/v1"
+
+  local target
+  for target in "${_targets[@]}"; do
+    DESTDIR="$pkgdir" ninja -C build-$target install-cxx
+  done
+
+  # reduce duplication
+  hardlink -c "$pkgdir/usr/share/wasi-sysroot"
+
+  install -Dm0644 llvm-project-$pkgver.src/libcxx/CREDITS.TXT "$pkgdir"/usr/share/licenses/"$pkgname"/CREDITS
+  install -Dm0644 llvm-project-$pkgver.src/libcxx/LICENSE.TXT "$pkgdir"/usr/share/licenses/"$pkgname"/LICENSE
+}
+
+package_wasi-libc++abi() {
+  pkgdesc="Low level support for the $pkgdesc"
+
+  local target
+  for target in "${_targets[@]}"; do
+    DESTDIR="$pkgdir" ninja -C build-$target install-cxxabi
+  done
+
+  # reduce duplication
+  hardlink -c "$pkgdir/usr/share/wasi-sysroot"
+
+  install -Dm0644 llvm-project-$pkgver.src/libcxxabi/CREDITS.TXT "$pkgdir"/usr/share/licenses/"$pkgname"/CREDITS
+  install -Dm0644 llvm-project-$pkgver.src/libcxxabi/LICENSE.TXT "$pkgdir"/usr/share/licenses/"$pkgname"/LICENSE
+}
