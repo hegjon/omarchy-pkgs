@@ -1,0 +1,62 @@
+# Maintainer: Caleb Maclennan <caleb@alerque.com>
+# Contributor: David Runge <dvzrv@archlinux.org> 
+# Contributor: Eli Schwartz <eschwartz@archlinux.org>
+# Contributor: George Rawlinson <george@rawlinson.net.nz>
+
+_devendored=1  # set to 0 to use vendored sources
+_pkgname=poetry-core
+pkgname=python-poetry-core
+pkgver=2.4.1
+pkgrel=1
+pkgdesc='Poetry PEP 517 Build Backend & Core Utilities'
+arch=(any)
+url="https://github.com/python-poetry/${_pkgname}"
+license=(MIT)
+groups=(python-build-backend)
+_pydeps=(fastjsonschema
+         lark-parser
+         packaging)
+depends=(python)
+if (( _devendored == 1 )); then
+	depends+=("${_pydeps[@]/#/python-}")
+fi
+makedepends=(python-{build,installer})
+checkdepends=(git
+              python-pytest
+              python-pytest-mock
+              python-setuptools
+              python-tomli-w
+              python-trove-classifiers
+              python-virtualenv)
+_archive="$_pkgname-$pkgver"
+source=("$url/archive/$pkgver/$_archive.tar.gz"
+        "$pkgname-1.9.0-devendor.patch")
+sha256sums=('da83444c058008e87b6505883e4f40569ebe833b8cd9d9ef6541e3942ea1c8ba'
+            '8ab581197e30a457b1388cc77437c6d202b59dd1d5a7444d9c2e5a1958cca3cf')
+
+prepare() {
+	if (( _devendored == 1 )); then
+		sed -e "s/2.3.2/$pkgver/" "../$pkgname-1.9.0-devendor.patch" |
+			patch -Np1 -d "$_archive"
+		rm -rv "$_archive/src/poetry/core/_vendor"
+	fi
+}
+
+build() {
+	cd "$_archive"
+	python -m build -wn
+}
+
+check() {
+	cd "$_archive"
+	export PYTHONPATH="$PWD/src"
+	# only works inside git repositories
+	pytest \
+		-k 'not test_default_with_excluded_data and not test_default_src_with_excluded_data'
+}
+
+package() {
+	cd "$_archive"
+	python -m installer -d "$pkgdir" dist/*.whl
+	install -Dm0644 -t "$pkgdir/usr/share/licenses/$pkgname/" LICENSE
+}

@@ -1,0 +1,44 @@
+# Maintainer: Antonio Rojas <arojas@archlinux.org>
+# Contributor: Ronald van Haren <ronald.archlinux.org>
+# Contributor: Juergen Hoetzel <juergen.archlinux.org>
+# Contributor: Tom Newsom <Jeepster@gmx.co.uk>
+
+pkgname=gsl
+pkgver=2.8
+pkgrel=1
+pkgdesc='The GNU Scientific Library (GSL) is a modern numerical library for C and C++ programmers'
+url='https://www.gnu.org/software/gsl/gsl.html'
+source=(https://ftp.gnu.org/gnu/gsl/$pkgname-$pkgver.tar.gz{,.sig})
+license=(GPL-3.0-only)
+arch=(x86_64)
+depends=(cblas
+         glibc
+         sh)
+sha256sums=('6a99eeed15632c6354895b1dd542ed5a855c0f15d9ad1326c6fe2b2c9e423190'
+            'SKIP')
+validpgpkeys=(DD61B7FC02790F978360F399245FB74BAE05B3E9) # Patrick Alken <alken@colorado.edu>
+
+prepare() {
+  cd $pkgname-$pkgver
+  sed -e 's|cblas/libgslcblas.la||g' -i Makefile.* # Don't link binaries to libgslcblas
+}
+
+build() {
+  cd $pkgname-$pkgver
+  LDFLAGS+=' -lcblas' \
+  ./configure --prefix=/usr
+  make
+}
+
+check() {
+  cd $pkgname-$pkgver
+  make check
+}
+
+package() {
+  cd $pkgname-$pkgver
+  make DESTDIR="$pkgdir" install
+# Use system cblas
+  rm "$pkgdir"/usr/lib/libgslcblas.*
+  ln -s /usr/lib/libcblas.so "$pkgdir"/usr/lib/libgslcblas.so
+}

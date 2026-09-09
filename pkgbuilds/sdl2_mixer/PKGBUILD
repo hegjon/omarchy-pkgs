@@ -1,0 +1,41 @@
+# Maintainer: Sven-Hendrik Haase <svenstaro@archlinux.org>
+pkgname=sdl2_mixer
+pkgver=2.8.2
+pkgrel=1
+pkgdesc="A simple multi-channel audio mixer (Version 2)"
+arch=('x86_64')
+url="https://github.com/libsdl-org/SDL_mixer"
+license=('MIT')
+depends=('sdl2' 'libvorbis' 'libmodplug' 'mpg123' 'flac' 'opusfile' 'libxmp')
+makedepends=('fluidsynth')
+optdepends=('fluidsynth: MIDI software synth, replaces built-in timidity')
+source=("https://github.com/libsdl-org/SDL_mixer/releases/download/release-${pkgver}/SDL2_mixer-${pkgver}.tar.gz"{,.sig})
+sha512sums=('9ea190a3e5a0dc3fc9c5a1d0b8aef4af7243559060c8c6d10b0da0defdafd8e78d584ad5ffc88d2e841cdf6886781f77e86b5c95abce6468ed877b372a57747b'
+            'SKIP')
+validpgpkeys=('0900104363B4C9D4223DE149D913FE7D4B61D39B') # Sam Lantinga
+
+build() {
+  cd "${srcdir}/SDL2_mixer-${pkgver}/"
+
+  # Fix https://bugs.archlinux.org/task/38428
+  sed -i "s|/etc/timidity.cfg|/etc/timidity/timidity.cfg|g" src/codecs/music_timidity.c
+
+  ./configure \
+      --enable-music-mod-modplug \
+      --enable-music-ogg-vorbis \
+      --enable-music-flac-libflac \
+      --enable-music-mp3-mpg123 \
+      --disable-music-ogg-stb \
+      --disable-music-flac-drflac \
+      --disable-music-mp3-drmp3 \
+      --disable-static \
+      --prefix=/usr
+  make
+}
+
+package() {
+  cd "${srcdir}/SDL2_mixer-${pkgver}/"
+
+  make DESTDIR="${pkgdir}" install
+  install -Dm644 LICENSE.txt "${pkgdir}/usr/share/licenses/${pkgname}/LICENSE"
+}

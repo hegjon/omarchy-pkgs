@@ -1,0 +1,64 @@
+# Maintainer: Maxime Gauduin <alucryd@archlinux.org>
+# Maintainer: Carl Smedstad <carsme@archlinux.org>
+# Contributor: Mihai Bişog <mihai.bisog@gmail.com>
+
+pkgbase=fmt
+pkgname=(
+  fmt
+  fmt-docs
+)
+pkgver=12.2.0
+pkgrel=1
+pkgdesc='Open-source formatting library for C++'
+arch=(x86_64)
+url=https://fmt.dev
+license=(MIT)
+makedepends=(
+  cmake
+  doxygen
+  git
+  mkdocs
+  mkdocs-material
+  mkdocstrings
+  ninja
+  npm
+  python-pymdown-extensions
+  python-regex
+)
+source=("git+https://github.com/fmtlib/fmt.git#tag=${pkgver}")
+b2sums=('e095e1d8e2d95a08f8d6430360e76e9b24a4e213ee83adeeeabf93de09dde325c8e2c4bbbab0907d79f77a21ef5db55ca25f836173f3cd94aecb0cc214fc596d')
+
+build() {
+  cmake -S fmt -B build -G Ninja \
+    -DCMAKE_BUILD_TYPE=None \
+    -DCMAKE_INSTALL_PREFIX=/usr \
+    -Wno-dev \
+    -DBUILD_SHARED_LIBS=ON
+  cmake --build build
+  cmake --build build --target doc
+}
+
+check() {
+  ctest --test-dir build --output-on-failure
+}
+
+package_fmt() {
+  depends=(
+    glibc
+    libgcc
+    libstdc++
+  )
+  provides=(libfmt.so)
+
+  DESTDIR="${pkgdir}" cmake --install build --component fmt_core
+  install -Dm 644 -t "${pkgdir}"/usr/share/licenses/${pkgname} fmt/LICENSE
+}
+
+package_fmt-docs() {
+  pkgdesc+=' (documentation)'
+
+  DESTDIR="${pkgdir}" cmake --install build --component fmt_doc
+  install -Dm 644 -t "${pkgdir}"/usr/share/licenses/${pkgname} fmt/LICENSE
+}
+
+# vim: ts=2 sw=2 et:

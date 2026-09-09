@@ -1,0 +1,34 @@
+# Maintainer: Sven-Hendrik Haase <svenstaro@archlinux.org>
+
+pkgname=sdl2_ttf
+pkgver=2.24.0
+pkgrel=2
+pkgdesc="A library that allows you to use TrueType fonts in your SDL applications (Version 2)"
+arch=('x86_64')
+url="https://github.com/libsdl-org/SDL_ttf"
+license=('MIT')
+depends=('sdl2' 'freetype2' 'harfbuzz')
+source=("https://github.com/libsdl-org/SDL_ttf/releases/download/release-${pkgver}/SDL2_ttf-${pkgver}.tar.gz"{,.sig})
+sha512sums=('a0f94e26f0387385f13ec1eb08ddca677d4181969073a50af387a0dce9c7bdddf393c028c8084538e01f875e19790ef7ae9a00c5106bf7ca9d21f3fcf9eee885'
+            'SKIP')
+validpgpkeys=('1528635D8053A57F77D1E08630A59377A7763BE6')
+
+prepare() {
+  cd SDL2_ttf-${pkgver}
+
+  autoreconf -vi
+}
+
+build() {
+  cd "${srcdir}/SDL2_ttf-${pkgver}/"
+
+  ./configure --disable-static --disable-freetype-builtin --disable-harfbuzz-builtin --prefix=/usr
+  make
+}
+
+package() {
+  cd "${srcdir}/SDL2_ttf-${pkgver}/"
+
+  make DESTDIR="${pkgdir}/" install
+  install -Dm644 LICENSE.txt "${pkgdir}/usr/share/licenses/${pkgname}/LICENSE"
+}

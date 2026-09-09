@@ -1,0 +1,80 @@
+# Maintainer: Levente Polyak <anthraxx[at]archlinux[dot]org>
+# Maintainer: Andreas 'Segaja' Schleifer <segaja at archlinux dot org>
+# Contributor: Simon Kohlmeyer <simon.kohlmeyer@gmail.com>
+
+_gemname='minitest'
+pkgname="ruby-${_gemname}"
+pkgver=5.27.0
+pkgrel=1
+pkgdesc='Complete suite of testing facilities supporting TDD, BDD, mocking, and benchmarking'
+url="https://github.com/minitest/${_gemname}"
+arch=('any')
+license=('MIT')
+depends=('ruby')
+makedepends=('ruby-hoe' 'ruby-rake' 'ruby-rdoc')
+options=('!emptydirs')
+source=("${url}/archive/v${pkgver}/${pkgname}-${pkgver}.tar.gz")
+sha512sums=('0af701e1213d7b24d00986d4cfcfffe35df2f042c356acadd9dbf92df5d6f4587fc97fe96da6be55158ee5e3a62b63ba58222c236da67a9445d436761f3f7c10')
+b2sums=('0ec48105e75701f759bfa8d17fb4c800bd987ecc7aa693a8358fd9b73010ab70836b20fcdd8c927cfe06c390b34dac31a88d68a8eb8496aa4962ee257cb7ef6d')
+
+build() {
+  cd "${_gemname}-${pkgver}"
+
+  local _gemdir="$(gem env gemdir)"
+
+  rake gem
+
+  gem install \
+    --local \
+    --verbose \
+    --ignore-dependencies \
+    --no-user-install \
+    --install-dir "tmp_install${_gemdir}" \
+    --bindir "tmp_install/usr/bin" \
+    "pkg/${_gemname}-${pkgver}.gem"
+
+  # remove unrepreducible files
+  rm --force --recursive --verbose \
+    "tmp_install${_gemdir}/cache/" \
+    "tmp_install${_gemdir}/gems/${_gemname}-${pkgver}/vendor/" \
+    "tmp_install${_gemdir}/doc/${_gemname}-${pkgver}/ri/ext/"
+
+  find "tmp_install${_gemdir}/gems/" \
+    -type f \
+    \( \
+      -iname "*.o" -o \
+      -iname "*.c" -o \
+      -iname "*.so" -o \
+      -iname "*.time" -o \
+      -iname "gem.build_complete" -o \
+      -iname "Makefile" \
+    \) \
+    -delete
+
+  find "tmp_install${_gemdir}/extensions/" \
+    -type f \
+    \( \
+      -iname "mkmf.log" -o \
+      -iname "gem_make.out" \
+    \) \
+    -delete
+}
+
+check() {
+  cd "${_gemname}-${pkgver}"
+
+  local _gemdir="$(gem env gemdir)"
+
+  GEM_HOME="tmp_install${_gemdir}" rake test
+}
+
+package() {
+  cd "${_gemname}-${pkgver}"
+
+  cp --archive --verbose tmp_install/* "${pkgdir}"
+
+  install --verbose -D --mode=0644 README.rdoc --target-directory "${pkgdir}/usr/share/licenses/${pkgname}"
+  install --verbose -D --mode=0644 *.rdoc --target-directory "${pkgdir}/usr/share/doc/${pkgname}"
+}
+
+# vim: tabstop=2 shiftwidth=2 expandtab:
