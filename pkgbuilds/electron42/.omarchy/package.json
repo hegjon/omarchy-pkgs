@@ -1,5 +1,7 @@
 {
   "source": "arch",
   "upstream_commit": "b0f459cd735ae89eeaa7befb5f99f3fab9533017",
-  "arch_repo": "extra"
+  "arch_repo": "extra",
+  "skip_build": true,
+  "skip_reason": "chromium-sized: no farm host has the disk (a 25 GB droplet dies mid-checkout); cursor-bin takes Arch's electron42"
 }
