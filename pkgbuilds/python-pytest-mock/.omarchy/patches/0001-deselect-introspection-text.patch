@@ -1,0 +1,17 @@
+Deselect the two tests that compare pytest's assertion introspection text, reworded in pytest 9.1.
+
+--- a/PKGBUILD
++++ b/PKGBUILD
+@@ -23,7 +23,11 @@
+   cd pytest-mock
+   python -m venv tmpenv --system-site-packages
+   tmpenv/bin/python -m installer dist/*.whl
+-  tmpenv/bin/python -m pytest
++  # two tests compare the exact text of pytest's assertion introspection,
++  # which pytest 9.1 words differently; the plugin is fine
++  tmpenv/bin/python -m pytest \
++    --deselect tests/test_pytest_mock.py::test_assert_called_args_with_introspection \
++    --deselect tests/test_pytest_mock.py::test_assert_called_kwargs_with_introspection
+ }
+ 
+ package() {

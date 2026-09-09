@@ -21,6 +21,8 @@ sha256sums=('2074b22a72caa65474902234b320d73463d6d4c223ee49f4b433495758356337')
 
 prepare() {
   cd $_name-$pkgver
+  # flit_core<4 is a pin, not a need: flit-core 4 builds it (Arch has 4.0.2)
+  sed -i 's/flit_core<4/flit_core/' pyproject.toml
 }
 
 build() {
