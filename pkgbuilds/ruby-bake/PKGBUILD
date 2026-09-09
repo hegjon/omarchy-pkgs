@@ -1,0 +1,67 @@
+# Maintainer: Felix Yan <felixonmars@archlinux.org>
+
+pkgname=ruby-bake
+pkgver=0.25.0
+pkgrel=1
+pkgdesc='A replacement for rake with a simpler syntax'
+arch=(any)
+url='https://github.com/ioquatix/bake'
+license=(MIT)
+depends=(
+  ruby
+  ruby-bigdecimal
+  ruby-samovar
+)
+makedepends=(
+  git
+)
+checkdepends=(
+  ruby-covered
+  ruby-sus
+)
+options=(!emptydirs)
+source=(git+https://github.com/ioquatix/bake.git#tag=v$pkgver)
+sha512sums=('1c008ba955a4e001e6487cf53dd88382d918b65a05e390a2eef62512dea65a2205010dc59bc68d51baf794a79450255b0afbbb6bf296be541194c0494faac814')
+b2sums=('9a6b7b08ca8ac6a0861bced86ae06d0394c5309edfbf538ce630b1505e5bbe5d7380852959aa3d3c80ff03e7247427c3ea81e75f1d3d048820f11592c902cc46')
+
+prepare() {
+  cd bake
+  sed -r -e 's|~>|>=|g' -e '/signing_key/d' -i bake.gemspec
+}
+
+build() {
+  local _gemdir="$(gem env gemdir)"
+  cd bake
+  gem build bake.gemspec
+  gem install \
+    --local \
+    --verbose \
+    --ignore-dependencies \
+    --no-user-install \
+    --install-dir "tmp_install/$_gemdir" \
+    --bindir "tmp_install/usr/bin" \
+    bake-$pkgver.gem
+  find "tmp_install/$_gemdir/gems/" \
+    -type f \
+    \( \
+        -iname "*.o" -o \
+        -iname "*.c" -o \
+        -iname "*.so" -o \
+        -iname "*.time" -o \
+        -iname "gem.build_complete" -o \
+        -iname "Makefile" \
+    \) \
+    -delete
+  rm -r tmp_install/$_gemdir/cache
+}
+
+check() {
+  local _gemdir="$(gem env gemdir)"
+  cd bake
+  GEM_HOME="tmp_install/$_gemdir" ruby -e 'gem "bake"; load Gem.bin_path("sus", "sus")' -- --verbose
+}
+
+package() {
+  cd bake
+  cp -a tmp_install/* "$pkgdir"/
+}

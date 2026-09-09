@@ -1,0 +1,11 @@
+diff --git a/src/filesystem/dcapfsfileengine.cpp b/src/filesystem/dcapfsfileengine.cpp
+index 4b7f5cb..5fb3f3b 100644
+--- a/src/filesystem/dcapfsfileengine.cpp
++++ b/src/filesystem/dcapfsfileengine.cpp
+@@ -226,7 +226,7 @@ QStringList DCapFSFileEngine::entryList(QDir::Filters filters, const QStringList
+     D_DC(DCapFSFileEngine);
+     if (!d->canReadWrite(d->file))
+         return {};
+-    return QFSFileEngine::entryList(filters, filterNames);
++    return QDir(d->file).entryList(filterNames, filters);
+ }

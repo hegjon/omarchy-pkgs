@@ -1,0 +1,34 @@
+# Maintainer: Felix Yan <felixonmars@archlinux.org>
+
+pkgname=python-pytest-timeout
+pkgver=2.5.0
+pkgrel=1
+pkgdesc='py.test plugin to abort hanging tests'
+arch=('any')
+license=('MIT')
+url='https://github.com/pytest-dev/pytest-timeout'
+depends=('python-pytest')
+makedepends=('git' 'python-build' 'python-installer' 'python-setuptools' 'python-wheel')
+checkdepends=('python-pexpect')
+source=("git+https://github.com/pytest-dev/pytest-timeout.git#tag=$pkgver")
+sha512sums=('604791e3b171b3f505c763ca5cf5c223262c044a3414c02f42d8b9643c635c1b9cba534170a17dd703cc8f03373a9643f38b15dc00d29aa7aa8ef343a31b6ac6')
+
+build() {
+  cd pytest-timeout
+  python -m build -nw
+}
+
+check() {
+  cd pytest-timeout
+  python -m venv --system-site-packages venv
+  venv/bin/python -m installer dist/*.whl
+  venv/bin/python -m pytest
+}
+
+package() {
+  cd pytest-timeout
+  python -m installer -d "$pkgdir" dist/*.whl
+  install -Dm644 LICENSE -t "$pkgdir"/usr/share/licenses/$pkgname/
+}
+
+# vim:set ts=2 sw=2 et:

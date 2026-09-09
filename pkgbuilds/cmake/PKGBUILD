@@ -1,0 +1,60 @@
+# Maintainer: Felix Yan <felixonmars@archlinux.org>
+# Contributor: Andrea Scarpino <andrea@archlinux.org>
+# Contributor: Pierre Schmitz <pierre@archlinux.de>
+
+pkgname=cmake
+pkgver=4.4.3
+pkgrel=2
+pkgdesc='A cross-platform open-source make system'
+arch=('x86_64')
+url="https://www.cmake.org/"
+license=('BSD-3-Clause')
+depends=(cppdap
+         curl
+         expat
+         glibc
+         hicolor-icon-theme
+         jsoncpp
+         libarchive
+         libgcc
+         libstdc++
+         libuv
+         ncurses
+         rhash
+         zlib)
+makedepends=(emacs
+             git
+             nlohmann-json
+             python-sphinx
+             qt6-base)
+optdepends=(
+  'make: for unix Makefile generator'
+  'ninja: for ninja generator'
+  'qt6-base: cmake-gui'
+)
+source=(git+https://gitlab.kitware.com/cmake/cmake.git#tag=v$pkgver?signed)
+sha512sums=('031a1544690f8980066519f410784f823644f70e1725fbdd52b505bf4d7f924586fa847abd119bacc80ee769ef3c51aaaea98fda9b904c1ff502d996528297b2')
+validpgpkeys=(CBA23971357C2E6590D9EFD3EC8FEF3A7BFB4EDA) # Brad King <brad.king@kitware.com>
+
+build() {
+  cd ${pkgname}
+  ./bootstrap --prefix=/usr \
+    --mandir=/share/man \
+    --docdir=/share/doc/cmake \
+    --datadir=/share/cmake \
+    --sphinx-man \
+    --sphinx-html \
+    --system-libs \
+    --qt-gui \
+    --parallel=$(/usr/bin/getconf _NPROCESSORS_ONLN)
+  make
+}
+
+package() {
+  cd ${pkgname}
+  make DESTDIR="${pkgdir}" install
+
+  rm -r "$pkgdir"/usr/share/doc/cmake/html/_sources
+  emacs -batch -f batch-byte-compile "${pkgdir}"/usr/share/emacs/site-lisp/cmake-mode.el
+  install -Dm644 LICENSE.rst -t "${pkgdir}"/usr/share/licenses/$pkgname
+}

@@ -1,0 +1,32 @@
+# Maintainer: Felix Yan <felixonmars@archlinux.org>
+# Contributor: Jelle van der Waa <jelle@vdwaa.nl>
+# Contributer: Allan McRae <allan@archlinux.org>
+
+pkgname=python-six
+pkgver=1.17.0
+pkgrel=3
+pkgdesc="Python 2 and 3 compatibility utilities"
+arch=('any')
+url="https://pypi.python.org/pypi/six/"
+license=('MIT')
+depends=('python')
+makedepends=('git' 'python-build' 'python-installer' 'python-wheel' 'python-setuptools')
+checkdepends=('python-pytest' 'tk')
+source=("git+https://github.com/benjaminp/six.git#tag=$pkgver")
+sha512sums=('ba4642ae45ad2039a680517905bc52700d6a41869a120a3bedab2cb6664d051bc0a761f48ee56d6636d4594326b1cf1d4a1f4438046c53e29c2dbf5ef7267dc2')
+
+build() {
+  cd six
+  python -m build --wheel --no-isolation
+}
+
+check() {
+  cd six
+  python -m pytest
+}
+
+package() {
+  cd six
+  python -m installer --destdir="$pkgdir" dist/*.whl
+  install -Dm644 LICENSE -t "$pkgdir"/usr/share/licenses/$pkgname/
+}

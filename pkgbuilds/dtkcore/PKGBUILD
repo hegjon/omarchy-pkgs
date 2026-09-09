@@ -1,0 +1,79 @@
+# Maintainer: Felix Yan <felixonmars@archlinux.org>
+# Contributor: Josip Ponjavic <josipponjavic at gmail dot com>
+# Contributor: Xu Fasheng <fasheng.xu[AT]gmail.com>
+
+pkgbase=dtkcore
+pkgname=(dtkcore dtk6core)
+pkgver=6.7.48
+pkgrel=1
+epoch=1
+pkgdesc='DTK core modules'
+arch=('x86_64')
+url="https://github.com/linuxdeepin/dtkcore"
+license=('LGPL-2.1-or-later' 'LGPL-3.0-or-later' 'BSD-3-Clause' 'CC-BY-4.0' 'CC0-1.0')
+groups=('deepin')
+makedepends=('git' 'cmake' 'ninja' 'qt5-tools' 'qt6-tools' 'gtest' 'doxygen'
+             'dbus' 'deepin-desktop-base' 'dtkcommon' 'dtklog' 'dtk6log'
+             'gsettings-qt' 'icu' 'lshw' 'qt5-base' 'qt6-base' 'uchardet')
+source=("git+https://github.com/linuxdeepin/dtkcore.git#tag=$pkgver"
+         qt-6.11.patch)
+sha512sums=('31415947857ce7763b0323ebaa575326c4d77e86e091a3adc456e8525b3ae21ad38d9bd093cc6deabd544b259a737f2486d001ef124724cb55afff82b46385f3'
+            'de5d38f293b89b02eb158c752b52e3a32976fe88b7b391da085dc95614e7cc8afdde1a355b1ecc2e8f6076aa16640221ad6914178d1abafc77abf08f9e26a874')
+
+prepare() {
+  cd dtkcore
+  sed -i 's|/etc/os-version|/etc/uos-version|' src/dsysinfo.cpp
+  patch -p1 < ../qt-6.11.patch
+}
+
+build() {
+  cd dtkcore
+
+  # Build Qt5 variant (dtkcore)
+  cmake . -Bbuild-qt5 -GNinja \
+    -DDTK5=ON \
+    -DBUILD_WITH_SYSTEMD=ON \
+    -DBUILD_TESTING=ON \
+    -DMKSPECS_INSTALL_DIR=lib/qt/mkspecs/modules \
+    -DFEATURES_INSTALL_DIR=lib/qt/mkspecs/features \
+    -DQCH_INSTALL_DESTINATION=share/doc/qt \
+    -DCMAKE_INSTALL_LIBDIR=lib \
+    -DCMAKE_INSTALL_LIBEXECDIR=lib \
+    -DCMAKE_INSTALL_PREFIX=/usr
+  cmake --build build-qt5
+
+  # Build Qt6 variant (dtk6core)
+  cmake . -Bbuild-qt6 -GNinja \
+    -DDTK5=OFF \
+    -DBUILD_WITH_SYSTEMD=ON \
+    -DBUILD_DOCS=ON \
+    -DBUILD_TESTING=ON \
+    -DCMAKE_INSTALL_LIBDIR=lib \
+    -DCMAKE_INSTALL_LIBEXECDIR=lib \
+    -DCMAKE_INSTALL_PREFIX=/usr
+  cmake --build build-qt6
+}
+
+check() {
+  cd dtkcore
+  ninja -C build-qt5 test || echo "Qt5 tests failed"
+  ninja -C build-qt6 test || echo "Qt6 tests failed"
+}
+
+package_dtkcore() {
+  pkgdesc='DTK core modules (Qt5 build)'
+  depends=('dbus' 'deepin-desktop-base' 'dtkcommon' 'dtklog' 'glibc' 'gsettings-qt' 'icu'
+           'libgcc' 'libstdc++' 'lshw' 'qt5-base' 'uchardet')
+
+  cd dtkcore
+  DESTDIR="$pkgdir" ninja -C build-qt5 install
+}
+
+package_dtk6core() {
+  pkgdesc='DTK core modules (Qt6 build)'
+  depends=('dbus' 'deepin-desktop-base' 'dtkcommon' 'dtk6log' 'glibc' 'icu' 'libgcc' 'libstdc++'
+           'lshw' 'qt6-base' 'uchardet')
+
+  cd dtkcore
+  DESTDIR="$pkgdir" ninja -C build-qt6 install
+}

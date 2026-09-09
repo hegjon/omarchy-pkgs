@@ -1,0 +1,41 @@
+# Maintainer: Florian Pritz< flo@xinu.at>
+# Contributor: Dany Martineau <dany.luc.martineau@gmail.com>
+
+pkgname=qrencode
+pkgver=4.1.1
+pkgrel=4
+pkgdesc='C library for encoding data in a QR Code symbol.'
+arch=('x86_64')
+depends=('libpng')
+makedepends=('git' 'sdl2')
+url='https://fukuchi.org/works/qrencode/'
+license=('GPL')
+source=("qrencode::git+https://github.com/fukuchi/libqrencode#tag=v${pkgver}")
+sha256sums=('0151f34aa6996aefb0a3d011ce050bf32c70c5644055d8c82dcaa8044332ad35')
+
+prepare() {
+  cd "${srcdir}/${pkgname}"
+
+  autoreconf -fi
+}
+
+build() {
+  cd "${srcdir}/${pkgname}"
+
+  ./configure \
+    --prefix=/usr
+
+  make
+}
+
+check() {
+  cd "${srcdir}/${pkgname}"
+
+  make check
+}
+
+package() {
+  cd "${srcdir}/${pkgname}"
+
+  make prefix="$pkgdir/usr" install
+}

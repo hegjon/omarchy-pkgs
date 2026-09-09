@@ -1,0 +1,48 @@
+# Maintainer: Maxime Gauduin <alucryd@archlinux.org>
+
+pkgname=granite7
+pkgver=7.8.1
+pkgrel=1
+pkgdesc='Library that extends Gtk+'
+arch=(x86_64)
+url=https://github.com/elementary/granite
+license=(LGPL3)
+groups=(pantheon)
+depends=(
+  cairo
+  gdk-pixbuf2
+  glib2
+  gtk4
+  libgee
+  pango
+)
+makedepends=(
+  cmake
+  git
+  gobject-introspection
+  libshumate
+  meson
+  sassc
+  vala
+)
+provides=(libgranite-7.so)
+_tag=4cd5188619e65f2f2410c9af834df903f6e4f85e
+source=(git+https://github.com/elementary/granite.git#tag=${_tag})
+sha256sums=('81b757902bfee6e7a38bd07131748737e37999ce1959dd9472430cfc3c7dbf11')
+
+pkgver() {
+  cd granite
+  git describe --tags
+}
+
+build() {
+  arch-meson granite build \
+    -D b_pie=false
+  ninja -C build
+}
+
+package() {
+  DESTDIR="${pkgdir}" ninja -C build install
+}
+
+# vim: ts=2 sw=2 et:
