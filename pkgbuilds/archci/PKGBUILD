@@ -12,15 +12,15 @@
 pkgbase=archci
 pkgname=(archci archci-master archci-worker archci-signer
          archci-worker-qemu-aarch64 archci-worker-qemu-riscv64)
-pkgver=0.2.10
-pkgrel=2
+pkgver=0.2.11
+pkgrel=1
 pkgdesc='Headless build farm for Arch Linux packages: builds a PKGBUILD repository into a signed pacman repository'
 arch=(any)
 url='https://github.com/hegjon/archci'
 license=(MIT)
 makedepends=(gnupg devtools)
 source=("https://github.com/hegjon/archci/archive/refs/tags/v${pkgver}.tar.gz")
-sha256sums=('2f6db2657d3ebb6edce98e72f6be9c7461a273688f59f18301dc3a0f98327ef6')
+sha256sums=('54b64d8c88c75b702cdd9d46f80e86ed05b84abbaedaa33020f20244c772b5d8')
 _src="archci-$pkgver"
 
 _libdir=/usr/lib/archci
@@ -55,6 +55,10 @@ package_archci() {
 
   cd "$srcdir/$_src"
   (cd lib && find . -type f -exec install -Dm644 '{}' "$pkgdir$_libdir/lib/{}" \;)
+  # the entry point: `archci <name>` runs archci-<name> of whichever role is installed
+  install -Dm755 bin/archci "$pkgdir$_libdir/bin/archci"
+  install -d "$pkgdir/usr/bin"
+  ln -s "$_libdir/bin/archci" "$pkgdir/usr/bin/archci"
   install -Dm644 config/archci.conf "$pkgdir/etc/archci/archci.conf"
   install -Dm644 config/systemd/archci.sysusers "$pkgdir/usr/lib/sysusers.d/archci.conf"
   install -Dm644 README.md "$pkgdir/usr/share/doc/$pkgbase/README.md"
