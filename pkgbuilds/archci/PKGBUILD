@@ -13,7 +13,7 @@ pkgbase=archci
 pkgname=(archci archci-master archci-worker archci-signer
          archci-worker-qemu-aarch64 archci-worker-qemu-riscv64)
 pkgver=0.2.10
-pkgrel=1
+pkgrel=2
 pkgdesc='Headless build farm for Arch Linux packages: builds a PKGBUILD repository into a signed pacman repository'
 arch=(any)
 url='https://github.com/hegjon/archci'
@@ -71,7 +71,8 @@ package_archci-master() {
   replaces=(archci-master-git)
 
   _install_role master archci-scan.service archci-scan.timer \
-    archci-reaper.service archci-reaper.timer archci-stage.service archci-stage.timer
+    archci-reaper.service archci-reaper.timer archci-stage.service archci-stage.timer \
+    archci-signer-status.service archci-signer-status.timer
   cd "$srcdir/$_src"
   install -Dm644 config/systemd/systemd-journal-remote.service.d/archci.conf \
     "$pkgdir/usr/lib/systemd/system/systemd-journal-remote.service.d/archci.conf"
