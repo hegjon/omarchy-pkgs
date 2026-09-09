@@ -912,11 +912,33 @@ bin/repo sync --arch aarch64
 
 The build system automatically handles inter-package dependencies:
 
-1. Parses `depends=()` and `makedepends=()` from PKGBUILDs
-2. Builds in correct order
-3. Makes newly-built packages available via temporary `[omarchy-build]` repo
+1. Plans dependency order once, including `depends`, `makedepends`,
+   `checkdepends`, and their architecture-specific arrays.
+2. Builds each package in a fresh container. Installed packages and changes
+   to the container's system files cannot carry over to the next build.
+3. Shares successful artifacts through the temporary `[omarchy-build]` repo,
+   installing newly built prerequisites in each consumer's container.
+4. Blocks consumers of a failed prerequisite while continuing independent
+   builds. Any failure still prevents the release from publishing.
 
 Example: If `aether` depends on `hyprshade`, `hyprshade` is built first.
+
+Isolation also lets the release and dev Omarchy pairs build in the same run:
+Flea can install `omarchy` without preventing `omarchy-dev` from installing
+its conflicting settings package in a different container.
+
+Pacman downloads are cached under `cache/pacman/<channel>/<arch>/` across
+containers and runs. The installed package database is never shared. Each
+container updates its base system before resolving build dependencies, so a
+cached builder image cannot cause a partial system upgrade. The existing
+`OMARCHY_KEEP_BUILD_WORKSPACE`, `OMARCHY_SKIP_BUILDER_IMAGE`, and
+`OMARCHY_DEFER_RUNTIME_DEPS` flags retain their behavior.
+
+`tests/build-isolation.sh` exercises conflicting package pairs, failed
+prerequisites, resumed builds, cache replacement, and deferred dependencies
+using real containers and pacman transactions. It uses the prepared builder
+image, or an image named by `TEST_BUILDER_IMAGE`; CI builds the small fixture
+image in `tests/build-isolation.Dockerfile`.
 
 ## Version Management
 

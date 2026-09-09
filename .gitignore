@@ -2,6 +2,7 @@
 src/
 logs/
 build-output/
+cache/
 pkgs.omarchy.org/
 pkgbuilds/*/.SRCINFO
 pkgbuilds/*/.gitignore
