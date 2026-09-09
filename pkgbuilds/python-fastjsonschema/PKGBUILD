@@ -1,0 +1,46 @@
+# Maintainer: David Runge <dvzrv@archlinux.org>
+
+_name=fastjsonschema
+pkgname=python-fastjsonschema
+pkgver=2.21.2
+pkgrel=2
+pkgdesc="Fast JSON schema validator for Python"
+arch=(any)
+url="https://github.com/horejsek/python-fastjsonschema"
+license=(BSD-3-Clause)
+depends=(python)
+makedepends=(
+  python-build
+  python-installer
+  python-setuptools
+  python-wheel
+)
+checkdepends=(python-pytest)
+source=($_name-$pkgver.tar.gz::$url/archive/refs/tags/v$pkgver.tar.gz)
+sha512sums=('6def573d5de6c29045ef902b78ce9ce7951081396342d2d1ba7c474e8059c2bcac733848a59f2361fe7e1e2216f9c4beeaadee8940ddd8d8648c043a59cfe819')
+b2sums=('ea93dfbac75cdf35e74dea627e680742351c4647fc8b18141dacd296e314eb698cd7a0a3ad05ecaa01f4b518c1372a77bcabd10a6bdc62d12e200c16f6de1762')
+
+build() {
+  cd $pkgname-$pkgver
+  python -m build --wheel --no-isolation
+}
+
+check() {
+  local pytest_options=(
+    -vv
+    -m "not benchmark"
+    # broken with pytest 8
+    --deselect tests/test_pattern_properties.py::test_pattern_with_escape_no_warnings
+    --deselect tests/test_string.py::test_pattern_with_escape_no_warnings
+  )
+
+  cd $pkgname-$pkgver
+  pytest "${pytest_options[@]}"
+}
+
+package() {
+  cd $pkgname-$pkgver
+  python -m installer --destdir="$pkgdir" dist/*.whl
+  install -vDm 644 README.rst -t "$pkgdir/usr/share/doc/$pkgname"
+  install -vDm 644 LICENSE -t "$pkgdir/usr/share/licenses/$pkgname"
+}

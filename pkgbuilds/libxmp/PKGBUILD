@@ -1,0 +1,27 @@
+# Maintainer: Sven-Hendrik Haase <svenstaro@archlinux.org>
+# Contributor: HurricanePootis <hurricanepootis@protonmail.com>
+# Contributor: grimi
+
+pkgname=libxmp
+pkgver=4.7.2
+pkgrel=1
+pkgdesc="Library that supports over 90 module formats (Amiga, Atari, ..)"
+arch=('x86_64')
+url="http://xmp.sourceforge.net/"
+license=('MIT')
+depends=('glibc')
+options=(!emptydirs)
+source=("http://download.sourceforge.net/project/xmp/$pkgname/$pkgver/$pkgname-$pkgver.tar.gz")
+sha256sums=('510a96eefd79e4558fb1fa41fb5494870328776b3f77563f94f61f241f64bde1')
+
+build() {
+  cd $pkgname-$pkgver
+  ./configure --prefix=/usr
+  make
+}
+
+package() {
+  cd $pkgname-$pkgver
+  make DESTDIR="$pkgdir/" install
+  install -Dm644 "$srcdir/$pkgname-$pkgver/docs/COPYING" "$pkgdir/usr/share/licenses/$pkgname/COPYING"
+}

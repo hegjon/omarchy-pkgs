@@ -1,0 +1,94 @@
+# Maintainer: Maxime Gauduin <alucryd@archlinux.org>
+# Maintainer: Carl Smedstad <carsme@archlinux.org>
+# Contributor: Adam Fontenot <adam.m.fontenot@gmail.com>
+
+pkgname=breezy
+pkgver=3.3.21
+pkgrel=2
+pkgdesc='A decentralized revision control system with support for Bazaar and Git file formats'
+arch=(x86_64)
+url=https://www.breezy-vcs.org/
+license=(GPL-2.0-or-later)
+depends=(
+  glibc
+  libgcc
+  python
+  python-configobj
+  python-dulwich
+  python-fastbencode
+  python-merge3
+  python-patiencediff
+  python-yaml
+)
+makedepends=(
+  cython
+  git
+  python-build
+  python-fastimport
+  python-gpgme
+  python-installer
+  python-packaging
+  python-paramiko
+  python-setuptools
+  python-setuptools-gettext
+  python-setuptools-rust
+  python-wheel
+)
+checkdepends=(
+  python-subunit
+  python-testscenarios
+  python-testtools
+)
+optdepends=(
+  'python-fastimport: Fastimport support'
+  'python-gpgme: PGP support'
+  'python-paramiko: access branches over SFTP'
+)
+provides=(bzr)
+conflicts=(bzr)
+replaces=(bzr)
+source=("git+https://github.com/breezy-team/breezy.git#tag=brz-$pkgver")
+b2sums=('1c7205b643d03a98fe3d739033e80b7827367bb6472ac414b843d6a158c3bce9e73f522e3e4d4883a254042705302b2a26ef29f4b8899573df39f0e7a71aa29f')
+
+build() {
+  cd $pkgname
+  python -m build --wheel --no-isolation
+}
+
+check() {
+  cd $pkgname
+  local excluded_tests=(
+    # This test is flaky and fails with the following error when run in parallel:
+    # ssl.SSLError: [SYS] unknown error (_ssl.c:2570)
+    --exclude="breezy.bzr.tests.test_read_bundle.TestReadMergeableBundleFromURL"
+
+    # Fails due to newline diffs:
+    # AssertionError: not equal:
+    # a = (0,
+    #  None,
+    #  b'bazaar-ng testament short form 1\nrevision-id: amy@example.com-2011052718'
+    #  b'5938-hluafawphszb8dl1\nsha1: 6411f9bdf6571200357140c9ce7c0f50106ac9a4\n')
+    # b = (0,
+    #  None,
+    #  b'bazaar-ng testament short form 1\nrevision-id: amy@example.com-2011052718'
+    #  b'5938-hluafawphszb8dl1\nsha1: 6411f9bdf6571200357140c9ce7c0f50106ac9a4')
+    --exclude="breezy.tests.test_gpg.TestVerify.test_verify_unacceptable_key"
+    --exclude="breezy.tests.test_gpg.TestVerify.test_verify_untrusted_but_accepted"
+    --exclude="breezy.tests.test_gpg.TestVerify.test_verify_valid_but_untrusted"
+  )
+  python -m venv --system-site-packages test-env
+  test-env/bin/python -m installer dist/*.whl
+  export PATH=$PWD/test-env/bin:$PATH
+  local python_version=$(python -c 'import sys; v = sys.version_info; print(f"{v.major}.{v.min}")')
+  PYTHONPATH=$PWD/test-env/lib/python$python_version/site-packages brz selftest \
+    --parallel=fork \
+    --verbose \
+    "${excluded_tests[@]}" \
+    -Oselftest.timeout=120
+}
+
+package() {
+  cd $pkgname
+  /usr/bin/python -m installer --destdir="$pkgdir" dist/*.whl
+  ln -vs /usr/bin/brz "$pkgdir/usr/bin/bzr" # backwards compatibility
+}

@@ -1,0 +1,30 @@
+# Maintainer: Felix Yan <felixonmars@archlinux.org>
+
+pkgname=python-cycler
+pkgver=0.12.1
+pkgrel=4
+pkgdesc="Composable style cycles"
+arch=('any')
+license=('BSD')
+url="https://github.com/matplotlib/cycler"
+depends=('python')
+makedepends=('python-build' 'python-installer' 'python-setuptools' 'python-wheel')
+checkdepends=('python-pytest')
+source=("https://github.com/matplotlib/cycler/archive/v$pkgver/$pkgname-$pkgver.tar.gz")
+sha512sums=('f1d264de9c5e63515649aefb5937ef7a85d781c07b1c7c8fe291c969565abb18eb48d6d62f77d278746c60900c93700cbb095d280e09de768aedc2463e60d9a2')
+
+build() {
+  cd cycler-$pkgver
+  python -m build -wn
+}
+
+check() {
+  cd cycler-$pkgver
+  pytest
+}
+
+package() {
+  cd cycler-$pkgver
+  python -m installer -d "$pkgdir" dist/*.whl
+  install -Dm644 LICENSE -t "$pkgdir"/usr/share/licenses/$pkgname/
+}

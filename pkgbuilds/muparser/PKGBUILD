@@ -1,0 +1,38 @@
+# Maintainer: Carl Smedstad <carsme@archlinux.org>
+# Contributor: Ronald van Haren <ronald.archlinux.org>
+# Contributor: damir <damir.archlinux.org>
+
+pkgname=muparser
+pkgver=2.3.5
+pkgrel=2
+pkgdesc="A fast math parser library"
+arch=('x86_64')
+url="https://github.com/beltoforion/muparser"
+license=('BSD-2-Clause')
+depends=(
+  'glibc'
+  'libgcc'
+  'libgomp'
+  'libstdc++'
+)
+makedepends=('cmake')
+source=("$url/archive/v$pkgver/$pkgname-$pkgver.tar.gz")
+b2sums=('fa315b5d42ff1f63dc001b042fd8dc30d6f08da1964d8ea4cb7741483706c3e74e1e8c75d69c1a5bf2e98937c4dd9dde11d931fbb7039b6749f403c2912fbebd')
+
+build() {
+  cmake -B build -S $pkgname-$pkgver \
+    -DCMAKE_BUILD_TYPE=None \
+    -DCMAKE_INSTALL_PREFIX=/usr \
+    -Wno-dev
+  cmake --build build
+}
+
+check() {
+  ctest --test-dir build --output-on-failure
+}
+
+package() {
+  DESTDIR="$pkgdir" cmake --install build
+  install -vDm644 -t "$pkgdir/usr/share/licenses/$pkgname" \
+    $pkgname-$pkgver/LICENSE
+}

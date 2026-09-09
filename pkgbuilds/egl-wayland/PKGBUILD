@@ -1,0 +1,45 @@
+# Maintainer: Jan Alexander Steffens (heftig) <heftig@archlinux.org>
+
+pkgname=egl-wayland
+pkgver=1.1.22
+pkgrel=1
+epoch=4
+pkgdesc="EGLStream-based Wayland external platform"
+url="https://github.com/NVIDIA/egl-wayland"
+arch=(x86_64)
+license=(MIT)
+depends=(
+  eglexternalplatform
+  glibc
+  libdrm
+  wayland
+)
+makedepends=(
+  git
+  'libglvnd>=1.3.4'
+  meson
+  wayland-protocols
+)
+provides=(libnvidia-egl-wayland.so)
+source=("git+$url#tag=$pkgver")
+b2sums=('5f3d817eada0da9f8a730c2a6018851ebe4fb9a75aec8fc9e6d14df12570788583a82741f569443146950be2fb982d9e2d8424092dd4235be096460eaadf6260')
+
+prepare() {
+  cd $pkgname
+}
+
+build() {
+  arch-meson $pkgname build
+  meson compile -C build
+}
+
+check() {
+  meson test -C build --print-errorlogs
+}
+
+package() {
+  meson install -C build --destdir "$pkgdir"
+  install -Dt "$pkgdir/usr/share/licenses/$pkgname" -m644 $pkgname/COPYING
+}
+
+# vim:set sw=2 sts=-1 et:

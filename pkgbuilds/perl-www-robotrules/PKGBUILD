@@ -1,0 +1,29 @@
+# Maintainer: Eric Bélanger <eric@archlinux.org>
+
+pkgname=perl-www-robotrules
+pkgver=6.03
+pkgrel=1
+pkgdesc="Database of robots.txt-derived permissions"
+arch=('any')
+url="https://metacpan.org/dist/WWW-RobotRules"
+license=('Artistic-1.0-Perl' 'GPL-1.0-or-later')
+depends=('perl' 'perl-uri')
+options=('!emptydirs')
+source=(https://cpan.metacpan.org/authors/id/O/OA/OALDERS/WWW-RobotRules-${pkgver}.tar.gz)
+sha256sums=('8522b532935a11bfa688c2e113bac66729df4851be50c2c26d4b06f45fade472')
+
+build() {
+  cd "${srcdir}/WWW-RobotRules-${pkgver}"
+  perl Makefile.PL INSTALLDIRS=vendor
+  make
+}
+
+check() {
+  cd "${srcdir}/WWW-RobotRules-${pkgver}"
+  make test
+}
+
+package() {
+  cd "${srcdir}/WWW-RobotRules-${pkgver}"
+  make DESTDIR="${pkgdir}" install
+}

@@ -1,0 +1,72 @@
+# Maintainer: George Rawlinson <grawlinson@archlinux.org>
+# Contributor: Felix Yan <felixonmars@archlinux.org>
+
+pkgname=python-lark-parser
+pkgver=1.3.1
+pkgrel=2
+pkgdesc='A modern parsing library'
+arch=(any)
+url='https://github.com/lark-parser/lark'
+license=(MIT)
+depends=(
+  python
+  python-typing_extensions
+)
+makedepends=(
+  git
+  python-build
+  python-installer
+  python-setuptools
+  python-setuptools-scm
+  python-wheel
+)
+checkdepends=(
+  python-tzlocal
+  python-atomicwrites
+  python-regex
+)
+optdepends=(
+  'python-atomicwrites: for atomic_cache'
+  # 'python-interegular: for interegular support'  # TODO: package
+  'python-regex: for regex support'
+  # 'python-js2py: for nearley support', # unmaintained and incompatible with Python 3.13
+)
+provides=(python-lark)
+source=(
+  "$pkgname::git+$url#tag=$pkgver"
+  'github.com-Hardmath123-nearley::git+https://github.com/Hardmath123/nearley'
+)
+sha512sums=('2e59f61567478da199c5619941f8bf7b422ff5e8e615712b56613374cacdb610775f344c5016ad55b92fdbea57f9290bd63deb32aabc0f2428c422d4246b35e7'
+            'SKIP')
+b2sums=('f11154ec6456580ef6947d8e5a1cd95591c610360c549f8f535a85d79a25e4bde6ae346fa8ef0ce9e42990a80e95317221ac5ffa9a00392e5133aca6782e7181'
+        'SKIP')
+
+prepare() {
+  cd "$pkgname"
+
+  # setup git submodules
+  git submodule init
+  git config submodule.tests/test_nearley/nearley.url "$srcdir/github.com-Hardmath123-nearley"
+  git -c protocol.file.allow=always submodule update
+}
+
+build() {
+  cd "$pkgname"
+
+  SETUPTOOLS_SCM_PRETEND_VERSION=$pkgver python -m build --wheel --no-isolation
+}
+
+check() {
+  cd "$pkgname"
+
+  python -m tests
+}
+
+package() {
+  cd "$pkgname"
+
+  python -m installer --destdir="$pkgdir" dist/*.whl
+
+  # license
+  install -vDm644 -t "$pkgdir/usr/share/licenses/$pkgname" LICENSE
+}

@@ -1,0 +1,35 @@
+# Maintainer: Sergej Pupykin <pupykin.s+arch@gmail.com>
+# Maintainer: Roman Kyrylych <Roman.Kyrylych@gmail.com>
+# Contributor: Roman Kyrylych <Roman.Kyrylych@gmail.com>
+
+pkgname=iniparser
+pkgver=4.2.6
+pkgrel=2
+pkgdesc='A free stand-alone ini file parsing library written in portable ANSI C'
+arch=('x86_64')
+url='https://github.com/ndevilla/iniparser'
+license=('MIT')
+depends=('glibc')
+provides=('libiniparser.so')
+makedepends=('cmake' 'doxygen')
+source=("${pkgname}-${pkgver}.tar.gz::https://github.com/ndevilla/iniparser/archive/v${pkgver}.tar.gz")
+md5sums=('225e439bf6940377b7a334b4befa1b18')
+sha256sums=('a0bd370713a744b1fa8ec27bba889ebf9dbd43060ec92e07fbe91fb43e3cb3ac')
+
+build() {
+  mkdir build
+
+  cmake \
+    "${pkgname}-${pkgver}" \
+    -B build \
+    -DCMAKE_INSTALL_PREFIX=/usr \
+    -DBUILD_STATIC_LIBS=false
+  cmake --build build
+}
+
+package() {
+  cd build
+  make DESTDIR="${pkgdir}" install
+
+  install -Dm0644 "${srcdir}/${pkgname}-${pkgver}"/LICENSE "${pkgdir}"/usr/share/licenses/iniparser/LICENSE
+}

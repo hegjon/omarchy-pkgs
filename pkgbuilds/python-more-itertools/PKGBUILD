@@ -1,0 +1,56 @@
+# Maintainer: George Rawlinson <grawlinson@archlinux.org>
+# Contributor: Kyle Keen <keenerd@gmail.com>
+# Contributor: Germán Osella Massa <gosella@gmail.com>
+
+pkgname=python-more-itertools
+pkgver=11.1.0
+pkgrel=1
+pkgdesc='More routines for operating on iterables, beyond itertools'
+arch=(any)
+url='https://github.com/more-itertools/more-itertools'
+license=(MIT)
+depends=(python)
+makedepends=(
+  git
+  python-build
+  python-installer
+  python-wheel
+  python-flit-core
+)
+source=(
+  "$pkgname::git+$url#tag=v$pkgver"
+  remove-version-constraint.patch
+)
+sha512sums=('000cd77996af1c30f37762f52ca06ce45722f360764cd5f84c4b7323c535d15ce994de5df062da843472c624790d3539a1ca53d7fa9dc938784afa3d8f5df450'
+            '5ccad7d2c98cde1df637869746e3194fd6c00d4f5706fefb009c02233e9e58728d2365a9827800c7ac3dc57c3d80d70bf3c78707f28cb4b5ca2396d90ed63ac7')
+b2sums=('30f6cfa77c619a2b88a1fb6c4a8b98ec9caa981d33f85cdc59a0abfc4d7ba4ac91a4e7ce34d6714c5c9a34ab8e07948b77a1bea550e55577b298620bfa3066d3'
+        'eaad9317f05b8708d137aef262ed33baf1e79ae3fe4affe1f5cf80e8a4813fe11d4f3376524663d2b0280ea912a406fab51e63b065548333a44a36c0b1910732')
+
+prepare() {
+  cd "$pkgname"
+
+  patch -p1 -i "$srcdir/remove-version-constraint.patch"
+}
+
+build() {
+  cd "$pkgname"
+
+  SETUPTOOLS_SCM_PRETEND_VERSION=$pkgver python -m build --wheel --no-isolation
+}
+
+check() {
+  cd "$pkgname"
+
+  python -m unittest
+}
+
+package() {
+  cd "$pkgname"
+
+  python -m installer --destdir="$pkgdir" dist/*.whl
+
+  # license
+  install -vDm644 -t "$pkgdir/usr/share/licenses/$pkgname" LICENSE
+}
+
+# vim:set ts=2 sw=2 et:

@@ -1,0 +1,77 @@
+# Maintainer: Jan Alexander Steffens (heftig) <heftig@archlinux.org>
+# Contributor: Jan de Groot <jgc@archlinux.org>
+
+pkgbase=pangomm
+pkgname=(
+  pangomm
+  pangomm-docs
+)
+pkgver=2.46.5
+pkgrel=1
+pkgdesc="C++ bindings for Pango"
+url="https://www.gtkmm.org/"
+arch=(x86_64)
+license=(LGPL-2.1-or-later)
+depends=(
+  cairomm
+  glib2
+  glibc
+  glibmm
+  libgcc
+  libsigc++
+  libstdc++
+  pango
+)
+makedepends=(
+  cairomm-docs
+  git
+  glibmm-docs
+  libsigc++-docs
+  meson
+  mm-common
+)
+options=(!emptydirs)
+source=("git+https://gitlab.gnome.org/GNOME/pangomm.git#tag=$pkgver")
+b2sums=('970f54762b2eb59d6150fea280acb972e1ec48e31308c9e06bcf0e4968208b27c6d2bff612ccb4808c99c895b2e88113cd5e5ed261627f5f6f2a946381d10ebf')
+
+prepare() {
+  cd pangomm
+}
+
+build() {
+  local meson_options=(
+    -D maintainer-mode=true
+  )
+
+  arch-meson pangomm build "${meson_options[@]}"
+  meson compile -C build
+}
+
+check() {
+  meson test -C build --print-errorlogs
+}
+
+package_pangomm() {
+  depends+=(
+    libcairomm-1.0.so
+    libglibmm-2.4.so
+    libsigc-2.0.so
+  )
+  provides=(libpangomm-1.4.so)
+
+  meson install -C build --destdir "$pkgdir"
+
+  # Split -docs
+  mkdir -p docs/usr/share
+  mv -t docs/usr/share "$pkgdir"/usr/share/{devhelp,doc}
+}
+
+package_pangomm-docs() {
+  pkgdesc+=" (documentation)"
+  depends=()
+  options=(!strip)
+
+  mv -t "$pkgdir" docs/*
+}
+
+# vim:set sw=2 sts=-1 et:

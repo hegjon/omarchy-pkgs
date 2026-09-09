@@ -1,0 +1,78 @@
+# Maintainer: Jan Alexander Steffens (heftig) <heftig@archlinux.org>
+# Contributor: Jan de Groot <jgc@archlinux.org>
+# Contributor: Sarah Hay <sarahhay@mb.sympatico.ca>
+
+pkgbase=libgsf
+pkgname=(
+  libgsf
+  libgsf-docs
+)
+pkgver=1.14.58
+pkgrel=1
+pkgdesc="Extensible I/O abstraction library for dealing with structured file formats"
+url="https://gitlab.gnome.org/GNOME/libgsf"
+arch=(x86_64)
+license=(LGPL-2.1-only)
+depends=(
+  bzip2
+  gdk-pixbuf2
+  glib2
+  glibc
+  libxml2
+  zlib
+)
+makedepends=(
+  autoconf-archive
+  git
+  gobject-introspection
+  gtk-doc
+)
+checkdepends=(
+  perl-xml-parser
+  unzip
+)
+source=("git+$url.git#tag=LIBGSF_${pkgver//./_}")
+b2sums=('571c0f1eef5a2b0e6213b1f958d22756e13704ae66b2d2002d6a8e3a5534863ab76ed81fc0a28e01def43e0366762a4af10bce438686b15ecbcf4bc717803915')
+
+prepare() {
+  cd libgsf
+  NOCONFIGURE=1 ./autogen.sh
+}
+
+build() {
+  local configure_options=(
+    --prefix=/usr
+    --sysconfdir=/etc
+    --localstatedir=/var
+    --disable-static
+    --enable-introspection
+    --enable-gtk-doc
+  )
+
+  cd libgsf
+  ./configure "${configure_options[@]}"
+  sed -i -e 's/ -shared / -Wl,-O1,--as-needed\0/g' libtool
+  make
+}
+
+check() {
+  make -C libgsf check
+}
+
+package_libgsf() {
+  provides=(libgsf-1.so)
+
+  make -C libgsf DESTDIR="$pkgdir" install
+
+  mkdir -p doc/usr/share
+  mv {"$pkgdir",doc}/usr/share/gtk-doc
+}
+
+package_libgsf-docs() {
+  pkgdesc+=" (documentation)"
+  depends=()
+
+  mv doc/* "$pkgdir"
+}
+
+# vim:set sw=2 sts=-1 et:

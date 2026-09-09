@@ -1,0 +1,95 @@
+# Maintainer: Fabian Bornschein <fabiscafe@archlinux.org>
+# Maintainer: Jan Alexander Steffens (heftig) <heftig@archlinux.org>
+
+pkgbase=libei
+pkgname=(
+  libei
+  libei-docs
+)
+pkgver=1.6.0
+pkgrel=1
+pkgdesc="Library for Emulated Input"
+url="https://libinput.pages.freedesktop.org/libei/"
+arch=(x86_64)
+license=(MIT)
+depends=(
+  gcc-libs
+  glibc
+  libevdev
+  systemd-libs
+)
+makedepends=(
+  doxygen
+  git
+  libxkbcommon
+  meson
+  python-attrs
+  python-dbusmock
+  python-jinja
+  python-pytest
+  python-structlog
+  python-yaml
+  systemd
+)
+checkdepends=(
+  python-pytest-xdist
+  valgrind
+)
+source=(
+  "git+https://gitlab.freedesktop.org/libinput/libei.git?signed#tag=$pkgver"
+  "nemequ-munit::git+https://github.com/nemequ/munit#commit=fbbdf1467eb0d04a6ee465def2e529e4c87f2118"
+)
+b2sums=('919fe7dfd7438dc03aadbdb83277e480761215ca9ed92eccde4d187d06e98ae2f41e223d9d29c6c5b83aa886cc271e272a92b074eb5e468bd955e2b1f06bc9ad'
+        'f9ffee024bf38c09736da3a4fe5aff85e95422d5be131ff5c6e392c1bd4f6c5f6a9cfff16ea044096e033fb24f1840520ef3a1ff2157b0e002c45597e45c2207')
+validpgpkeys=(
+  3C2C43D9447D5938EF4551EBE23B7E70B467F0BF # Peter Hutterer <peter.hutterer@who-t.net>
+)
+
+prepare() {
+  # Inject munit
+  ln -s nemequ-munit munit
+
+  cd libei
+}
+
+build() {
+  local meson_options=(
+    -D documentation=api
+  )
+
+  # Inject munit
+  export MESON_PACKAGE_CACHE_DIR="$srcdir"
+
+  arch-meson libei build "${meson_options[@]}"
+  meson compile -C build
+  meson compile -C build doxygen
+}
+
+check() {
+  # protocol tests are flaky
+  meson test -C build --print-errorlogs --no-suite python
+  meson test -C build --print-errorlogs --suite python
+
+  # Extra valgrind tests
+  meson test -C build --print-errorlogs --setup valgrind
+}
+
+package_libei() {
+  provides=(lib{ei,eis,oeffis}.so)
+
+  meson install -C build --destdir "$pkgdir" --skip-subprojects
+
+  install -Dt "$pkgdir/usr/share/licenses/$pkgname" -m644 libei/COPYING
+}
+
+package_libei-docs() {
+  pkgdesc+=" (API documentation)"
+  depends=()
+
+  mkdir -p "$pkgdir/usr/share/doc/$pkgname"
+  cp -a build/doc/html "$pkgdir/usr/share/doc/$pkgname/api"
+
+  install -Dt "$pkgdir/usr/share/licenses/$pkgname" -m644 libei/COPYING
+}
+
+# vim:set sw=2 sts=-1 et:

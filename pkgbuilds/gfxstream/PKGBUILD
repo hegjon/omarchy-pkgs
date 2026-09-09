@@ -1,0 +1,34 @@
+# Maintainer: Sven-Hendrik Haase
+# Contributor: envolution
+# Contributor: David Garfias <dgarfiasme at gmail dot com>
+# shellcheck shell=bash disable=SC2034,SC2154
+pkgname=gfxstream
+pkgdesc="Graphics Streaming Kit (colloquially known as Gfxstream) is a code generator that makes it easier to serialize and forward graphics API calls from one place to another"
+license=("Apache-2.0")
+pkgver=0.1.2
+pkgrel=2
+arch=("x86_64")
+url="https://android.googlesource.com/platform/hardware/google/gfxstream/"
+source=("git+https://android.googlesource.com/platform/hardware/google/gfxstream#tag=v${pkgver}-gfxstream-release"
+        gfxstream-cstdint.patch)
+depends=(libaemu libglvnd mesa glu freeglut libdrm glm)
+makedepends=(meson git ninja clang vulkan-headers)
+sha256sums=('6a97a1762a3851076f8e844fd812a9b7c569ca931b1197eca0a2c402583b42c8'
+            '88bd60dcfa5bc4c1a5fc166fd6bd3ca5114f5a9c5c0fc6d4bbd09c729971e204')
+
+prepare() {
+  cd "$pkgname"
+  patch -Np1 -i "$srcdir"/gfxstream-cstdint.patch
+}
+
+build() {
+  cd "$pkgname"
+  CC=clang CXX=clang++ arch-meson -Ddecoders=gles,vulkan,composer . build
+  meson compile -C build
+}
+
+package() {
+  cd "$pkgname"
+  meson install -C build --destdir "$pkgdir"
+}
+# vim:set ts=2 sw=2 et:

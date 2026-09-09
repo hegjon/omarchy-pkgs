@@ -1,0 +1,49 @@
+# Maintainer: Felix Yan <felixonmars@archlinux.org>
+# Contributor: Josip Ponjavic <josipponjavic at gmail dot com>
+# Contributor: Xu Fasheng <fasheng.xu[AT]gmail.com>
+
+pkgbase=gsettings-qt
+pkgname=('gsettings-qt5' 'gsettings-qt6')
+pkgver=1.1.1
+pkgrel=2
+pkgdesc="Library to access GSettings from Qt"
+arch=('x86_64')
+url="https://gitlab.com/ubports/development/core/gsettings-qt"
+license=('LGPL-3.0-only')
+makedepends=('git' 'cmake' 'ninja' 'cmake-extras' 'qt5-declarative' 'qt6-declarative')
+source=("git+https://gitlab.com/ubports/development/core/gsettings-qt.git#tag=v$pkgver")
+sha256sums=('48eace2329dab4c50d3e0c47d28fb146e76c2c3c82a2fab056902427a309a173')
+
+prepare() {
+  cp -a gsettings-qt{,5}
+  sed -i 's/debian_version/arch-release/' gsettings-qt/GSettings/CMakeLists.txt
+}
+
+build() {
+  cd gsettings-qt
+  cmake -Bbuild -GNinja -DENABLE_QT6=ON -DCMAKE_INSTALL_PREFIX=/usr .
+  ninja -C build
+
+  cd ../gsettings-qt5
+  cmake -Bbuild -GNinja -DENABLE_QT6=OFF -DCMAKE_INSTALL_PREFIX=/usr .
+  ninja -C build
+}
+
+package_gsettings-qt5() {
+  pkgdesc="Library to access GSettings from Qt5"
+  depends=('glib2' 'glibc' 'libgcc' 'libstdc++' 'qt5-base' 'qt5-declarative')
+  provides=('gsettings-qt')
+  conflicts=('gsettings-qt')
+  replaces=('gsettings-qt')
+
+  cd gsettings-qt5
+  DESTDIR="$pkgdir" ninja -C build install
+}
+
+package_gsettings-qt6() {
+  pkgdesc="Library to access GSettings from Qt6"
+  depends=('glib2' 'glibc' 'libgcc' 'libstdc++' 'qt6-base' 'qt6-declarative')
+
+  cd gsettings-qt
+  DESTDIR="$pkgdir" ninja -C build install
+}

@@ -1,0 +1,60 @@
+# Maintainer: George Rawlinson <grawlinson@archlinux.org>
+# Maintainer: Robin Candau <antiz@archlinux.org>
+# Contributor: Christian Muehlhaeuser <muesli at gmail dot com>
+# Contributor: Stephen Gregoratto <dev@sgregoratto.me>
+
+pkgname=glow
+pkgver=3.0.0
+pkgrel=2
+pkgdesc="Command-line markdown renderer"
+url="https://github.com/charmbracelet/glow"
+arch=('x86_64')
+license=('MIT')
+depends=('glibc')
+makedepends=('git' 'go')
+options=('!lto')
+source=("git+${url}.git#tag=v${pkgver}")
+b2sums=('63a972f3b64da121fb54b90cb9aae937c227e6f880d20d8f670933724cc9547148b6afed86f62acce6552ac6e85b979a412b657c7db062b6bae38f8e42bf7f0c')
+
+prepare() {
+	cd "${pkgname}"
+
+	mkdir -p build/
+	go mod download
+}
+
+build() {
+	cd "${pkgname}"
+
+	export CGO_CPPFLAGS="${CPPFLAGS}"
+	export CGO_CFLAGS="${CFLAGS}"
+	export CGO_CXXFLAGS="${CXXFLAGS}"
+	export CGO_LDFLAGS="${LDFLAGS}"
+	export GOPATH="${srcdir}"
+	export GOFLAGS="-buildmode=pie -mod=readonly -modcacherw"
+	local ldflags=(
+		-compressdwarf=false
+		-linkmode=external
+		-X main.Version="${pkgver}"
+		-X main.CommitSHA="$(git rev-parse --short=7 HEAD)"
+		-X main.CommitDate="$(git show -s --format=%cs HEAD)"
+	)
+	go build -v -ldflags "${ldflags[*]}" -o build .
+
+	build/glow completion bash > completion.bash
+	build/glow completion fish > completion.fish
+	build/glow completion zsh > completion.zsh
+}
+
+package() {
+	cd "${pkgname}"
+
+	install -Dm 755 "build/${pkgname}" "${pkgdir}/usr/bin/${pkgname}"
+
+	install -Dm 644 completion.bash "${pkgdir}/usr/share/bash-completion/completions/${pkgname}"
+	install -Dm 644 completion.fish "${pkgdir}/usr/share/fish/vendor_completions.d/${pkgname}.fish"
+	install -Dm 644 completion.zsh "${pkgdir}/usr/share/zsh/site-functions/_${pkgname}"
+
+	install -Dm 644 LICENSE "${pkgdir}/usr/share/licenses/${pkgname}/LICENSE"
+	install -Dm 644 README.md "${pkgdir}/usr/share/doc/${pkgname}/README.md"
+}

@@ -1,0 +1,108 @@
+# Maintainer: Levente Polyak <anthraxx[at]archlinux[dot]org>
+# Maintainer: Anatol Pomozov <anatol.pomozov@gmail.com>
+# Maintainer: Christian Heusel <gromit@archlinux.org>
+# Contributor: Allan McRae <allan@archlinux.org>
+# Contributor: Jan de Groot <jgc@archlinux.org>
+
+pkgbase=gdb
+# gdb-common is a package that contains files common for all cross compiled versions
+# of gdb (for arm/avr/...)
+pkgname=(gdb gdb-common)
+pkgver=17.2
+pkgrel=1
+pkgdesc='The GNU Debugger'
+arch=(x86_64)
+url='https://www.gnu.org/software/gdb/'
+license=(GPL-3.0-or-later LGPL-3.0-or-later)
+makedepends=(
+  bash
+  boost
+  expat
+  glibc
+  gmp
+  guile
+  libgcc
+  mpfr
+  ncurses
+  python
+  readline
+  source-highlight
+  texinfo
+  xxhash
+  xz
+  zstd
+)
+source=(https://ftp.gnu.org/gnu/gdb/${pkgname}-${pkgver}.tar.xz{,.sig})
+sha1sums=('4a4db2ba512fc30b4ff9129df5efa8524df3588f'
+          'SKIP')
+b2sums=('3c6c893e1d26d534918fb07b64f2e5b368825a64f888171f07443c5ebed456e7c26ed223d78bf304ee5f145c6f3c08c790c993c7b955d168e2fd8e656c6e1e9a'
+        'SKIP')
+validpgpkeys=('F40ADB902B24264AA42E50BF92EDB04BFF325CF3') # Joel Brobecker
+
+build() {
+  cd gdb-$pkgver
+
+  mkdir -p build && cd build
+  ../configure \
+    --prefix=/usr \
+    --disable-nls \
+    --enable-source-highlight \
+    --enable-tui \
+    --enable-targets=all \
+    --enable-languages=all \
+    --enable-multilib \
+    --enable-interwork \
+    --with-system-readline \
+    --with-python=/usr/bin/python \
+    --with-system-gdbinit=/etc/gdb/gdbinit
+  make
+}
+
+package_gdb-common() {
+  depends=(python guile)
+
+  cd gdb-$pkgver/build
+  make -C gdb/data-directory DESTDIR="$pkgdir" install
+}
+
+package_gdb() {
+  depends=(
+    bash
+    boost-libs
+    expat
+    gcc-libs
+    gdb-common=$pkgver
+    glibc
+    gmp
+    guile
+    libelf
+    liblzma.so
+    libmpfr.so
+    libncursesw.so
+    libreadline.so
+    libxxhash.so
+    libzstd.so
+    mpfr
+    ncurses
+    python
+    readline
+    source-highlight
+    xxhash
+    xz
+    zstd
+  )
+  backup=(etc/gdb/gdbinit)
+
+  cd gdb-$pkgver/build
+  make -C gdb DESTDIR="$pkgdir" install
+  make -C gdbserver DESTDIR="$pkgdir" install
+
+  # install "custom" system gdbinit
+  install -dm 755 "$pkgdir/etc/gdb"
+  touch "$pkgdir/etc/gdb/gdbinit"
+
+  # comes from gdb-common
+  rm -r "$pkgdir/usr/share/gdb/"
+}
+
+# vim: ts=2 sw=2 et:

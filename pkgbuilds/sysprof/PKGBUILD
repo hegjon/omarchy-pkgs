@@ -1,0 +1,102 @@
+# Maintainer: Fabian Bornschein <fabiscafe@archlinux.org>
+# Maintainer: Jan Alexander Steffens (heftig) <heftig@archlinux.org>
+# Contributor: Sergej Pupykin <pupykin.s+arch@gmail.com>
+# Contributor: Geoffroy Carrier <geoffroy.carrier@aur.archlinux.org>
+# Contributor: Eric Belanger <belanger@astro.umontreal.ca>
+# Contributor: aeolist <aeolist@hotmail.com>
+# Contributor: Gabriel Rauter <rauter.gabriel@gmail.com>
+
+pkgbase=sysprof
+pkgname=(
+  sysprof
+  libsysprof-capture
+)
+pkgver=50.0
+pkgrel=6
+pkgdesc="Kernel based performance profiler"
+url="https://apps.gnome.org/Sysprof/"
+license=(GPL-3.0-or-later)
+arch=(x86_64)
+depends=(
+  cairo
+  glib2
+  glibc
+  graphene
+  gtk4
+  hicolor-icon-theme
+  json-glib
+  libadwaita
+  libdex
+  libelf
+  libgcc
+  libpanel
+  libstdc++
+  libunwind
+  pango
+  polkit
+  systemd-libs
+)
+makedepends=(
+  git
+  meson
+  glib2-devel
+  yelp-tools
+)
+source=(
+  "git+https://gitlab.gnome.org/GNOME/sysprof.git#tag=${pkgver/[a-z]/.&}"
+)
+b2sums=('dcdc3157710f9eb72afda82b22475694180e36b45b96c07bda13d23bd05bdf51036d39f22aba586ffc09b706f13c880e704f1a3c7c48124f8e01e8e37791a14d')
+
+prepare() {
+  cd sysprof
+}
+
+build() {
+  # Ensure static library is non-LTO compatible
+  CFLAGS+=" -ffat-lto-objects"
+
+  arch-meson sysprof build
+  meson compile -C build
+}
+
+check() {
+  meson test -C build --print-errorlogs
+}
+
+_pick() {
+  local p="$1" f d; shift
+  for f; do
+    d="$srcdir/$p/${f#$pkgdir/}"
+    mkdir -p "$(dirname "$d")"
+    mv "$f" "$d"
+    rmdir -p --ignore-fail-on-non-empty "$(dirname "$f")"
+  done
+}
+
+package_sysprof() {
+  depends+=(libsysprof-capture)
+  groups=(gnome-extra)
+
+  meson install -C build --destdir "$pkgdir"
+
+  cd "$pkgdir"
+
+  _pick capture usr/lib/libsysprof-capture-*
+  _pick capture usr/lib/pkgconfig/sysprof-capture-*
+  _pick capture usr/include/sysprof-*/sysprof-{address,capture,clock,collector,macros}.h
+  _pick capture usr/include/sysprof-*/sysprof-{platform,version,version-macros}.h
+  _pick capture usr/include/sysprof-*/sysprof-capture-{condition,cursor,reader,types,writer}.h
+}
+
+package_libsysprof-capture() {
+  pkgdesc+=" - capture library"
+  depends=()
+  license=(BSD-2-Clause-Patent)
+
+  mv capture/* "$pkgdir"
+
+  install -Dt "$pkgdir/usr/share/licenses/$pkgname" -m644 \
+    sysprof/src/libsysprof-capture/COPYING
+}
+
+# vim:set sw=2 sts=-1 et:

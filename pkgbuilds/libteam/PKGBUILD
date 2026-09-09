@@ -1,0 +1,77 @@
+# Maintainer: Jan Alexander Steffens (heftig) <heftig@archlinux.org>
+
+pkgbase=libteam
+pkgname=(
+  libteam
+  libteam-docs
+)
+pkgver=1.32
+pkgrel=3
+pkgdesc="Library for controlling team network device"
+url="https://libteam.org/"
+arch=(x86_64)
+license=(LGPL-2.1-or-later)
+depends=(
+  bash
+  glibc
+  jansson
+  libdaemon
+  libdbus
+  libnl
+  zeromq
+)
+makedepends=(
+  doxygen
+  git
+  graphviz
+)
+source=("git+https://github.com/jpirko/libteam#tag=v$pkgver")
+b2sums=('a2d17fefbe2482241bd722b7f8f4904484838207330dc93819233f98e064d4fc06c3aea908680bf10eccc1d9e1bd339605eb91a29e8dbb4df109ea1ae8aaecf5')
+
+prepare() {
+  cd libteam
+  NOCONFIGURE=1 ./autogen.sh
+}
+
+build() {
+  local configure_options=(
+    --prefix=/usr
+    --sysconfdir=/etc
+    --localstatedir=/var
+    --libexecdir=/usr/lib
+    --disable-static
+  )
+
+  cd libteam
+  ./configure "${configure_options[@]}"
+  sed -i -e 's/ -shared / -Wl,-O1,--as-needed\0/g' libtool
+  make all html
+}
+
+check() {
+  cd libteam
+  make check
+}
+
+package_libteam() {
+  provides=(
+    libteam.so
+    libteamdctl.so
+  )
+
+  cd libteam
+  make DESTDIR="$pkgdir" install
+
+  install -Dm644 teamd/redhat/systemd/teamd@.service -t "$pkgdir/usr/lib/systemd/system"
+  install -Dm644 teamd/dbus/teamd.conf -t "$pkgdir/usr/share/dbus-1/system.d"
+}
+
+package_libteam-docs() {
+  pkgdesc+=" (documentation)"
+  depends=()
+
+  mkdir -p "$pkgdir/usr/share/doc/$pkgbase"
+  cp -a libteam/doc/api "$pkgdir/usr/share/doc/$pkgbase"
+}
+
+# vim:set sw=2 sts=-1 et:

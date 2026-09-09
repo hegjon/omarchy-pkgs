@@ -1,0 +1,46 @@
+# Maintainer: Felix Yan <felixonmars@archlinux.org>
+
+pkgname=python-execnet
+pkgver=2.1.2
+pkgrel=3
+pkgdesc="Rapid multi-Python deployment"
+arch=('any')
+license=('MIT')
+url="https://codespeak.net/execnet"
+depends=('python')
+makedepends=(
+  'git'
+  'python-build'
+  'python-installer'
+  'python-hatchling'
+  'python-hatch-vcs'
+)
+checkdepends=(
+  'openssh'
+  'procps-ng'
+  'python-pytest'
+  'python-pytest-timeout'
+)
+source=("git+https://github.com/pytest-dev/execnet.git#tag=v$pkgver")
+sha512sums=('ff72f8c46ac57bcc8387783ba07ca8fb0569f125199345c3ca124af148bb3739717ce0b7ab793638c81b381ff27d582a1cc823d9e6839b4e5a37d58c6a96e78f')
+
+build() {
+  cd execnet
+  python -m build --wheel --no-isolation
+}
+
+check() {
+  local site_packages=$(python -c "import site; print(site.getsitepackages()[0])")
+
+  cd execnet
+  # install to temporary location, as importlib is used
+  python -m installer --destdir=test_dir dist/*.whl
+  export PYTHONPATH="test_dir/$site_packages:$PYTHONPATH"
+  pytest -vv testing
+}
+
+package() {
+  cd execnet
+  python -m installer --destdir="$pkgdir" dist/*.whl
+  install -Dm644 LICENSE -t "$pkgdir"/usr/share/licenses/$pkgname/
+}

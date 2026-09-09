@@ -1,0 +1,70 @@
+# Maintainer: Antonio Rojas <arojas@archlinux.org>
+# Contributor: Andrea Scarpino <andrea@archlinux.org>
+# Contributor: Pierre Schmitz <pierre@archlinux.de>
+
+pkgbase=qca
+pkgname=(qca-qt5
+         qca-qt6)
+pkgver=2.3.12
+pkgrel=1
+pkgdesc='Qt Cryptographic Architecture'
+arch=(x86_64)
+url='https://userbase.kde.org/QCA'
+license=(LGPL-2.1-or-later)
+depends=(ca-certificates
+         glibc
+         libgcc
+         libstdc++
+         nss)
+optdepends=('botan: botan plugin'
+            'libgcrypt: gcrypt plugin'
+            'libsasl: SASL plugin'
+            'openssl: SSL plugin'
+            'pkcs11-helper: PKCS-11 plugin')
+makedepends=(botan
+             cmake
+             doxygen
+             libgcrypt
+             libsasl
+             openssl
+             pkcs11-helper
+             qt5-base
+             qt6-base
+             qt6-5compat)
+source=(https://download.kde.org/stable/$pkgbase/$pkgver/$pkgbase-$pkgver.tar.xz{,.sig})
+sha256sums=('d4a2b3aa0272d73ea0c4cd2140960177fa34ddc2030e59a48ecfb80c757572c3'
+            'SKIP')
+validpgpkeys=(CB9387521E1EE0127DA804843FDBB55084CC5D84) # Harald Sitter <sitter@kde.org>
+
+build() {
+  cmake -B build-qt5 -S $pkgbase-$pkgver \
+    -DCMAKE_INSTALL_PREFIX=/usr \
+    -DBUILD_TESTS=OFF \
+    -DQCA_INSTALL_IN_QT_PREFIX=ON \
+    -DQCA_MAN_INSTALL_DIR=/usr/share/man
+  cmake --build build-qt5
+
+  cmake -B build-qt6 -S $pkgbase-$pkgver \
+    -DCMAKE_INSTALL_PREFIX=/usr \
+    -DQT6=ON \
+    -DBUILD_TESTS=OFF \
+    -DQCA_INSTALL_IN_QT_PREFIX=ON \
+    -DQCA_MAN_INSTALL_DIR=/usr/share/man
+  cmake --build build-qt6
+}
+
+package_qca-qt5() {
+  depends+=(qt5-base)
+  conflicts=(qca)
+  provides=(qca)
+  replaces=(qca)
+
+  DESTDIR="$pkgdir" cmake --install build-qt5
+}
+
+package_qca-qt6() {
+  depends+=(qt6-5compat
+            qt6-base)
+
+  DESTDIR="$pkgdir" cmake --install build-qt6
+}

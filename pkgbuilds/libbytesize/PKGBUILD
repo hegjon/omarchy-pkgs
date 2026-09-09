@@ -1,0 +1,35 @@
+# Maintainer: Felix Yan <felixonmars@archlinux.org>
+
+pkgname=libbytesize
+pkgver=2.12
+pkgrel=3
+pkgdesc='A tiny library providing a C "class" for working with arbitrary big sizes in bytes'
+arch=('x86_64')
+url="https://github.com/storaged-project/libbytesize"
+license=('LGPL-2.1-or-later')
+depends=('glibc' 'gmp' 'mpfr' 'pcre2')
+makedepends=('python')
+optdepends=('python: for Python bindings and for the bscalc command')
+source=("$pkgname-$pkgver.tar.gz::https://github.com/rhinstaller/libbytesize/archive/$pkgver.tar.gz")
+sha512sums=('2742e9ad9377295fce298a2b70a1a6b9859f36fea3b9ac74d2281b359a1419917c04e001bda1d999aa4f993733bb4d6f0e2a2c7ed3b0b89080140df7ee96fc6c')
+
+prepare() {
+  cd "$srcdir"/$pkgname-$pkgver
+  ./autogen.sh
+}
+
+build() {
+  cd "$srcdir"/$pkgname-$pkgver
+  ./configure --prefix=/usr
+  make
+}
+
+check() {
+  cd "$srcdir"/$pkgname-$pkgver
+  make check TESTS=libbytesize_unittest.sh
+}
+
+package() {
+  cd "$srcdir"/$pkgname-$pkgver
+  make DESTDIR="$pkgdir" install
+}

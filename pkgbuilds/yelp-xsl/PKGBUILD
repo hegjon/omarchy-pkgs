@@ -1,0 +1,47 @@
+# Maintainer: Jan Alexander Steffens (heftig) <heftig@archlinux.org>
+
+pkgname=yelp-xsl
+pkgver=49.0
+pkgrel=1
+pkgdesc="Document transformations from Yelp"
+url="https://gitlab.gnome.org/GNOME/yelp-xsl"
+arch=(any)
+license=(
+  BSD-3-Clause
+  GPL-2.0-or-later
+  LGPL-2.1-or-later
+)
+makedepends=(
+  git
+  itstool
+  libxslt
+  meson
+)
+source=(
+  "git+$url.git#tag=${pkgver/[a-z]/.&}"
+)
+b2sums=('1d9f21e4ca2f1ae7c718f55650f4e21af2aec80c075b8f7b42b2489658ca93d22ffde2006ed6ac607b832475256cab654700e7ac2c4c483890eaa1b15829b671')
+
+prepare() {
+  cd yelp-xsl
+}
+
+build() {
+  local meson_options=(
+    -D dita=true
+  )
+
+  arch-meson yelp-xsl build "${meson_options[@]}"
+  meson compile -C build
+}
+
+check() {
+  meson test -C build --print-errorlogs
+}
+
+package() {
+  meson install -C build --destdir "$pkgdir"
+  install -Dm644 yelp-xsl/COPYING -t "$pkgdir/usr/share/licenses/$pkgname"
+}
+
+# vim:set sw=2 sts=-1 et:

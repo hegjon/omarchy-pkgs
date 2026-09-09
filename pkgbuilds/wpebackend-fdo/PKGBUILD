@@ -1,0 +1,73 @@
+# Maintainer: Jan Alexander Steffens (heftig) <heftig@archlinux.org>
+
+pkgbase=wpebackend-fdo
+pkgname=(
+  wpebackend-fdo
+  wpebackend-fdo-docs
+)
+pkgver=1.16.1
+pkgrel=1
+pkgdesc="Freedesktop.org backend for WPE WebKit"
+url="https://wpewebkit.org"
+arch=(x86_64)
+license=(BSD-2-Clause)
+depends=(
+  gcc-libs
+  glib2
+  glibc
+  libegl
+  libepoxy
+  libwpe
+  wayland
+)
+makedepends=(
+  clang
+  git
+  hotdoc
+  llvm
+  mesa
+  meson
+  wayland-protocols
+)
+source=("git+https://github.com/Igalia/WPEBackend-fdo#tag=$pkgver")
+b2sums=('849c67b96138fe3a35cef9d119663b765f27fcb4bad7f61932d634630dc01a163b806df5bc1e3325358690b6bb60fc89a8e503148ffd4874ccf9cd3d082aa0a0')
+validpgpkeys=(
+  5AA3BC334FD7E3369E7C77B291C559DBE4C9123B # Adrián Pérez de Castro <aperez@igalia.com>
+)
+
+prepare() {
+  cd WPEBackend-fdo
+}
+
+build() {
+  arch-meson WPEBackend-fdo build -D build_docs=true
+  meson compile -C build
+}
+
+check() {
+  meson test -C build --print-errorlogs
+}
+
+package_wpebackend-fdo() {
+  depends+=(
+    libg{lib,object,io}-2.0.so
+    libwpe-1.0.so
+  )
+  provides=(libWPEBackend-fdo-1.0.so)
+
+  meson install -C build --destdir "$pkgdir"
+  install -Dt "$pkgdir/usr/share/licenses/$pkgname" -m644 WPEBackend-fdo/COPYING
+
+  mkdir -p doc/usr/share
+  mv {"$pkgdir",doc}/usr/share/doc
+}
+
+package_wpebackend-fdo-docs() {
+  pkgdesc+=" (documentation)"
+  depends=()
+
+  mv doc/* "$pkgdir"
+  install -Dt "$pkgdir/usr/share/licenses/$pkgname" -m644 WPEBackend-fdo/COPYING
+}
+
+# vim:set sw=2 sts=-1 et:

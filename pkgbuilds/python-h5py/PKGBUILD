@@ -1,0 +1,69 @@
+# Maintainer: Bruno Pagani <archange@archlinux.org>
+# Maintainer: Carl Smedstad <carsme@archlinux.org>
+# Contributor: Felix Yan <felixonmars@archlinux.org>
+# Contributor: Andrzej Giniewicz <gginiu@gmail.com>
+# Contributor: Rich Li <rich@dranek.com>
+# Contributor: Sebastien Binet <binet@lblbox>
+
+pkgname=python-h5py
+pkgver=3.16.0
+pkgrel=1
+pkgdesc="General-purpose Python bindings for the HDF5 library"
+arch=(x86_64)
+url="https://www.h5py.org/"
+license=(BSD-3-Clause)
+depends=(
+  glibc
+  hdf5
+  liblzf
+  python
+  python-numpy
+)
+makedepends=(
+  cython
+  python-build
+  python-installer
+  python-packaging
+  python-pkgconfig
+  python-setuptools
+  python-wheel
+)
+checkdepends=(
+  python-pytables
+  python-pytest
+  python-pytest-mpi
+)
+conflicts=(hdf5-openmpi)
+source=(
+  "https://github.com/h5py/h5py/archive/$pkgver/${pkgname#python-}-$pkgver.tar.gz"
+  remove-version-check.patch
+)
+sha256sums=('9c3aa5e1fc0c33ae8501a17987af2f986c8ba3ade25da66c78738a5abefea133'
+            '621f108e5e95dc250047501447d0dc633fbf3f8bf19e4c4b4c4d5a286864664c')
+
+prepare() {
+  cd ${pkgname#python-}-$pkgver
+  # Remove RPATH
+  sed -i "s/settings\\['runtime_library_dirs'\\] = settings\\['library_dirs'\\]/pass/" setup_build.py
+  # Drop annoying version check
+  patch -p1 -i ../remove-version-check.patch
+}
+
+build() {
+  cd ${pkgname#python-}-$pkgver
+  H5PY_SYSTEM_LZF=1 python -m build --wheel --no-isolation
+}
+
+check() {
+  cd ${pkgname#python-}-$pkgver
+  python -m venv --system-site-packages test-env
+  test-env/bin/python -m installer dist/*.whl
+  cd test-env/lib/python*/site-packages
+  H5PY_TEST_CHECK_FILTERS=1 ../../../bin/python -m pytest
+}
+
+package() {
+  cd ${pkgname#python-}-$pkgver
+  python -m installer --destdir="$pkgdir" dist/*.whl
+  install -vDm644 -t "$pkgdir/usr/share/licenses/$pkgname" LICENSE
+}

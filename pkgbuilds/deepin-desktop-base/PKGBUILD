@@ -1,0 +1,48 @@
+# Maintainer: Felix Yan <felixonmars@archlinux.org>
+# Contributor: Josip Ponjavic <josipponjavic at gmail dot com>
+# Contributor: Xu Fasheng <fasheng.xu[AT]gmail.com>
+
+pkgname=deepin-desktop-base
+pkgver=2026.09.04
+pkgrel=1
+epoch=2
+pkgdesc='Base component for Deepin'
+arch=('any')
+url="https://github.com/linuxdeepin/deepin-desktop-base"
+license=('GPL-3.0-or-later')
+makedepends=('git')
+groups=('deepin')
+source=("git+https://github.com/linuxdeepin/deepin-desktop-base.git#tag=$pkgver"
+        distribution.info)
+sha512sums=('7745a3b525c1903ff263b52a4e5952dd5294165f8bb67166fe6bf896ba2b71aaa3477f3a47e11274e1596a5824ea82e967329cd682d2acf3280f86c76d1b5897'
+            '17b17c3174a052ae93e57cfffaf551cac05a56da62b2f4829f5e8f4d0bd9dbe47e043ffcbd2c6299a771f7f8b8f2fffc727f2b5b754ab1cffbbf72fa3f54d035')
+
+build() {
+  cd $pkgname
+  make
+}
+
+package() {
+  cd $pkgname
+  make DESTDIR="$pkgdir" install
+
+  install -Dm644 "$srcdir"/distribution.info -t "$pkgdir"/usr/share/deepin/
+
+  # Remove Deepin distro's lsb-release
+  rm "$pkgdir"/etc/lsb-release
+
+  # Don't override systemd timeouts
+  rm -r "$pkgdir"/etc/systemd
+
+  # Make a symlink for deepin-version
+  ln -s ../usr/lib/deepin/desktop-version "$pkgdir"/etc/deepin-version
+
+  # Install os-version and rename to uos-version
+  install -Dm644 files/os-version "$pkgdir"/etc/uos-version
+
+  # Remove apt-specific templates
+  rm -r "$pkgdir"/usr/share/python-apt
+
+  # Remove empty distro info directory
+  rm -r "$pkgdir"/usr/share/distro-info
+}

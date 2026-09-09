@@ -1,0 +1,45 @@
+# Maintainer: Maxime Gauduin <alucryd@archlinux.org>
+# Contributor: Eric Bélanger <eric@archlinux.org>
+
+pkgname=soundtouch
+pkgver=2.4.1
+pkgrel=1
+pkgdesc='An audio processing library'
+arch=(x86_64)
+url=https://www.surina.net/soundtouch/
+license=(LGPL-2.1-only)
+depends=(libgcc libstdc++)
+makedepends=(
+  cmake
+  git
+  ninja
+)
+source=(
+  git+https://codeberg.org/soundtouch/soundtouch.git#tag=${pkgver}
+  soundtouch-cmake.patch
+)
+b2sums=('920d1ae7b2d20c0a1dad81fd1118cbe7616beaf5233c02ce48bf24ff9ec4907bceb956ee5d2eaad108d79e049f18c3203003986184b23f7e23f83259ba409091'
+        '9eed09dc451c4e216a322211622e96757671613a4ba8231a699e32a50764eee4072837df697205dea87ef66a4d4d3105418451bec9cbe4f077ab55718ab374dd')
+
+prepare() {
+  cd soundtouch
+  # install autotools files
+  patch -Np1 -i ../soundtouch-cmake.patch
+  # cmake doesn't generate files for autotools
+  autoreconf -fiv
+  ./configure --prefix=/usr --enable-shared
+}
+
+build() {
+  cmake -S soundtouch -B build -G Ninja \
+    -DCMAKE_BUILD_TYPE='' \
+    -DCMAKE_INSTALL_PREFIX=/usr \
+    -DBUILD_SHARED_LIBS=ON
+  cmake --build build
+}
+
+package() {
+  DESTDIR="${pkgdir}" cmake --install build
+}
+
+# vim: ts=2 sw=2 et:

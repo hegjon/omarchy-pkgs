@@ -1,0 +1,30 @@
+# Maintainer: Levente Polyak <anthraxx[at]archlinux[dot]org>
+# Maintainer: Christian Rebischke <chris.rebischke[at]archlinux[dot]org>
+# Contributor: Sonic-Y3k <sonic.y3k@googlemail.com>
+
+pkgname=python-pefile
+pkgver=2024.8.26
+pkgrel=2
+pkgdesc='Python PE parsing module'
+url='https://github.com/erocarrera/pefile'
+arch=('any')
+license=('MIT')
+depends=('python')
+makedepends=('python-setuptools' 'python-build' 'python-installer' 'python-wheel')
+source=(https://github.com/erocarrera/pefile/archive/v${pkgver}/${pkgname}-${pkgver}.tar.gz)
+sha512sums=('d81dc149da6dfc70e80c305440f2846a04904e8c442a42882b9c8d1a7a2b5ccf827be19827f4979e9880098a67dc858ddcce5a24b35cc6b7cda2e448f3e1386f')
+b2sums=('32807d9a1dbfd6f0691dafcc909348e59b561ed1d5cacf75d3b6d8dae9c0276a8e4d508296efc7676018c75a072bc8c86efd1e31b36259c78e9c9e3f2fe99662')
+
+build() {
+  cd pefile-${pkgver}
+  python -m build --wheel --no-isolation
+}
+
+package_python-pefile() {
+  cd pefile-${pkgver}
+  python -m installer --destdir="${pkgdir}" dist/*.whl
+  install -Dm 644 LICENSE -t "${pkgdir}/usr/share/licenses/${pkgname}"
+  install -Dm 644 README* -t "${pkgdir}/usr/share/doc/${pkgname}"
+}
+
+# vim: ts=2 sw=2 et:

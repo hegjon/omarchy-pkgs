@@ -1,0 +1,60 @@
+# Maintainer: George Rawlinson <grawlinson@archlinux.org>
+# Contributor: Eric Bélanger <eric@archlinux.org>
+
+pkgname=perl-libwww
+pkgver=6.83
+pkgrel=1
+pkgdesc='The World-Wide Web library for Perl'
+arch=(any)
+url='https://metacpan.org/release/libwww-perl'
+license=('GPL-1.0-or-later OR Artistic-1.0-Perl')
+depends=(
+  perl
+  perl-encode-locale
+  perl-file-listing
+  perl-html-parser
+  perl-http-cookies
+  perl-http-daemon
+  perl-http-cookiejar
+  perl-http-date
+  perl-http-negotiate
+  perl-lwp-mediatypes
+  perl-net-http
+  perl-try-tiny
+  perl-uri
+  perl-www-robotrules
+)
+optdepends=('perl-lwp-protocol-https: for https:// url schemes')
+checkdepends=(
+  perl-test-fatal
+  perl-test-needs
+  perl-test-requiresinternet
+)
+options=(!emptydirs)
+source=(https://cpan.metacpan.org/authors/id/O/OA/OALDERS/libwww-perl-$pkgver.tar.gz)
+sha512sums=('23d62d7319ae055f8bd3b103fd2b2d5f9a4d0f5d24e9a60448fba15f323d1b209c30ae2e276c7f5c295b41acee928af40316ae2c111a3f022aba7718e483ac62')
+b2sums=('a97acac45785a9f8a41f09c0ab426ae3ef806b39d494db996fd1465bd2551b7d4034144fae9d55fb1b727528e9df07fd99a77fcd30e44bbf39bcf3108c26b5a9')
+
+build() {
+  cd "libwww-perl-$pkgver"
+
+  unset PERL5LIB PERL_MM_OPT PERL_LOCAL_LIB_ROOT
+  export PERL_MM_USE_DEFAULT=1 PERL_AUTOINSTALL=--skipdeps
+  perl Makefile.PL
+  make
+}
+
+check()  {
+  cd "libwww-perl-$pkgver"
+
+  unset PERL5LIB PERL_MM_OPT PERL_LOCAL_LIB_ROOT
+  export PERL_MM_USE_DEFAULT=1
+  make test
+}
+
+package() {
+  cd "libwww-perl-$pkgver"
+
+  unset PERL5LIB PERL_MM_OPT PERL_LOCAL_LIB_ROOT
+  make install INSTALLDIRS=vendor DESTDIR="$pkgdir"
+}

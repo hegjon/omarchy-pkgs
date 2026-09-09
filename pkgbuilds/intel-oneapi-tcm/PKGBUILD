@@ -1,0 +1,27 @@
+# Maintainer: Torsten Keßler <tpkessler@archlinux.org>
+pkgname=intel-oneapi-tcm
+pkgver=1.5.0_489
+_pkgver=$(echo $pkgver | sed 's/_/-/')
+_majmin=$(echo $pkgver | cut -d. -f1,2)
+pkgrel=1
+pkgdesc="Thread Composability Manager"
+arch=('x86_64')
+url="https://www.intel.com/content/www/us/en/developer/tools/oneapi/overview.html"
+license=('LicenseRef-Intel-Simplified')
+depends=('intel-oneapi-common' 'glibc' 'gcc-libs' 'hwloc')
+source=("https://apt.repos.intel.com/oneapi/pool/main/${pkgname}-${_majmin}-${_pkgver}_amd64.deb")
+b2sums=('874b6bb986bbf98cfa8340955c1f7575f823050c3258450bd0508b09dd9fa0507bacb13193d4282ff2591b5e8f79fea1ecc412141ea07eb290e4103411cdd9be')
+noextract=("${pkgname}-${majmin}-${_pkgver}_amd64.deb")
+conflicts=('intel-oneapi-basekit')
+
+package() {
+	ar x "${pkgname}-${_majmin}-${_pkgver}_amd64.deb"
+	tar xvf data.tar.xz -C "${pkgdir}"
+	rm data.tar.xz
+
+	local _prefix=/opt/intel/oneapi/tcm
+	ln -vs "${_prefix}/${_majmin}" "${pkgdir}/${_prefix}/latest"
+
+	install -d "${pkgdir}"/usr/share/licenses/"${pkgname}"
+	ln -vs /usr/share/licenses/intel-oneapi "${pkgdir}"/usr/share/licenses/"${pkgname}"/oneapi
+}

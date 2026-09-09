@@ -1,0 +1,51 @@
+# Maintainer: Felix Yan <felixonmars@archlinux.org>
+
+pkgbase=dtklog
+pkgname=(dtklog dtk6log)
+pkgver=6.7.48
+pkgrel=1
+pkgdesc='Simple, convenient and thread safe logger for Qt-based C++ apps'
+arch=('x86_64')
+url="https://github.com/linuxdeepin/dtklog"
+license=('LGPL-2.1-or-later')
+groups=('deepin')
+makedepends=('git' 'cmake' 'ninja' 'qt5-base' 'qt6-base' 'spdlog' 'fmt')
+source=("git+https://github.com/linuxdeepin/dtklog.git#tag=$pkgver")
+sha512sums=('98196f40c480899961659a219d3b21a67a70a2134c57a6939eff66605b18e587acec6cc69e4a13b4a1bf2c57c747ae00c98e3fd3ab7e60153373716cc847f9ac')
+
+build() {
+  cd dtklog
+
+  # Build Qt5 variant (dtklog)
+  cmake . -Bbuild-qt5 -GNinja \
+    -DDTK5=ON \
+    -DBUILD_WITH_SYSTEMD=ON \
+    -DMKSPECS_INSTALL_DIR=lib/qt/mkspecs/modules \
+    -DCMAKE_INSTALL_LIBDIR=lib \
+    -DCMAKE_INSTALL_PREFIX=/usr
+  cmake --build build-qt5
+
+  # Build Qt6 variant (dtk6log)
+  cmake . -Bbuild-qt6 -GNinja \
+    -DDTK5=OFF \
+    -DBUILD_WITH_SYSTEMD=ON \
+    -DCMAKE_INSTALL_LIBDIR=lib \
+    -DCMAKE_INSTALL_PREFIX=/usr
+  cmake --build build-qt6
+}
+
+package_dtklog() {
+  pkgdesc='Simple, convenient and thread safe logger for Qt-based C++ apps (Qt5 build)'
+  depends=('glibc' 'libgcc' 'libstdc++' 'libsystemd' 'qt5-base' 'spdlog' 'fmt')
+
+  cd dtklog
+  DESTDIR="$pkgdir" ninja -C build-qt5 install
+}
+
+package_dtk6log() {
+  pkgdesc='Simple, convenient and thread safe logger for Qt-based C++ apps (Qt6 build)'
+  depends=('glibc' 'libgcc' 'libstdc++' 'libsystemd' 'qt6-base' 'spdlog' 'fmt')
+
+  cd dtklog
+  DESTDIR="$pkgdir" ninja -C build-qt6 install
+}

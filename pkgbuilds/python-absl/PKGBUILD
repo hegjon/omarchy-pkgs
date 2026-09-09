@@ -1,0 +1,26 @@
+# Maintainer: Sven-Hendrik Haase <svenstaro@archlinux.org>
+pkgname=python-absl
+pkgver=2.5.0
+pkgrel=1
+pkgdesc="Abseil Python Common Libraries"
+arch=('any')
+url='https://github.com/abseil/abseil-py'
+provides=('absl-py')
+conflicts=('absl-py')
+replaces=('absl-py')
+license=('APACHE')
+makedepends=(python-{build,installer,wheel} python-setuptools python-hatchling)
+source=("https://pypi.io/packages/source/a/absl-py/absl_py-$pkgver.tar.gz")
+sha512sums=('ebc1e9fc05199a71cf42a000cfce45485a0b4ed99e9078543effc8ccd276e97a3867c738d045e23c83ea3ef75402804e66b60ad3759ace80f1c35b0b84fc9aff')
+
+build() {
+  cd "$srcdir/absl_py-$pkgver"
+  python -m build --wheel --no-isolation
+}
+
+package() {
+  cd "$srcdir/absl_py-$pkgver"
+  python -m installer --destdir="$pkgdir" dist/*.whl
+}
+
+# vim:set ts=2 sw=2 et:

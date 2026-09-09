@@ -1,0 +1,37 @@
+# Maintainer: Maxime Gauduin <alucryd@archlinux.org>
+# Contributor: Giovanni Scafora <giovanni@archlinux.org>
+# Contributor: 03/08/04 <lefungus@altern.org>
+
+pkgname=libebml
+pkgver=1.4.7
+pkgrel=1
+pkgdesc='Extensible Binary Meta Language library'
+arch=(x86_64)
+url=https://github.com/Matroska-Org/libebml
+license=(LGPL-2.1-only)
+depends=(
+  glibc
+  libgcc
+  libstdc++
+)
+makedepends=(
+  cmake
+  git
+  ninja
+)
+provides=(libebml.so)
+source=(git+https://github.com/Matroska-Org/libebml.git#tag=release-${pkgver})
+b2sums=('198ee990d5f06828fa939885b26d00b3d8d6c9e5ee7205b59952ec1722863bd9c2afb0d964f66c862caff2aa4dcf1c6d7927338f154cddbbf8f8e0bd05b3574e')
+
+build() {
+  cmake -S libebml -B build -G Ninja \
+    -DCMAKE_INSTALL_PREFIX=/usr \
+    -DCMAKE_INSTALL_LIBDIR=/usr/lib \
+    -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
+    -DBUILD_SHARED_LIBS=ON
+  cmake --build build
+}
+
+package() {
+  DESTDIR="${pkgdir}" cmake --install build
+}

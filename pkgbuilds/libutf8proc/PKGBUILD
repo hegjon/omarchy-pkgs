@@ -1,0 +1,45 @@
+# Maintainer: Alexander F. Rødseth <xyproto@archlinux.org>
+
+pkgname=libutf8proc
+pkgver=2.11.3
+_sover=3.2.3
+pkgrel=1
+pkgdesc='C library for processing UTF-8 encoded Unicode strings'
+arch=(x86_64)
+url='https://github.com/JuliaStrings/utf8proc'
+license=(MIT custom)
+depends=(glibc)
+makedepends=(cmake git)
+source=("git+$url#tag=v$pkgver"
+        $pkgname.pc.in)
+b2sums=('cd194b62f56fcfd046125f98cffc1da5d4a3665c44cd54e659b03ef439668cd9bb289d4cceb80506e05b4a18a7a5ea204b3224cb81c9e731d08c6e1774f42a58'
+        '27cfd2086b63b0d9b08720d966d760e4237734a85a293eab81065f49857aa11ed57682a4bd26e4081701d34e61c156170b65bbf38f19387539f5472d0d94db23')
+
+prepare() {
+  sed "s#@VERSION@#$pkgver#" libutf8proc.pc.in > libutf8proc.pc
+}
+
+build() {
+  cmake \
+    -B build \
+    -D CMAKE_BUILD_TYPE=Release \
+    -D CMAKE_INSTALL_LIBDIR=lib \
+    -D CMAKE_INSTALL_PREFIX=/usr \
+    -D BUILD_SHARED_LIBS=ON \
+    -S utf8proc
+  make -C build
+}
+
+package() {
+  # The install command does not work for libutf8proc
+  #DESTDIR="$pkgdir" make -C $pkgname-$pkgver/build install
+
+  cd utf8proc
+  install -Dm644 utf8proc.h "$pkgdir/usr/include/utf8proc.h"
+  install -Dm644 LICENSE.md "$pkgdir/usr/share/licenses/$pkgname/LICENSE.md"
+  install -Dm644 "$srcdir/$pkgname.pc" "$pkgdir/usr/lib/pkgconfig/$pkgname.pc"
+  install -Dm644 ../build/$pkgname.so.$_sover \
+    "$pkgdir/usr/lib/$pkgname.so.$_sover"
+  ln -s /usr/lib/$pkgname.so.$_sover "$pkgdir/usr/lib/$pkgname.so"
+  ldconfig -n "$pkgdir/usr/lib"
+}

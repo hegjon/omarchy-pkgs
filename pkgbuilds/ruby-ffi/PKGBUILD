@@ -1,0 +1,100 @@
+# Maintainer: George Rawlinson <grawlinson@archlinux.org>
+# Contributor: Felix Yan <felixonmars@archlinux.org>
+# Contributor: Mario Finelli <mario at finel dot li>
+# Contributor: Artem Vorotnikov <artem at vorotnikov dot me>
+
+_gemname=ffi
+pkgname=ruby-$_gemname
+pkgver=1.17.4
+pkgrel=1
+pkgdesc='Ruby FFI'
+arch=('x86_64')
+url='https://github.com/ffi/ffi'
+license=(BSD-3-Clause MIT)
+depends=(
+  glibc
+  libffi
+  ruby
+)
+makedepends=(
+  git
+  ruby-bundler
+  ruby-rake
+  ruby-rake-compiler
+  ruby-rdoc
+  ruby-rspec
+)
+checkdepends=(ruby-bigdecimal)
+options=(!emptydirs)
+source=(
+  "$pkgname::git+$url#tag=v$pkgver"
+  "github.com-libffi-libffi::git+https://github.com/libffi/libffi"
+)
+sha512sums=('f52d99d372a786214958acfb586626bb01d8ef9846cfe18b1064b7a510c079104bb14a8d020f3c3e7e74085f17af49e1df26a228e7637eedd574c923e5687afe'
+            'SKIP')
+b2sums=('d4396c66880fd4e813b5a15d4eb235f716c9a29b404a0f55e9963c9d907cdfe9462d63a8c8c45317ea3b2f2ce62a69664e41c86e78c165cc0c3a3142d577b13f'
+        'SKIP')
+
+prepare() {
+  cd "$pkgname"
+
+  git submodule init
+  git config submodule.ext/ffi_c/libffi.url "$srcdir/github.com-libffi-libffi"
+  git -c protocol.file.allow=always submodule update
+}
+
+build() {
+  cd "$pkgname"
+
+  local _gemdir="$(ruby -e'puts Gem.default_dir')"
+
+  rake compile
+  gem build --verbose "${_gemname}.gemspec"
+
+  gem install \
+    --verbose \
+    --ignore-dependencies \
+    --no-document \
+    --no-user-install \
+    --install-dir "tmp_install${_gemdir}" \
+    --bindir "tmp_install/usr/bin" \
+    "$_gemname-$pkgver.gem"
+
+  # delete unnecessary files & folders
+  cd "tmp_install/$_gemdir"
+  find . -type f -name 'gem_make.out' -delete -o -name 'mkmf.log' -delete
+  rm -vrf cache
+  cd "gems/$_gemname-$pkgver"
+  rm -vrf Gemfile Rakefile "$_gemname.gemspec" ext rakelib
+  find lib/ffi/platform/* -prune -not -name "$CARCH-linux" -exec rm -rf {} +
+
+  # move documentation
+  install -vd "$srcdir/$pkgname/tmp_install/usr/share/doc/$pkgname"
+  mv -v samples CHANGELOG.md README.md "$srcdir/$pkgname/tmp_install/usr/share/doc/$pkgname"
+
+  # move licenses
+  install -vd "$srcdir/$pkgname/tmp_install/usr/share/licenses/$pkgname"
+  mv -v LICENSE* COPYING "$srcdir/$pkgname/tmp_install/usr/share/licenses/$pkgname"
+
+  # generate Ruby documentation
+  rdoc \
+    --format ri \
+    --output "$srcdir/$pkgname/tmp_install$_gemdir/doc/$_gemname-$pkgver/ri" \
+    ./lib
+  # delete unnecessary artifacts
+  rm -rf "$srcdir/$pkgname/tmp_install$_gemdir/doc/$_gemname-$pkgver/ri/"{lib,created.rid}
+}
+
+check() {
+  cd "$pkgname"
+
+  local _gemdir="$(ruby -e'puts Gem.default_dir')"
+
+  GEM_HOME="tmp_install${_gemdir}" rake test
+}
+
+package() {
+  cd "$pkgname"
+
+  cp --archive --verbose tmp_install/* "${pkgdir}"
+}

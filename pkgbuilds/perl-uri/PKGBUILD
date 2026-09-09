@@ -1,0 +1,33 @@
+# Maintainer: Felix Yan <felixonmars@archlinux.org>
+# Contributor: Manolis Tzanidakis
+# Contributor: Firmicus <francois.archlinux.org> 
+
+pkgname=perl-uri
+pkgver=5.37
+pkgrel=1
+pkgdesc="Uniform Resource Identifiers (absolute and relative)"
+arch=('any')
+url="https://search.cpan.org/dist/URI/"
+license=('Artistic-1.0-Perl' 'GPL-1.0-or-later')
+depends=('perl' 'perl-mime-base32')
+checkdepends=('perl-test-needs' 'perl-test-warnings')
+options=('!emptydirs')
+source=("https://cpan.metacpan.org/authors/id/O/OA/OALDERS/URI-$pkgver.tar.gz")
+sha512sums=('c720fa5ab8efda9f67040cc9221a75996807e37fdcdadec4f621778f1bda2de1fc544461b816f6aef8560b23361d597d677cd6f9eaea04a1783ccfb83d234ff5')
+
+build() {
+  cd URI-$pkgver
+  perl Makefile.PL INSTALLDIRS=vendor
+  make
+}
+
+check() {
+  cd URI-$pkgver
+  make test
+}
+
+package() {
+  cd URI-$pkgver
+  make install DESTDIR="$pkgdir"
+}
+# vim: ts=2 sw=2 et ft=sh

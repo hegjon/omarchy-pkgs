@@ -1,0 +1,34 @@
+# Maintainer: Felix Yan <felixonmars@archlinux.org>
+# Contrinutor: shining <shiningxc@gmail.com>
+# Contributor: phillid <dbphillipsnz _at_thingy_that_swirly_a_symbol gmaildott comm>
+
+pkgname=python-pydot
+pkgver=4.0.1
+pkgrel=1
+pkgdesc="Python interface to Graphviz's Dot"
+arch=('any')
+url="https://github.com/pydot/pydot"
+license=('MIT')
+depends=('python-pyparsing>=3.1.0' 'graphviz')
+makedepends=('git' 'python-build' 'python-installer' 'python-setuptools' 'python-wheel')
+checkdepends=('python-chardet' 'python-parameterized' 'python-pytest')
+source=("git+https://github.com/pydot/pydot#tag=v$pkgver")
+sha512sums=('f1400bf63300a0928a9c299f1ebe9eace7dcaf41192390dced202c0e25735dd904bbec3238ee0e9eff18f3250cb4f9d4f24a685fb2231e9e179b9156647c2934')
+
+build() {
+  cd pydot
+  python -m build --wheel --no-isolation
+}
+
+check() {
+  cd pydot
+  python -m venv --system-site-packages testenv
+  testenv/bin/python -m installer dist/*.whl
+  testenv/bin/python -m pytest
+}
+
+package() {
+  cd pydot
+  python -m installer --destdir="$pkgdir" dist/*.whl
+  install -Dm644 -t "$pkgdir"/usr/share/licenses/$pkgname LICENSES/MIT.txt
+}

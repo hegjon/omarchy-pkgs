@@ -1,0 +1,57 @@
+# Maintainer: George Rawlinson <grawlinson@archlinux.org>
+# Contributor: Max Mehl <aur at mehl dot mx>
+# SPDX-FileCopyrightText: 2019 Max Mehl
+# SPDX-License-Identifier: CC0-1.0
+
+pkgname=python-license-expression
+pkgver=30.4.4
+pkgrel=2
+pkgdesc='Utility to parse, normalize and compare license expressions'
+arch=(any)
+url='https://github.com/nexB/license-expression'
+license=(Apache-2.0)
+depends=(
+  python
+  python-boolean.py
+)
+makedepends=(
+  git
+  python-build
+  python-installer
+  python-setuptools-scm
+  python-wheel
+)
+checkdepends=(
+  python-pytest
+  python-pytest-xdist
+)
+source=("$pkgname::git+$url#tag=v$pkgver")
+sha512sums=('39fe4a92372d6c28e933b2e4031c7921ee506918528525479dbc1d941180d17833137b878addafa7c7b1a1b78689a51ea84ee74e3fea28d24ae0de39c7334b94')
+b2sums=('3f32009c391d162c037c521b36abf8669f519a5299f2ce9ca2eccb6d8aa155a81a8ac727127d9781db3fb82963830ce39e35e0f07b4472c6964353559bb2c06d')
+
+prepare() {
+  cd "$pkgname"
+
+  # Fix file to comply with PEP-440
+  sed \
+    -i pyproject.toml \
+    -e "s/^fallback_version =.*/fallback_version = \"$pkgver\"/"
+}
+
+build() {
+  cd "$pkgname"
+
+  SETUPTOOLS_SCM_PRETEND_VERSION="$pkgver" python -m build --wheel --no-isolation
+}
+
+check() {
+  cd "$pkgname"
+
+  pytest -v
+}
+
+package() {
+  cd "$pkgname"
+
+  python -m installer --destdir="$pkgdir" dist/*.whl
+}

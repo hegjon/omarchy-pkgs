@@ -1,0 +1,27 @@
+# Maintainer: Felix Yan <felixonmars@archlinux.org>
+
+pkgname=chafa
+pkgver=1.18.2
+pkgrel=2
+pkgdesc="Image-to-text converter supporting a wide range of symbols and palettes, transparency, animations, etc."
+arch=("x86_64")
+url="https://hpjansson.org/chafa/"
+license=("LGPL-3.0-or-later")
+depends=('libavif' 'libheif' 'libjxl' 'librsvg' 'libwebp' 'libxslt')
+makedepends=('git' 'gtk-doc')
+provides=('libchafa.so')
+source=(git+https://github.com/hpjansson/chafa.git#tag=$pkgver?signed)
+sha512sums=('93e1a44e2e5ec655f65e9f2b85be44e407429621a6b14b37f6cdf1db5c686d78c3b1c12d7b45791e12127d174da47fd69d151bb539f72f4449a8671c75f0a3ad')
+validpgpkeys=('C01EDE5BB0D91E26D003662EC76BB9FEEAD12EA7')  # Hans Petter Jansson
+
+build() {
+  cd $pkgname
+  ./autogen.sh --prefix=/usr --enable-man --enable-gtk-doc
+  make
+}
+
+package() {
+  cd $pkgname
+  make DESTDIR="$pkgdir" install
+  make -C tools/completions PREFIX="$pkgdir"/usr/share install-zsh-completion install-fish-completion install-bash-completion
+}

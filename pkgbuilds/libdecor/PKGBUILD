@@ -1,0 +1,24 @@
+# Maintainer: Sven-Hendrik Haase <svenstaro@archlinux.org>
+# Contributor: Adrian Perez de Castro <aperez@igalia.com>
+pkgdesc='Client-side decorations library for Wayland clients'
+pkgname=libdecor
+pkgver=0.2.5
+pkgrel=1
+url="https://gitlab.freedesktop.org/libdecor/libdecor"
+license=('MIT')
+arch=('x86_64')
+depends=('wayland' 'pango' 'dbus')
+makedepends=('cmake' 'ninja' 'meson' 'wayland-protocols' 'gtk3')
+optdepends=('gtk3: gtk3 support')
+source=("https://gitlab.freedesktop.org/libdecor/libdecor/-/archive/${pkgver}/libdecor-${pkgver}.tar.gz")
+sha512sums=('c696ed38a80256e1db68fcc0fd8a8c18439c4a1c4bf4d7e4068a741b0e2642d99dc07ae92e209c15f2387ea9330f9b3281ab9114b5d8989e085165f3eae6abed')
+
+build() {
+  arch-meson -Ddemo=false build "${pkgname}-${pkgver}"
+  meson compile -C build
+}
+
+package() {
+  meson install -C build --destdir "${pkgdir}"
+  install -Dm644 "${pkgname}-${pkgver}/LICENSE" "${pkgdir}/usr/share/licenses/${pkgname}/LICENSE"
+}

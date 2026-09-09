@@ -1,0 +1,40 @@
+# Maintainer: Filipe Laíns (FFY00) <lains@archlinux.org>
+# Maintainer: Daniel M. Capella <polyzen@archlinux.org>
+
+_pkgname=markdown-it-py
+pkgname=python-$_pkgname
+pkgver=4.2.0
+pkgrel=1
+pkgdesc='Python port of markdown-it. Markdown parsing, done right!'
+arch=('any')
+url='https://github.com/executablebooks/markdown-it-py'
+license=('MIT')
+depends=('python-mdurl')
+optdepends=('python-mdit_py_plugins: core plugins'
+            'python-linkify-it-py: linkify extension')
+makedepends=('python-build' 'python-flit-core' 'python-installer')
+checkdepends=('python-pytest' 'python-pytest-regressions' 'python-mdit_py_plugins' 'python-linkify-it-py')
+source=("$pkgname-$pkgver.tar.gz::$url/archive/v$pkgver.tar.gz")
+sha512sums=('81e659729f8da1ad269f40c693d66f0192c129dc42fcbcb09a14c617794816555d9f69137d09458d79f96eb5c92ea29e4d625616f994f7fcffa1b198a9830be0')
+
+build() {
+  cd $_pkgname-$pkgver
+
+  python -m build
+}
+
+check() {
+  cd $_pkgname-$pkgver
+
+  python -m pytest tests
+}
+
+package() {
+  cd $_pkgname-$pkgver
+
+  python -m installer -d "$pkgdir" dist/*.whl
+
+  install -Dm 644 LICENSE "$pkgdir"/usr/share/licenses/$pkgname/LICENSE
+}
+
+# vim:set ts=2 sw=2 et:

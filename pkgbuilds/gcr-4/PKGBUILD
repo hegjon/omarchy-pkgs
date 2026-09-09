@@ -1,0 +1,79 @@
+# Maintainer: Jan Alexander Steffens (heftig) <heftig@archlinux.org>
+# Contributor: Ionut Biru <ibiru@archlinux.org>
+
+pkgbase=gcr-4
+pkgname=(
+  gcr-4
+  gcr-4-docs
+)
+pkgver=4.4.0.1
+pkgrel=1
+pkgdesc="A library for bits of crypto UI and parsing"
+url="https://gitlab.gnome.org/GNOME/gcr"
+arch=(x86_64)
+license=(LGPL-2.1-or-later)
+depends=(
+  glib2
+  glibc
+  gnutls
+  libp11-kit
+  libsecret
+  openssh
+  systemd-libs
+)
+makedepends=(
+  gi-docgen
+  git
+  glib2-devel
+  gobject-introspection
+  gtk4
+  meson
+  systemd
+  vala
+)
+source=("git+https://gitlab.gnome.org/GNOME/gcr.git?signed#tag=$pkgver")
+b2sums=('54ea2239128a9782cc63e612eaff01b563d2642a5cc3dde85e33ddb8dacba1bcd8bf3ab5a5daab2eae6627d975dad1d2203619f44ef8cda5f76f9ec9ac25d913')
+validpgpkeys=(
+  EF3226243ABEFC1A828BC5B46A2AC2B52126D946 # Dhanuka Warusadura <dhanuka@gnome.org>
+  A7C626E13F9AD776776BD9CA1D8A57CF2E8D36A3 # Niels De Graef (nielsdg) <nielsdegraef@gmail.com>
+)
+
+prepare() {
+  cd gcr
+}
+
+build() {
+  local meson_options=(
+    -D crypto=gnutls
+  )
+
+  arch-meson gcr build "${meson_options[@]}"
+  meson compile -C build
+}
+
+check() {
+  # Secure memory tests fail
+  dbus-run-session meson test -C build --print-errorlogs || :
+}
+
+package_gcr-4() {
+  optdepends=('gtk4: gcr-viewer-gtk4')
+  provides=(
+    libgck-2.so
+    libgcr-4.so
+  )
+
+  meson install -C build --destdir "$pkgdir"
+
+  mkdir -p doc/usr/share
+  mv {"$pkgdir",doc}/usr/share/doc
+}
+
+package_gcr-4-docs() {
+  pkgdesc+=" (documentation)"
+  depends=()
+
+  mv doc/* "$pkgdir"
+}
+
+# vim:set sw=2 sts=-1 et:

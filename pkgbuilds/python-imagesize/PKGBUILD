@@ -1,0 +1,41 @@
+# Maintainer: Johannes Löthberg <johannes@kyriasis.com>
+# Maintainer: Daniel M. Capella <polyzen@archlinux.org>
+
+_name=imagesize_py
+pkgname=python-imagesize
+pkgver=2.0.1
+pkgrel=1
+pkgdesc='Analyzes JPEG/JPEG 2000/PNG/GIF/TIFF/SVG/Netpbm/WebP image headers and returns image size or DPI'
+url=https://github.com/shibukawa/imagesize_py
+arch=(any)
+license=(MIT)
+depends=(python)
+makedepends=(
+  git
+  python-build
+  python-installer
+  python-setuptools
+  python-wheel
+)
+source=("git+$url.git#tag=$pkgver")
+b2sums=('d46f612b97ed5576ce33c3012c5ce44380fcce0c52ee50fa81236cab0563aaad5c1e0159e6e6bdd548653cc76081bf00fb13777b2d4ad9d6737d0362948f67b8')
+
+build() {
+  cd $_name
+  python -m build --wheel --skip-dependency-check --no-isolation
+}
+
+check() {
+  cd $_name
+  python -m unittest discover -v
+}
+
+package() {
+  local site_packages=$(python -c "import site; print(site.getsitepackages()[0])")
+  install -d "$pkgdir"/usr/share/licenses/$pkgname
+  ln -s "$site_packages"/imagesize-$pkgver.dist-info/licenses/LICENSE.rst \
+    "$pkgdir"/usr/share/licenses/$pkgname
+
+  cd $_name
+  python -m installer --destdir="$pkgdir" dist/*.whl
+}

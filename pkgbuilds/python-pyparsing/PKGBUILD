@@ -1,0 +1,55 @@
+# Maintainer: Felix Yan <felixonmars@archlinux.org>
+# Contributor: Alexander F Rødseth <xyproto@archlinux.org>
+# Contributor: Chris Brannon <cmbrannon79@gmail.com>
+# Contributor: Geoffroy Carrier <geoffroy.carrier@aur.archlinux.org>
+# Contributor: Arvid Ephraim Picciani <aep@exys.org>
+# Contributor: Michael Krauss <hippodriver@gmx.net>
+
+pkgname=python-pyparsing
+pkgver=3.3.2
+pkgrel=1
+pkgdesc='General parsing module for Python'
+arch=(any)
+url='https://github.com/pyparsing/pyparsing/'
+license=(MIT)
+depends=(python)
+makedepends=(
+  git
+  python-build
+  python-installer
+  python-flit-core
+)
+checkdepends=(
+  python-jinja
+  python-railroad-diagrams
+  python-pytest
+  python-matplotlib
+)
+optdepends=('python-railroad-diagrams: for generating Railroad Diagrams'
+            'python-jinja: for generating Railroad Diagrams')
+source=("$pkgname::git+https://github.com/pyparsing/pyparsing.git#tag=$pkgver")
+sha512sums=('e2f94f57e77b8d76c95039d5edf3df1527d67acfce860640ba3db692f9b1c03cf3107a7aa3bfc026ff63085b5cf6acee86a60f146b94f256b1a88e389bc44a9f')
+b2sums=('284f4dc66ea9b0316acb8b83541717f53c1fd7fb02f241ed62169fa88f283ab0b8a46d3813c9d1d20cd076decb53476aba72195d37aa5bf66872f75031107d87')
+
+build() {
+  cd "$pkgname"
+
+  python -m build --wheel --no-isolation
+}
+
+check() {
+  cd "$pkgname"
+
+  python -m unittest
+}
+
+package() {
+  cd "$pkgname"
+
+  python -m installer --destdir="$pkgdir" dist/*.whl
+
+  # license
+  install -vDm644 -t "$pkgdir/usr/share/licenses/$pkgname" LICENSE
+}
+
+# vim:set ts=2 sw=2 et:

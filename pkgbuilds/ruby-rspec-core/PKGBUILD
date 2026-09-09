@@ -1,0 +1,132 @@
+# Maintainer: Levente Polyak <anthraxx[at]archlinux[dot]org>
+# Maintainer: Andreas 'Segaja' Schleifer <segaja at archlinux dot org>
+# Contributor: Artem Vorotnikov <artem@vorotnikov.me>
+
+_gemname=rspec-core
+pkgname=ruby-${_gemname}
+pkgver=3.13.6
+pkgrel=1
+pkgdesc='RSpec runner and formatters'
+url='https://github.com/rspec/rspec'
+arch=('any')
+license=('MIT')
+depends=(
+  ruby-erb
+  ruby-rspec-support
+)
+makedepends=(
+  git
+  ruby-rdoc
+)
+checkdepends=(
+  ruby-bigdecimal
+  ruby-bundler
+  ruby-childprocess
+  ruby-coderay
+  ruby-diff-lcs
+  ruby-drb
+  ruby-ffi
+  ruby-minitest
+  ruby-mutex_m
+  ruby-rake
+  ruby-rspec
+  ruby-rspec-core
+  ruby-rspec-expectations
+  ruby-rspec-mocks
+  ruby-test-unit
+  ruby-thread_order
+)
+options=('!emptydirs')
+source=(
+  "${pkgname}::git+${url}#tag=${_gemname}-v${pkgver}"
+  "${pkgname}_no_version_constraints.patch"
+  "${pkgname}_fix_tests.patch"
+)
+sha512sums=('7134f67870994d02b75f6ab3c835a3008b87a4b200448c37dc8744e2ec06bb0bb00a0954991ed4daa410b18ba631c961b06f824a3a0493ed8e1dff46a9763e07'
+            '2225c734926ffb9eee0a3a19a796f7c1a1489839c6b00650014c2396140adae87c94f2f11575bf594c2ad68e088af7100cffeb14c08472b07ac6f6c57526b632'
+            '87e32aca3d9448b44cb0094b6cf8c857229aaa178dd98afa43d4672a53561a74bd36751193b701d17ce02084ae752dbfda62441efbfe7965f9f96b9a5af4725f')
+b2sums=('bddc70a5ab6d4fa5c97da93a834c6cdb9f205cd2186584cec4103ee8decaa21baf01b2e96b70b92c7ffbdebe2601c5e908e915a30888adc1279935ff5688c487'
+        '4429c7d4bf68f745a7db3dfea0d00cbacab78d882dcd393cf203555ceee760b46c2e28806e5d1217f41d6b65d326d82593501df4b938d054bc004162469b2857'
+        '6f61325d229e235f4681e0f3188830321247dd165806e81791379804a218c3116ee1a549cc643b358fcee790985d48eb4e7a3ed2c90eacdaa4ec378b59569a18')
+
+prepare() {
+  cd "${pkgname}"
+
+  patch --verbose --strip=1 --input="../${pkgname}_no_version_constraints.patch"
+  patch --verbose --strip=1 --input="../${pkgname}_fix_tests.patch"
+
+  rm --verbose \
+    rspec-core/spec/integration/bisect_runners_spec.rb \
+    rspec-core/spec/integration/fail_if_no_examples_spec.rb \
+    rspec-core/spec/integration/failed_line_detection_spec.rb \
+    rspec-core/spec/integration/filtering_spec.rb \
+    rspec-core/spec/integration/order_spec.rb \
+    rspec-core/spec/integration/output_stream_spec.rb \
+    rspec-core/spec/integration/persistence_failures_spec.rb \
+    rspec-core/spec/integration/spec_file_load_errors_spec.rb \
+    rspec-core/spec/integration/suite_hooks_errors_spec.rb \
+    rspec-core/spec/rspec/core_spec.rb \
+    rspec-core/spec/support/aruba_support.rb
+}
+
+build() {
+  cd "${pkgname}/${_gemname}"
+
+  local _gemdir="$(gem env gemdir)"
+
+  gem build --verbose "${_gemname}.gemspec"
+
+  gem install \
+    --local \
+    --verbose \
+    --ignore-dependencies \
+    --no-user-install \
+    --install-dir "tmp_install${_gemdir}" \
+    --bindir "tmp_install/usr/bin" \
+    "${_gemname}-${pkgver}.gem"
+
+  # remove unreproducible files
+  rm --force --recursive --verbose \
+    "tmp_install${_gemdir}/cache/" \
+    "tmp_install${_gemdir}/gems/${_gemname}-${pkgver}/vendor/" \
+    "tmp_install${_gemdir}/doc/${_gemname}-${pkgver}/ri/ext/"
+
+  find "tmp_install${_gemdir}/gems/" \
+    -type f \
+    \( \
+      -iname "*.o" -o \
+      -iname "*.c" -o \
+      -iname "*.so" -o \
+      -iname "*.time" -o \
+      -iname "gem.build_complete" -o \
+      -iname "Makefile" \
+    \) \
+    -delete
+
+  find "tmp_install${_gemdir}/extensions/" \
+    -type f \
+    \( \
+      -iname "mkmf.log" -o \
+      -iname "gem_make.out" \
+    \) \
+    -delete
+}
+
+check() {
+  cd "${pkgname}/${_gemname}"
+
+  local _gemdir="$(gem env gemdir)"
+
+  GEM_HOME="tmp_install${_gemdir}" rake spec
+}
+
+package() {
+  cd "${pkgname}/${_gemname}"
+
+  cp --archive --verbose tmp_install/* "${pkgdir}"
+
+  install --verbose -D --mode=0644 LICENSE* --target-directory "${pkgdir}/usr/share/licenses/${pkgname}"
+  install --verbose -D --mode=0644 *.md --target-directory "${pkgdir}/usr/share/doc/${pkgname}"
+}
+
+# vim: tabstop=2 shiftwidth=2 expandtab:

@@ -1,0 +1,19 @@
+version = 1
+
+[[annotations]]
+path = [
+    "PKGBUILD",
+    "README.md",
+    "keys/**",
+    ".SRCINFO",
+    ".nvchecker.toml",
+]
+SPDX-FileCopyrightText = "Arch Linux contributors"
+SPDX-License-Identifier = "0BSD"
+
+[[annotations]]
+path = [
+    "signing-key.pub",
+]
+SPDX-FileCopyrightText = "libev contributors"
+SPDX-License-Identifier = "BSD-2-Clause"

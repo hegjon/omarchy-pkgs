@@ -1,0 +1,71 @@
+# Maintainer: Konstantin Gizdov <arch at kge dot pw>
+# Maintainer: Torsten Keßler <tpkessler at archlinux dot org>
+
+pkgname=intel-oneapi-openmp
+pkgver=2026.0.0_947
+_pkgver=$(echo $pkgver | sed 's/_/-/')
+_majmin=$(echo $pkgver | cut -d. -f1,2)
+pkgrel=1
+pkgdesc="Intel oneAPI OpenMP runtime library"
+arch=('x86_64')
+url='https://software.intel.com/content/www/us/en/develop/tools/oneapi.html'
+license=("LicenseRef-Intel-EULA-Developer-Tools")
+source=("https://apt.repos.intel.com/oneapi/pool/main/${pkgname}-${_majmin}-${_pkgver}_amd64.deb"
+        "https://apt.repos.intel.com/oneapi/pool/main/${pkgname}-common-${_majmin}-${_pkgver}_all.deb"
+        "https://apt.repos.intel.com/oneapi/pool/main/intel-oneapi-runtime-openmp-${_pkgver}_amd64.deb")
+b2sums=('7d2c2a140f4a8e5c3d5d09dbb18d950d50367c29a8af3e87c429c3da351c3e7f5a42af91759e0625e7e8a8ee11d6263b453cfcd0486a54b6721f16deadefa9a9'
+        'be5f87a8ca09ee59459a639750009aee63a48239fac69ff1e553074027507b1ae3c082a5024152dd492fd647ba58ca2b8546bc07af782322804d02f64138d299'
+        '188f5e8aa0103c66fae7ce9937292421f215c326a8a9e2fb25aff085b3713a71cf7e1d2f6d9f8bd92877caec89ac39ddff3952956cfaf9420611ed433f9d3363')
+depends=('intel-oneapi-common' 'intel-oneapi-tcm' 'sh' 'glibc' 'gcc-libs' 'zlib'
+         'libelf' 'level-zero-loader' 'libffi')
+noextract=(
+    "${pkgname}-${_majmin}-${_pkgver}_amd64.deb"
+    "${pkgname}-common-${_majmin}-${_pkgver}_all.deb"
+    "intel-oneapi-runtime-openmp-${_pkgver}_amd64.deb"
+)
+conflicts=('intel-oneapi-basekit')
+
+package() {
+    cd "${srcdir}"
+
+    ar x "${srcdir}/${pkgname}-${_majmin}-${_pkgver}_amd64.deb"
+    tar xvf data.tar.xz -C "${pkgdir}"
+    rm data.tar.xz
+
+    ar x "${srcdir}/${pkgname}-${_majmin}-${_pkgver}_amd64.deb"
+    tar xvf data.tar.xz -C "${pkgdir}"
+    rm data.tar.xz
+
+    ar x "${srcdir}/${pkgname}-common-${_majmin}-${_pkgver}_all.deb"
+    tar xvf data.tar.xz -C "${pkgdir}"
+    rm data.tar.xz
+
+    ar x "${srcdir}/intel-oneapi-runtime-openmp-${_pkgver}_amd64.deb"
+    tar xvf data.tar.xz -C "${pkgdir}"
+    rm data.tar.xz
+
+    # latest symlink
+    local _prefix=/opt/intel/oneapi/compiler
+    ln -s "${_prefix}/${_majmin}" "${pkgdir}/${_prefix}/latest"
+
+    # fix permissions
+    find "${pkgdir}" -type f \( -iname '*.so' -o -iname '*.so.*' \) -exec chmod +x '{}' \;
+
+    # fix pkgconfig
+    local _prefix=/opt/intel/oneapi/compiler
+    sed -e "s@prefix=.*@prefix=${_prefix}/latest@g" \
+        -i "${pkgdir}/${_prefix}/${_majmin}"/lib/pkgconfig/openmp.pc
+    install -d "${pkgdir}"/usr/share/pkgconfig
+    ln -s {"${_prefix}"/latest/lib/pkgconfig/,"${pkgdir}"/usr/share/pkgconfig/}openmp.pc
+
+    # ldconfig
+    install -d "${pkgdir}"/etc/ld.so.conf.d
+    echo "${_prefix}"/${_majmin}/"$(sed -n 's/libdir=${prefix}\///p' "${pkgdir}/${_prefix}/${_majmin}"/lib/pkgconfig/openmp.pc)" \
+        > "${pkgdir}/etc/ld.so.conf.d/${pkgname}.conf"
+    echo "/opt/intel/oneapi/lib/intel64" >> "${pkgdir}/etc/ld.so.conf.d/${pkgname}.conf"
+    echo "${_prefix}/latest/linux/compiler/lib/intel64" >> "${pkgdir}/etc/ld.so.conf.d/${pkgname}.conf"
+
+    install -d "${pkgdir}"/usr/share/licenses/"${pkgname}"
+    ln -s /usr/share/licenses/intel-oneapi "${pkgdir}"/usr/share/licenses/"${pkgname}"/oneapi
+    ln -s /opt/intel/oneapi/compiler/"${_majmin}"/licensing/openmp "${pkgdir}"/usr/share/licenses/"${pkgname}"/openmp
+}

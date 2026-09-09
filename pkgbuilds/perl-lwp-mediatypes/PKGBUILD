@@ -1,0 +1,29 @@
+# Maintainer: Eric Bélanger <eric@archlinux.org>
+
+pkgname=perl-lwp-mediatypes
+pkgver=6.05
+pkgrel=1
+pkgdesc="Guess the media type of a file or a URL"
+arch=('any')
+url="https://metacpan.org/release/LWP-MediaTypes"
+depends=('perl')
+license=('Artistic-1.0-Perl' 'GPL-1.0-or-later')
+options=('!emptydirs')
+source=(https://cpan.metacpan.org/authors/id/O/OA/OALDERS/LWP-MediaTypes-${pkgver}.tar.gz)
+sha256sums=('abb2dcfbf069317fe65b098e3b2ad58c5eb33e9a839b9190cce6d371f8966cc1')
+
+build() {
+  cd "${srcdir}/LWP-MediaTypes-${pkgver}"
+  perl Makefile.PL INSTALLDIRS=vendor
+  make
+}
+
+check() {
+  cd "${srcdir}/LWP-MediaTypes-${pkgver}"
+  make test
+}
+
+package() {
+  cd "${srcdir}/LWP-MediaTypes-${pkgver}"
+  make DESTDIR="$pkgdir" install
+}

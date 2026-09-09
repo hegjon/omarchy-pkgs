@@ -1,0 +1,47 @@
+# Maintainer: Felix Yan <felixonmars@archlinux.org>
+# Maintainer: Caleb Maclennan <caleb@alerque.com>
+# Maintainer: Daniel M. Capella <polyzen@archlinux.org>
+
+pkgname=node-gyp
+pkgver=13.0.2
+pkgrel=1
+pkgdesc='Node.js native addon build tool'
+arch=('any')
+url='https://github.com/nodejs/node-gyp'
+license=('MIT')
+depends=('nodejs' 'nodejs-nopt' 'semver')
+makedepends=('git' 'jq' 'npm')
+checkdepends=('python')
+optdepends=('gcc: to build C++ modules'
+            'make: to build C++ modules'
+            'python: to build C++ modules')
+options=('!emptydirs')
+source=("git+$url.git#tag=v$pkgver")
+b2sums=('dc69224d915dd1a4a64252d4a113110c8faa373b0497b2b514a0b1a435294c6dd27874e4db7d9ea634c102a23e7c83fd4c6e45576cad13b7eb55ae86f8122767')
+
+prepare() {
+  cd $pkgname
+  npm install
+}
+
+check() {
+  cd $pkgname
+  npm test
+}
+
+package() {
+  local mod_dir=/usr/lib/node_modules/$pkgname
+
+  install -d "$pkgdir"/{usr/{bin,share/licenses/$pkgname},$mod_dir}
+  ln -s $mod_dir/bin/$pkgname.js "$pkgdir"/usr/bin/$pkgname
+  ln -s $mod_dir/LICENSE "$pkgdir"/usr/share/licenses/$pkgname
+
+  cd $pkgname
+  npm prune --omit=dev
+
+  mapfile -t mod_files < <(npm pack --dry-run --json | jq -r .[].files.[].path)
+  cp --parents -a "${mod_files[@]}" node_modules "$pkgdir"/$mod_dir
+
+  # Experimental dedup
+  rm -r "$pkgdir"/$mod_dir/node_modules/{,.bin/}{nopt,semver}
+}

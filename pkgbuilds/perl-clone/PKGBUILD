@@ -1,0 +1,32 @@
+# Maintainer: Thomas Dziedzic < gostrc at gmail >
+# Contributor: François Charette <firmicus ατ gmx δοτ net>
+# Contributor: Alex Dioso <adioso->gmail*com>
+
+pkgname=perl-clone
+pkgver=0.50
+pkgrel=1
+pkgdesc='Recursive copy of nested objects.'
+arch=('x86_64')
+url='https://github.com/garu/Clone'
+license=('Artistic-1.0-Perl' 'GPL-1.0-or-later')
+depends=('perl')
+checkdepends=('perl-b-cow')
+options=('!emptydirs')
+source=("https://cpan.metacpan.org/authors/id/A/AT/ATOOMIC/Clone-$pkgver.tar.gz")
+sha512sums=('b76382994567ce566dde67c0e59188ddb971fc102f2f85f683596a368d348a7f7c22684ee2bb0087357219b541ece94e79119772198f568421a490b37e9bd049')
+
+build() {
+  cd Clone-$pkgver
+  PERL_MM_USE_DEFAULT=1 perl Makefile.PL INSTALLDIRS=vendor
+  make
+}
+
+check() {
+  cd Clone-$pkgver
+  make test
+}
+
+package() {
+  cd Clone-$pkgver
+  make DESTDIR="$pkgdir" install
+}

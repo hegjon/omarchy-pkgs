@@ -1,0 +1,38 @@
+# Maintainer: Orhun Parmaksız <orhun@archlinux.org>
+# Maintainer: Carl Smedstad <carsme@archlinux.org>
+# Contributor: BrainDamage
+
+pkgname=libsixel
+pkgver=1.10.5
+pkgrel=1
+pkgdesc="Provides a codec for DEC SIXEL graphics and some converter programs"
+arch=('x86_64')
+url="https://github.com/libsixel/libsixel"
+license=('MIT')
+depends=(
+  'curl'
+  'gdk-pixbuf2'
+  'glib2'
+  'glibc'
+  'libjpeg-turbo'
+  'libpng'
+)
+makedepends=('meson')
+source=("$url/archive/v$pkgver/$pkgname-$pkgver.tar.gz")
+sha256sums=('b6654928bd423f92e6da39eb1f40f10000ae2cc6247247fc1882dcff6acbdfc8')
+
+build() {
+  meson --prefix=/usr --buildtype=plain -Dtests=enabled -Dlibcurl=enabled -Dgdk-pixbuf2=enabled "${pkgname}-${pkgver}" build
+  meson compile -C build
+}
+
+check() {
+  meson test -C build
+}
+
+package() {
+  meson install -C build --destdir "${pkgdir}"
+  install -Dvm 644 "${pkgname}-${pkgver}/LICENSE" "${pkgdir}/usr/share/licenses/${pkgname}/LICENSE"
+}
+
+# vim: ts=2 sw=2 et:

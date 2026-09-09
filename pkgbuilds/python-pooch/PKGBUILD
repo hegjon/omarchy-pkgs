@@ -1,0 +1,51 @@
+# Maintainer: Antonio Rojas <arojas@archlinux.org>
+# Contributor: Jingbei Li <i@jingbei.li>
+# Contributor: Jose Riha <jose1711 gmail com>
+
+pkgname=python-pooch
+_pyname=pooch
+pkgver=1.9.0
+pkgrel=1
+pkgdesc='Python library for fetching and caching data files'
+arch=(any)
+url='https://www.fatiando.org/pooch/latest/'
+license=(LicenseRef-pooch)
+depends=(python
+         python-packaging
+         python-platformdirs
+         python-requests)
+optdepends=('python-paramiko: for SFTP downloads'
+            'python-tqdm: for printing a download progress bar')
+makedepends=(git
+             python-build
+             python-installer
+             python-setuptools-scm
+             python-wheel)
+checkdepends=(python-pytest
+              python-pytest-httpserver)
+source=(git+https://github.com/fatiando/pooch#tag=v$pkgver
+        https://github.com/fatiando/pooch/commit/96bd5437.patch)
+sha256sums=('7d1960d420394a28562da93f6e6cbfa694ab8e5c2079b8eb7f9aa9e17630258b'
+            '8c2b3e9749e3485ee1e636e134848928bb7024167376ce384d9cda1fab3032b3')
+
+prepare() {
+  cd $_pyname
+  patch -p1 -i ../96bd5437.patch # Exclude doc dir from wheel
+}
+
+build() {
+  cd $_pyname
+  SETUPTOOLS_SCM_PRETEND_VERSION=$pkgver \
+  python -m build --wheel --no-isolation
+}
+
+check() {
+  cd $_pyname
+  pytest -v -k 'not test_check_availability_on_ftp and not test_ftp_downloader and not figshare'
+}
+
+package() {
+  cd $_pyname
+  python -m installer --destdir="$pkgdir" dist/*.whl
+  install -Dm644 LICENSE.txt "$pkgdir"/usr/share/licenses/$pkgname/LICENSE
+}

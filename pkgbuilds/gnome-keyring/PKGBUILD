@@ -1,0 +1,73 @@
+# Maintainer: Jan Alexander Steffens (heftig) <heftig@archlinux.org>
+# Contributor: Jan De Groot <jgc@archlinux.org>
+
+pkgname=gnome-keyring
+pkgver=50.0
+pkgrel=1
+epoch=1
+pkgdesc="Stores passwords and encryption keys"
+url="https://gitlab.gnome.org/GNOME/gnome-keyring"
+arch=(x86_64)
+license=(
+  GPL-2.0-or-later
+  LGPL-2.1-or-later
+)
+depends=(
+  dconf
+  gcr
+  gcr-4
+  glib2
+  glibc
+  libcap-ng
+  libgcc
+  libgcrypt
+  pam
+  systemd-libs
+)
+makedepends=(
+  docbook-xsl
+  git
+  glib2-devel
+  meson
+  p11-kit
+  python
+)
+provides=(org.freedesktop.secrets)
+groups=(gnome)
+install=gnome-keyring.install
+source=(
+  "git+$url.git?signed#tag=${pkgver/[a-z]/.&}"
+  0001-daemon-Add-Cinnamon-to-autostart-files.patch
+)
+b2sums=('aec1619320d19e6389e3332f51335bea821bac1f715ea60af57c92f143ea49757d67a240942e89cf17668d17301fc3d0420ed324839d5b348adeaf17631b92d3'
+        '584832e529ee2be98b78b128ab4271fae919a194f2d9254526943da6baccfe5eb6deb17ee03cfb54261cade4be0e93ea7fbcc91ebc77ecfacd2f25d90f9e29c4')
+validpgpkeys=(
+  A7C626E13F9AD776776BD9CA1D8A57CF2E8D36A3 # Niels De Graef (nielsdg) <nielsdegraef@gmail.com>
+)
+
+prepare() {
+  cd $pkgname
+
+  # Autolaunch in Cinnamon
+  git apply -3 ../0001-daemon-Add-Cinnamon-to-autostart-files.patch
+}
+
+build() {
+  local meson_options=(
+    -D selinux=disabled
+  )
+
+  arch-meson $pkgname build "${meson_options[@]}"
+  meson compile -C build
+}
+
+check() {
+  # Secure memory tests fail
+  dbus-run-session meson test -C build --print-errorlogs || :
+}
+
+package() {
+  meson install -C build --destdir "$pkgdir"
+}
+
+# vim:set sw=2 sts=-1 et:

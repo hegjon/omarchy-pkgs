@@ -1,0 +1,43 @@
+# Maintainer: Carl Smedstad <carsme@archlinux.org>
+# Contributor: Jiachen Yang <farseerfc@gmail.com>
+# Contributor: Aetf <aetf at unlimitedcodeworks dot xyz>
+# Contributor: carstene1ns <arch carsten-teibes de>
+
+pkgname=python-smartypants
+_pkgname=smartypants.py
+pkgver=2.0.2
+pkgrel=2
+pkgdesc="Python with the SmartyPants"
+arch=('any')
+url="https://github.com/justinmayer/smartypants.py"
+license=('BSD-2-Clause')
+depends=('python')
+makedepends=(
+  'python-build'
+  'python-installer'
+  'python-setuptools'
+  'python-wheel'
+)
+checkdepends=(
+  'python-docutils'
+  'python-pygments'
+  'python-pytest'
+)
+source=("$url/archive/v$pkgver/$pkgname-$pkgver.tar.gz")
+sha512sums=('6cdb1574145f4c15984550c2b10bc95b7a86baf067f6465d53e60696347a650e6afb978f623f2344d82e03281ecb28a1f94cdb759fd2db613dc13fada1b25485')
+
+build() {
+  cd $_pkgname-$pkgver
+  python -m build --wheel --no-isolation
+}
+
+check() {
+  cd $_pkgname-$pkgver
+  pytest
+}
+
+package() {
+  cd $_pkgname-$pkgver
+  python -m installer --destdir="$pkgdir" dist/*.whl
+  install -vDm644 -t "$pkgdir/usr/share/licenses/$pkgname" COPYING
+}

@@ -1,0 +1,325 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: 0xmagnus <216443774+0xmagnus91@users.noreply.github.com>
+Date: Wed, 4 Mar 2026 19:30:22 -0500
+Subject: [PATCH] Remove runtime pkg_resources dependency in default and
+ server_ingester (#7057)
+
+## Motivation for features / changes
+
+Fixes #7003.
+
+`pkg_resources` is removed in newer setuptools, which can break
+TensorBoard at import/runtime. This change removes runtime reliance on
+`pkg_resources` in the two affected code paths.
+
+## Technical description of changes
+
+- Replaced dynamic plugin discovery in `tensorboard/default.py`:
+  - from `pkg_resources.iter_entry_points(...)`
+- to `importlib.metadata.entry_points(...)` with compatibility handling
+for different Python return shapes.
+- Replaced version parsing in `tensorboard/data/server_ingester.py`:
+  - from `pkg_resources.parse_version(...)`
+  - to `packaging.version.parse(...)`.
+- Updated related tests:
+- `tensorboard/default_test.py` now patches `_iter_entry_points` and
+uses `load()`-style fake entry points.
+- `tensorboard/version_test.py` now validates PEP 440 behavior using
+`packaging.version`.
+- Updated Bazel deps to use `expect_packaging_installed` where
+`packaging` is now required.
+
+## Detailed steps to verify changes work correctly (as executed by you)
+
+Executed locally in an isolated venv:
+
+- `python -m py_compile tensorboard/default.py
+tensorboard/default_test.py tensorboard/data/server_ingester.py
+tensorboard/version_test.py`
+- `PYTHONPATH=. python tensorboard/version_test.py` (passes)
+
+Attempted but environment-limited locally:
+
+- `bazel test //tensorboard:version_test //tensorboard:default_test
+//tensorboard/data:server_ingester_test` (bazel not available in local
+shell)
+- Direct execution of `default_test.py` and `server_ingester_test.py`
+without Bazel-generated artifacts hit local environment/import
+constraints.
+
+## Alternate designs / implementations considered (or N/A)
+
+- N/A
+
+(cherry picked from commit 29f809f4737489912612635d9079a61f8e570bb8)
+---
+ tensorboard/BUILD                   | 12 ++++-----
+ tensorboard/data/BUILD              |  2 +-
+ tensorboard/data/server_ingester.py | 11 +++-----
+ tensorboard/default.py              | 22 ++++++++++------
+ tensorboard/default_test.py         | 40 +++++++----------------------
+ tensorboard/version_test.py         | 23 +++++------------
+ 6 files changed, 39 insertions(+), 71 deletions(-)
+
+diff --git a/tensorboard/BUILD b/tensorboard/BUILD
+index 405d6b8d9..a4e2a18ee 100644
+--- a/tensorboard/BUILD
++++ b/tensorboard/BUILD
+@@ -303,7 +303,6 @@ py_library(
+     srcs = ["default.py"],
+     srcs_version = "PY3",
+     deps = [
+-        "//tensorboard:expect_pkg_resources_installed",
+         "//tensorboard/backend:experimental_plugin",
+         "//tensorboard/plugins/audio:audio_plugin",
+         "//tensorboard/plugins/core:core_plugin",
+@@ -341,7 +340,6 @@ py_test(
+     deps = [
+         ":default",
+         ":test",
+-        "//tensorboard:expect_pkg_resources_installed",
+         "//tensorboard/plugins:base_plugin",
+     ],
+ )
+@@ -361,7 +359,7 @@ py_test(
+     deps = [
+         ":test",
+         ":version",
+-        "//tensorboard:expect_pkg_resources_installed",
++        "//tensorboard:expect_packaging_installed",
+     ],
+ )
+ 
+@@ -455,10 +453,10 @@ py_library(name = "expect_absl_logging_installed")
+ # `pip install absl-py`
+ py_library(name = "expect_absl_testing_absltest_installed")
+ 
+-# This is a dummy rule used as a pkg-resources dependency in open-source.
+-# We expect pkg-resources to already be installed on the system, e.g., via
+-# `pip install setuptools`.
+-py_library(name = "expect_pkg_resources_installed")
++# This is a dummy rule used as a packaging dependency in open-source.
++# We expect packaging to already be installed on the system, e.g. via
++# `pip install packaging`.
++py_library(name = "expect_packaging_installed")
+ 
+ # This is a dummy rule used as a pandas dependency in open-source.
+ # We expect pandas to already be installed on the system, e.g. via
+diff --git a/tensorboard/data/BUILD b/tensorboard/data/BUILD
+index 0a3337af1..6946466d0 100644
+--- a/tensorboard/data/BUILD
++++ b/tensorboard/data/BUILD
+@@ -62,7 +62,7 @@ py_library(
+         ":grpc_provider",
+         ":ingester",
+         "//tensorboard:expect_grpc_installed",
+-        "//tensorboard:expect_pkg_resources_installed",
++        "//tensorboard:expect_packaging_installed",
+         "//tensorboard/data/proto:protos_all_py_pb2",
+         "//tensorboard/util:tb_logging",
+     ],
+diff --git a/tensorboard/data/server_ingester.py b/tensorboard/data/server_ingester.py
+index fb0d2fc59..e35b10326 100644
+--- a/tensorboard/data/server_ingester.py
++++ b/tensorboard/data/server_ingester.py
+@@ -22,14 +22,13 @@ import tempfile
+ import time
+ 
+ import grpc
+-import pkg_resources
++from packaging import version as packaging_version
+ 
+ from tensorboard.data import grpc_provider
+ from tensorboard.data import ingester
+ from tensorboard.data.proto import data_provider_pb2
+ from tensorboard.util import tb_logging
+ 
+-
+ logger = tb_logging.get_logger()
+ 
+ # If this environment variable is non-empty, it will be used as the path to the
+@@ -202,7 +201,7 @@ def _maybe_read_file(path):
+ 
+ 
+ def _make_stub(addr, channel_creds_type):
+-    (creds, options) = channel_creds_type.channel_config()
++    creds, options = channel_creds_type.channel_config()
+     options.append(("grpc.max_receive_message_length", 1024 * 1024 * 256))
+     channel = grpc.secure_channel(addr, creds, options=options)
+     return grpc_provider.make_stub(channel)
+@@ -231,9 +230,7 @@ class ServerBinary:
+         """
+         self._path = path
+         self._version = (
+-            pkg_resources.parse_version(version)
+-            if version is not None
+-            else version
++            packaging_version.parse(version) if version is not None else version
+         )
+ 
+     @property
+@@ -260,7 +257,7 @@ class ServerBinary:
+         """
+         if self._version is None:
+             return True
+-        return self._version >= pkg_resources.parse_version(required_version)
++        return self._version >= packaging_version.parse(required_version)
+ 
+ 
+ def get_server_binary():
+diff --git a/tensorboard/default.py b/tensorboard/default.py
+index 7e6711337..77a783879 100644
+--- a/tensorboard/default.py
++++ b/tensorboard/default.py
+@@ -24,10 +24,8 @@ automatically inherit the centrally-maintained list of standard plugins,
+ for less repetition.
+ """
+ 
+-
+ import logging
+-
+-import pkg_resources
++from importlib import metadata
+ 
+ from tensorboard.plugins.audio import audio_plugin
+ from tensorboard.plugins.core import core_plugin
+@@ -46,7 +44,6 @@ from tensorboard.plugins.text import text_plugin
+ from tensorboard.plugins.mesh import mesh_plugin
+ from tensorboard.plugins.wit_redirect import wit_redirect_plugin
+ 
+-
+ logger = logging.getLogger(__name__)
+ 
+ 
+@@ -119,8 +116,17 @@ def get_dynamic_plugins():
+     [1]: https://packaging.python.org/specifications/entry-points/
+     """
+     return [
+-        entry_point.resolve()
+-        for entry_point in pkg_resources.iter_entry_points(
+-            "tensorboard_plugins"
+-        )
++        entry_point.load()
++        for entry_point in _iter_entry_points("tensorboard_plugins")
+     ]
++
++
++def _iter_entry_points(group):
++    """Returns entry points for a given group across Python versions."""
++    entry_points = metadata.entry_points()
++    # In newer Python versions, `metadata.entry_points()` returns an
++    # `EntryPoints` object with a `select()` method.
++    # Before "selectable" entry points existed, it would return a dictionary.
++    if hasattr(entry_points, "select"):
++        return entry_points.select(group=group)
++    return entry_points.get(group, ())
+diff --git a/tensorboard/default_test.py b/tensorboard/default_test.py
+index e131be9ea..c74ff8548 100644
+--- a/tensorboard/default_test.py
++++ b/tensorboard/default_test.py
+@@ -14,52 +14,30 @@
+ # ==============================================================================
+ """Unit tests for `tensorboard.default`."""
+ 
+-
+ from unittest import mock
+ 
+-import pkg_resources
+-
+ from tensorboard import default
+-from tensorboard.plugins import base_plugin
+ from tensorboard import test
+ 
+ 
+-class FakePlugin(base_plugin.TBPlugin):
+-    """FakePlugin for testing."""
+-
+-    plugin_name = "fake"
+-
+-
+-class FakeEntryPoint(pkg_resources.EntryPoint):
+-    """EntryPoint class that fake loads FakePlugin."""
+-
+-    @classmethod
+-    def create(cls):
+-        """Creates an instance of FakeEntryPoint.
+-
+-        Returns:
+-          instance of FakeEntryPoint
+-        """
+-        return cls("foo", "bar")
+-
+-    def resolve(self):
+-        """Returns FakePlugin instead of resolving module.
++class FakeEntryPoint:
++    def __init__(self, value):
++        self._value = value
+ 
+-        Returns:
+-          FakePlugin
+-        """
+-        return FakePlugin
++    def load(self):
++        return self._value
+ 
+ 
+ class DefaultTest(test.TestCase):
+-    @mock.patch.object(pkg_resources, "iter_entry_points")
++    @mock.patch.object(default, "_iter_entry_points")
+     def test_get_dynamic_plugin(self, mock_iter_entry_points):
+-        mock_iter_entry_points.return_value = [FakeEntryPoint.create()]
++        fake_plugin = object()
++        mock_iter_entry_points.return_value = [FakeEntryPoint(fake_plugin)]
+ 
+         actual_plugins = default.get_dynamic_plugins()
+ 
+         mock_iter_entry_points.assert_called_with("tensorboard_plugins")
+-        self.assertEqual(actual_plugins, [FakePlugin])
++        self.assertEqual(actual_plugins, [fake_plugin])
+ 
+ 
+ if __name__ == "__main__":
+diff --git a/tensorboard/version_test.py b/tensorboard/version_test.py
+index dbfd59b0f..f4a99e671 100644
+--- a/tensorboard/version_test.py
++++ b/tensorboard/version_test.py
+@@ -13,7 +13,7 @@
+ # limitations under the License.
+ 
+ 
+-import pkg_resources
++from packaging import version as packaging_version
+ 
+ from tensorboard import test as tb_test
+ from tensorboard import version
+@@ -22,22 +22,11 @@ from tensorboard import version
+ class VersionTest(tb_test.TestCase):
+     def test_valid_pep440_version(self):
+         """Ensure that our version is PEP 440-compliant."""
+-        # pkg_resources.parse_version() doesn't have a public return type,
+-        # so we get a handle to it by parsing known good and bad versions.
+-        #
+-        # Note: depending on the version of the module (which is bundled
+-        # with setuptools), when called with a non-compliant version, it
+-        # either returns a `LegacyVersion` (setuptools < 66) or raises an
+-        # `InvalidVersion` exception (setuptools >= 66). Handle both cases.
+-        compliant_version = pkg_resources.parse_version("1.0.0")
+-        try:
+-            legacy_version = pkg_resources.parse_version("arbitrary string")
+-        except Exception:
+-            legacy_version = None
+-        self.assertNotEqual(type(compliant_version), type(legacy_version))
+-
+-        tensorboard_version = pkg_resources.parse_version(version.VERSION)
+-        self.assertIsInstance(tensorboard_version, type(compliant_version))
++        with self.assertRaises(packaging_version.InvalidVersion):
++            packaging_version.parse("arbitrary string")
++
++        tensorboard_version = packaging_version.parse(version.VERSION)
++        self.assertIsInstance(tensorboard_version, packaging_version.Version)
+ 
+ 
+ if __name__ == "__main__":
+-- 
+2.51.0
+

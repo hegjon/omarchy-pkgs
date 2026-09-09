@@ -1,0 +1,34 @@
+# Maintainer: Maxime Gauduin <alucryd@archlinux.org>
+
+pkgname=python-patiencediff
+pkgver=0.2.19
+pkgrel=1
+pkgdesc='Patiencediff Python and C implementations'
+arch=(x86_64)
+url=https://www.breezy-vcs.org/
+license=(GPL-2.0-only)
+depends=(
+  glibc
+  python
+)
+makedepends=(
+  git
+  python-build
+  python-installer
+  python-setuptools
+  python-setuptools-rust
+  python-wheel
+)
+source=(git+https://github.com/breezy-team/patiencediff.git#tag=v${pkgver})
+sha256sums=('5a46331731121377bf8533f39d4387020fb78063bf6bbcd683a6613e18f280b3')
+
+build() {
+  cd patiencediff
+  python -m build --wheel --no-isolation
+}
+
+package() {
+  python -m installer --destdir="${pkgdir}" patiencediff/dist/*.whl
+}
+
+# vim: ts=2 sw=2 et

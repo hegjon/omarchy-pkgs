@@ -1,0 +1,96 @@
+# Maintainer: Andreas 'Segaja' Schleifer <segaja at archlinux dot org>
+# Maintainer: DeepChirp <deepchirp@archlinux.org>
+
+pkgname='mise'
+pkgver=2026.9.1
+pkgrel=1
+pkgdesc='The front-end to your dev env'
+arch=('x86_64')
+url='https://github.com/jdx/mise'
+license=('MIT')
+depends=(
+  libgcc
+  glibc
+  lua51
+  openssl
+  zstd
+)
+makedepends=(
+  cargo
+  clang
+  cmake
+)
+checkdepends=(
+  git
+)
+optdepends=(
+  'bash-completion: bash completion support'
+  'usage: completion support'
+)
+conflicts=(
+  rtx
+)
+replaces=(
+  rtx
+)
+options=(
+  '!emptydirs'
+  '!lto'
+)
+source=("${url}/archive/v${pkgver}/${pkgname}-${pkgver}.tar.gz"
+        "${pkgname}-${pkgver}.tar.gz.sig::${url}/releases/download/v${pkgver}/v${pkgver}.tar.gz.sig")
+validpgpkeys=('24853EC9F655CE80B48E6C3A8B81C9D17413A06D') # mise releases <release@mise.jdx.dev>
+sha512sums=('15df8dd3cdde59487a45eb8e6aabefc16be1e7154042fbc974d74e7813d84233758fdff6c52885bc0163e52e9d5d60accfaa48a8e28f6666b48ba2e7f914eac7'
+            'SKIP')
+b2sums=('87a386c2268294a59a1592a259d6ed2948c9417ef223bdf3cad748a2fd8b5174d1ce3c75287e52806305477c3cb696d1f399a6cd510bca595e44a536c0fe9790'
+        'SKIP')
+
+prepare() {
+  cd "${pkgname}-${pkgver}"
+
+  cargo fetch --locked --target "$(rustc --print host-tuple)"
+}
+
+build() {
+  cd "${pkgname}-${pkgver}"
+
+  export OPENSSL_NO_VENDOR=true
+  export ZSTD_SYS_USE_PKG_CONFIG=1
+
+  # use serious profile: https://github.com/jdx/mise/commit/44fc03b2f10d1d9d7e8242c965a957b3b0d42865
+  # no need to enable `vendored-lua` and `self_update`
+  cargo build --frozen --profile=serious --no-default-features --features native-tls
+}
+
+check() {
+  cd "${pkgname}-${pkgver}"
+
+  export OPENSSL_NO_VENDOR=true
+  export ZSTD_SYS_USE_PKG_CONFIG=1
+  export MISE_EXPERIMENTAL=1
+
+  cargo test --frozen --no-default-features --features native-tls
+
+  unset MISE_EXPERIMENTAL
+}
+
+package() {
+  cd "${pkgname}-${pkgver}"
+
+  # package
+  install --verbose -D --mode=0755 "target/serious/${pkgname}" --target-directory "${pkgdir}/usr/bin"
+
+  # license
+  install --verbose -D --mode=0644 LICENSE --target-directory "${pkgdir}/usr/share/licenses/${pkgname}"
+
+  # docs
+  install --verbose -D --mode=0644 *.md --target-directory "${pkgdir}/usr/share/doc/${pkgname}"
+  install --verbose -D --mode=0644 man/man1/mise.1 --target-directory "${pkgdir}/usr/share/man/man1"
+
+  # completion support
+  install --verbose -D --mode=0644 completions/mise.bash "${pkgdir}/usr/share/bash-completion/completions/mise"
+  install --verbose -D --mode=0644 completions/mise.fish "${pkgdir}/usr/share/fish/vendor_completions.d/mise.fish"
+  install --verbose -D --mode=0644 completions/_mise "${pkgdir}/usr/share/zsh/site-functions/_mise"
+}
+
+# vim: tabstop=2 shiftwidth=2 expandtab:

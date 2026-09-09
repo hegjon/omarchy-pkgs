@@ -1,0 +1,60 @@
+# Maintainer: George Rawlinson <grawlinson@archlinux.org>
+
+pkgname=python-referencing
+pkgver=0.37.0
+pkgrel=3
+pkgdesc='An implementation-agnostic implementation of JSON reference resolution'
+arch=('any')
+url='https://referencing.readthedocs.io'
+license=(MIT)
+depends=(python python-attrs python-rpds-py)
+makedepends=(
+  git
+  python-build
+  python-installer
+  python-hatchling
+  python-hatch-vcs
+)
+checkdepends=(
+  python-pytest
+  python-pytest-subtests
+  python-jsonschema
+)
+source=(
+  "$pkgname::git+https://github.com/python-jsonschema/referencing#tag=v$pkgver"
+  'github.com-python-jsonschema-referencing-suite::git+https://github.com/python-jsonschema/referencing-suite'
+)
+sha512sums=('60fc7446bd52b33a684c1eeb4f182325f3cdb5eaa5b53fc1b0882447684a8c7c729ed3c77feacd7243dd0a97cd84a41bf4add07fbcc857324effc8d6e729a263'
+            'SKIP')
+b2sums=('b2c8d333388a1ac430912d66e954a79dc555d8c554ad712f5d77d23b3f29c2637bde3a621dbf79ea9c5a46574f6e12303a9496a408f62f96053131dda197de9a'
+        'SKIP')
+
+prepare() {
+  cd "$pkgname"
+
+  # prepare git submodules
+  git submodule init
+  git config submodule.suite.url "$srcdir/github.com-python-jsonschema-referencing-suite"
+  git -c protocol.file.allow=always submodule update
+}
+
+build() {
+  cd "$pkgname"
+
+  python -m build --wheel --no-isolation
+}
+
+check() {
+  cd "$pkgname"
+
+  pytest -v
+}
+
+package() {
+  cd "$pkgname"
+
+  python -m installer --destdir="$pkgdir" dist/*.whl
+
+  # license
+  install -vDm644 -t "$pkgdir/usr/share/licenses/$pkgname" COPYING
+}

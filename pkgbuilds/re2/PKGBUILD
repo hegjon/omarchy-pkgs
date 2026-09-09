@@ -1,0 +1,57 @@
+# Maintainer: Christian Heusel <gromit@archlinux.org>
+# Contributor: Evangelos Foutras <foutrelis@archlinux.org>
+# Contributor: Anatol Pomozov <anatol.pomozov@gmail.com>
+# Contributor: Gustavo Alvarez <sl1pkn07@gmail.com>
+# Contributor: Alexandre Bique <bique.alexandre@gmail.com>
+
+pkgname=re2
+pkgrel=6
+epoch=2
+pkgver=2025.11.05
+pkgdesc="Fast, safe, thread-friendly regular expression engine"
+arch=('x86_64')
+url="https://github.com/google/re2"
+license=('BSD-3-Clause')
+depends=(
+    'abseil-cpp'
+    'glibc'
+    'libgcc'
+)
+checkdepends=('gtest' 'benchmark')
+makedepends=('git' 'cmake')
+provides=('libre2.so')
+source=("$pkgname::git+https://github.com/google/re2.git#tag=${pkgver//./-}")
+sha256sums=('13cb4ba61567d496fc8ed0bc31369e81bbe9ef34ce8c7dffe5219093a576e385')
+
+build() {
+  local cmake_options=(
+    -B build
+    -S $pkgname
+    -W no-dev
+    -D CMAKE_BUILD_TYPE=None
+    -D CMAKE_INSTALL_PREFIX=/usr
+    -D BUILD_SHARED_LIBS=ON
+    -D RE2_BUILD_TESTING=ON
+  )
+  cmake "${cmake_options[@]}"
+  cmake --build build
+}
+
+check() {
+  local excluded_tests=""
+  local ctest_flags=(
+    --test-dir build
+    # show the stdout and stderr when the test fails
+    --output-on-failure
+    # execute tests in parallel
+    --parallel $(nproc)
+    # exclude problematic tests
+    --exclude-regex "$excluded_tests"
+  )
+  ctest "${ctest_flags[@]}"
+}
+
+package() {
+  DESTDIR="$pkgdir" cmake --install build
+  install -Dm644 $pkgname/LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+}

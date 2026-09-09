@@ -1,0 +1,45 @@
+# Maintainer: George Rawlinson <grawlinson@archlinux.org>
+
+pkgname=python-jsonschema-specifications
+pkgver=2025.9.1
+pkgrel=2
+pkgdesc='The JSON Schema meta-schemas and vocabularies, exposed as a Registry'
+arch=('any')
+url='https://github.com/python-jsonschema/jsonschema-specifications'
+license=('MIT')
+depends=('python' 'python-referencing')
+makedepends=(
+  'git'
+  'python-build'
+  'python-installer'
+  'python-hatchling'
+  'python-hatch-vcs'
+)
+checkdepends=('python-pytest')
+source=("$pkgname::git+$url#tag=v$pkgver")
+sha512sums=('2017f0b98aaa2244c81964093dab37a61f582a9c1cda9abe0227711907793cfeca17c86fa06d9e8c771079bdd1e65a1c11999976e9646dced02ff3ee722776ed')
+b2sums=('7ac9ef70621c3a65eb3e30d5e2a608ceeae5b94754991ed20511d71ffb0594f36f4326dfd302c2a5dd0ebfac86ef0fb569450b48840171f46d46c9d46f507855')
+
+build() {
+  cd "$pkgname"
+
+  python -m build --wheel --no-isolation
+}
+
+check() {
+  cd "$pkgname"
+
+  PYTHONPATH="$(pwd)" pytest -v
+}
+
+package() {
+  cd "$pkgname"
+
+  python -m installer --destdir="$pkgdir" dist/*.whl
+
+  # symlink license file
+  local site_packages=$(python -c "import site; print(site.getsitepackages()[0])")
+  install -d "$pkgdir/usr/share/licenses/$pkgname"
+  ln -s "$site_packages/jsonschema_specifications-$pkgver.dist-info/licenses/COPYING" \
+    "$pkgdir/usr/share/licenses/$pkgname/COPYING"
+}

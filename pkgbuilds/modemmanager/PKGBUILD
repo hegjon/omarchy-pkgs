@@ -1,0 +1,137 @@
+# Maintainer: Jan Alexander Steffens (heftig) <heftig@archlinux.org>
+# Contributor: Ionut Biru <ibiru@archlinux.org>
+
+pkgbase=modemmanager
+pkgname=(
+  modemmanager
+  libmm-glib
+  modemmanager-docs
+)
+pkgver=1.24.2
+pkgrel=1
+pkgdesc="Mobile broadband modem management service"
+url="https://www.freedesktop.org/wiki/Software/ModemManager/"
+arch=(x86_64)
+license=(
+  GPL-2.0-or-later
+  LGPL-2.1-or-later
+)
+depends=(
+  bash
+  gcc-libs
+  glib2
+  glibc
+  hicolor-icon-theme
+  libgudev
+  libmbim
+  libqmi
+  libqrtr-glib
+  mobile-broadband-provider-info
+  polkit
+  ppp
+  systemd-libs
+)
+makedepends=(
+  bash-completion
+  git
+  glib2-devel
+  gobject-introspection
+  gtk-doc
+  meson
+  systemd
+  vala
+)
+checkdepends=(
+  python-dbus
+  python-gobject
+)
+source=(
+  "git+https://gitlab.freedesktop.org/mobile-broadband/ModemManager.git?signed#tag=${pkgver/[a-z]/-&}"
+)
+b2sums=('fbf202dc30af2201ba2a675183bdf8b12d0f8665e4a73454c7d7bca8cc7acf4ee93c42c291f9ddfa84c696b7c05a1b68e4211f7e75707aea0000f77bff6cc72b')
+validpgpkeys=(
+  A814D09B9C5BC01945A64308AECE0239C6606AD5 # Aleksander Morgado <aleksandermj@chromium.org>
+  3A948E16E8860C68CD68441D734614319E26A433 # Dan Williams <dan@ioncontrol.co>
+)
+
+prepare() {
+  cd ModemManager
+
+  # Fix gtk-doc build
+  git cherry-pick -n 1ec2b86239c3686e22034baae0068bd5d52779ae
+
+  # Fix for Fibocom modems
+  # https://gitlab.archlinux.org/archlinux/packaging/packages/modemmanager/-/issues/1
+  git cherry-pick -n 018e44084825ab294ad2b5d5b301d2b9e2577eb1
+}
+
+build() {
+  local meson_options=(
+    -D dbus_policy_dir=/usr/share/dbus-1/system.d
+    -D dist_version="\"$pkgver-$pkgrel\""
+    -D gtk_doc=true
+    -D polkit=permissive
+    -D vapi=true
+  )
+
+  arch-meson ModemManager build "${meson_options[@]}"
+  meson compile -C build
+}
+
+_pick() {
+  local p="$1" f d; shift
+  for f; do
+    d="$srcdir/$p/${f#$pkgdir/}"
+    mkdir -p "$(dirname "$d")"
+    mv "$f" "$d"
+    rmdir -p --ignore-fail-on-non-empty "$(dirname "$f")"
+  done
+}
+
+package_modemmanager() {
+  license=(GPL-2.0-or-later)
+  depends+=(
+    "libmm-glib=$pkgver-$pkgrel" libmm-glib.so
+    libgudev-1.0.so
+    libg{lib,object,io,module}-2.0.so
+    libmbim-glib.so
+    libqmi-glib.so
+    libsystemd.so
+  )
+  optdepends=(
+    'usb_modeswitch: install if your modem shows up as a storage drive'
+  )
+
+  meson install -C build --destdir "$pkgdir"
+
+  cd "$pkgdir"
+  _pick libmm usr/include
+  _pick libmm usr/lib/girepository-1.0
+  _pick libmm usr/lib/libmm-glib.so*
+  _pick libmm usr/lib/pkgconfig
+  _pick libmm usr/share/gir-1.0
+  _pick libmm usr/share/vala
+  _pick docs usr/share/gtk-doc
+}
+
+package_libmm-glib() {
+  pkgdesc="ModemManager library"
+  license=(LGPL-2.1-or-later)
+  depends=(
+    gcc-libs
+    glib2 libg{lib,object,io}-2.0.so
+    glibc
+  )
+  provides=(libmm-glib.so)
+
+  mv libmm/* "$pkgdir"
+}
+
+package_modemmanager-docs() {
+  pkgdesc+=" (documentation)"
+  depends=()
+
+  mv docs/* "$pkgdir"
+}
+
+# vim:set sw=2 sts=-1 et:

@@ -1,0 +1,38 @@
+# Maintainer: Carl Smedstad <carsme@archlinux.org>
+
+pkgname=python-fastbencode
+pkgver=0.3.11
+pkgrel=1
+pkgdesc="Implementation of bencode with optional fast C extensions"
+arch=(x86_64)
+url="https://github.com/breezy-team/fastbencode"
+license=(GPL-2.0-or-later)
+depends=(
+  glibc
+  libgcc
+  python
+)
+makedepends=(
+  cython
+  python-build
+  python-installer
+  python-setuptools-rust
+  python-wheel
+)
+source=("$url/archive/v$pkgver/$pkgname-$pkgver.tar.gz")
+b2sums=('895104ea1c3d4d4c61c6c8c892f56e8bab8cbfb367cbf508ab46f2befb1688ceba4ab80462c6262a7b5dab42e9c17096d597663025ab6c4b983230697aa4a649')
+
+build() {
+  cd ${pkgname#python-}-$pkgver
+  python -m build --wheel --no-isolation
+}
+
+check() {
+  cd ${pkgname#python-}-$pkgver
+  python -m unittest discover -v
+}
+
+package() {
+  cd ${pkgname#python-}-$pkgver
+  python -m installer --destdir="$pkgdir" dist/*.whl
+}

@@ -1,0 +1,31 @@
+# Maintainer: Andreas Radke <andyrtr@archlinux.org>
+# Contributor: Jan de Groot <jgc@archlinux.org>
+
+pkgname=libfontenc
+pkgver=1.1.9
+pkgrel=1
+pkgdesc="X11 font encoding library"
+arch=('x86_64')
+url="https://gitlab.freedesktop.org/xorg/lib/libfontenc"
+license=('MIT')
+depends=('zlib' 'glibc' 'xorg-fonts-encodings')
+makedepends=('pkgconfig' 'xorgproto' 'xorg-util-macros')
+source=(https://xorg.freedesktop.org/releases/individual/lib/${pkgname}-${pkgver}.tar.xz{,.sig})
+sha512sums=('19050c4c9ea1143b555b92faec641fd6b4976de463ad1fb67d20a7bf2f610bbc3debd3c65925cd8329691a9fb0435d004a05b6486e1dc600719e8c479812b912'
+            'SKIP')
+validpgpkeys=('3AB285232C46AE43D8E192F4DAB0F78EA6E7E2D2') #Alan Coopersmith <alan.coopersmith@oracle.com>
+#validpgpkeys=('3BB639E56F861FA2E86505690FDD682D974CA72A') # Matt Turner <mattst88@gmail.com>
+
+build() {
+  cd ${pkgname}-${pkgver}
+  ./configure --prefix=/usr --sysconfdir=/etc \
+      --localstatedir=/var --disable-static \
+      --with-encodingsdir=/usr/share/fonts/encodings      
+  make
+}
+
+package() {
+  cd ${pkgname}-${pkgver}
+  make DESTDIR="${pkgdir}" install
+  install -Dm644 COPYING "${pkgdir}/usr/share/licenses/${pkgname}/COPYING"
+}

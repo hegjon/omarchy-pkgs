@@ -1,0 +1,48 @@
+# Maintainer: Antonio Rojas <arojas@archlinux.org>
+# Maintainer: Maxime Arthaud <maxime@arthaud.me>
+
+pkgname=zxing-cpp
+pkgver=3.1.1
+pkgrel=1
+pkgdesc='An open-source, multi-format linear/matrix barcode image processing library implemented in C++'
+arch=(x86_64)
+url='https://github.com/zxing-cpp/zxing-cpp'
+license=(Apache-2.0)
+depends=(glibc
+         libgcc
+         libstdc++
+         zint)
+makedepends=(cmake
+             git
+             libpng
+             opencv
+             qt6-base
+             qt6-declarative
+             qt6-multimedia
+             stb)
+checkdepends=(gtest)
+optdepends=('qt6-multimedia: for ZXingQtCamReader')
+source=(git+https://github.com/zxing-cpp/zxing-cpp#tag=v$pkgver)
+sha256sums=('dd2e3cf7e1077acbcf74c98ec8e8487f3828396e006e2d37e9773fb8ec584a64')
+
+build() {
+  cmake -B build -S $pkgname \
+    -DCMAKE_INSTALL_PREFIX=/usr \
+    -DCMAKE_BUILD_TYPE=None \
+    -DZXING_EXAMPLES=ON \
+    -DZXING_EXAMPLES_QT=ON \
+    -DZXING_UNIT_TESTS=ON \
+    -DZXING_C_API=ON \
+    -DZXING_USE_BUNDLED_ZINT=OFF \
+    -DZXING_WRITERS=BOTH \
+    -DSTB_IMAGE_INCLUDE_DIR=/usr/include/stb
+  cmake --build build
+}
+
+check() {
+  ctest --test-dir build --output-on-failure
+}
+
+package() {
+  DESTDIR="$pkgdir" cmake --install build
+}

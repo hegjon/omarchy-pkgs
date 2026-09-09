@@ -1,0 +1,47 @@
+# Maintainer: Maxime Gauduin <alucryd@archlinux.org>
+# Contributor: Tom Gundersen <teg@jklm.no>
+# Contributor: Sébastien Luttringer <sеblu@аrchlіnux․org>
+# Contributor: Joel Teichroeb <joel@teichroeb.net>
+
+pkgname=lib32-wayland
+pkgver=1.26.0
+pkgrel=1
+pkgdesc='A computer display server protocol'
+arch=(x86_64)
+url=https://wayland.freedesktop.org
+license=(MIT)
+depends=(
+  lib32-glibc
+  lib32-libffi
+  lib32-expat
+  lib32-libxml2
+  wayland
+)
+makedepends=(meson)
+provides=(libwayland-{client,cursor,egl,server}.so)
+validpgpkeys=('C7223EBE4EF66513B892598911A30156E0E67611'  # Bryce Harrington
+              'C0066D7DB8E9AC6844D728715E54498E697F11D7'  # Derek Foreman
+              '34FF9526CFEF0E97A340E2E40FDE7BE0E88F5E48') # Simon Ser <contact@emersion.fr>
+source=("https://gitlab.freedesktop.org/wayland/wayland/-/releases/$pkgver/downloads/wayland-$pkgver.tar.xz"{,.sig})
+b2sums=('f5a9179f5e82d564812dfdc0bbca2e4bed6ff9963b9a1ff181489774eb10946a37f5ec004a87354bf1e8ac012553926dcc6e65feb9eacdb9a18cbc034590a325'
+        'SKIP')
+
+build() {
+  arch-meson build wayland-${pkgver} \
+    --cross-file lib32 \
+    -D documentation=false
+  meson compile -C build
+}
+
+check() {
+  meson test -C build --print-errorlogs
+}
+
+package() {
+  meson install -C build --destdir "${pkgdir}"
+  rm -rf "${pkgdir}"/usr/{bin,include,share}
+  install -dm 755 "${pkgdir}"/usr/share/licenses
+  ln -s wayland "${pkgdir}"/usr/share/licenses/lib32-wayland
+}
+
+# vim: ts=2 sw=2 et:

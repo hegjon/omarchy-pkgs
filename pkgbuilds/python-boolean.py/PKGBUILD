@@ -1,0 +1,46 @@
+# Maintainer: George Rawlinson <grawlinson@archlinux.org>
+# Contributor: Max Mehl <aur at mehl dot mx>
+# SPDX-FileCopyrightText: 2019 Max Mehl
+# SPDX-License-Identifier: CC0-1.0
+
+pkgname='python-boolean.py'
+pkgver=5.0
+pkgrel=2
+pkgdesc='Implements boolean algebra in one module'
+arch=('any')
+url='https://github.com/bastikr/boolean.py'
+license=('BSD-2-Clause')
+depends=('python')
+makedepends=(
+  'git'
+  'python-build'
+  'python-installer'
+  'python-setuptools'
+  'python-wheel'
+)
+checkdepends=('python-pytest')
+source=("$pkgname::git+$url#tag=v$pkgver")
+sha512sums=('c1a8c6c1a6a10921c060cde3b659e8acedb8ca8a8930118f01e8ca7df2a48817fa4dc315c28b829bd6a97a6c61e845dd7baff11a7b8e7908eb3173ac183a21a3')
+b2sums=('c9de2ba5b0b72c09f885377d4db7888e49518c14800db495c1bfa74c2b7d696156e0fd7c6e62c6187ae79a9bf779de4a567070c5a2276a3dae7f32cef69d870e')
+
+build() {
+  cd "$pkgname"
+
+  python -m build --wheel --no-isolation
+}
+
+check() {
+  cd "$pkgname"
+
+  pytest -vv
+}
+
+package() {
+  cd "$pkgname"
+
+  python -m installer --destdir="$pkgdir" dist/*.whl
+
+  install -Dm644 -t "$pkgdir/usr/share/licenses/$pkgname" LICENSE.txt
+}
+
+# vim: ts=2 sw=2 et:

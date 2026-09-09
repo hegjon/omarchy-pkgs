@@ -1,0 +1,28 @@
+# Maintainer: Daniel M. Capella <polyzen@archlinux.org>
+
+pkgname=pcaudiolib
+pkgver=1.3
+pkgrel=1
+pkgdesc='Portable C Audio Library'
+url=https://github.com/espeak-ng/pcaudiolib
+arch=('x86_64')
+license=('GPL3')
+depends=('alsa-lib' 'libpulse')
+source=("$url/archive/$pkgver/$pkgname-$pkgver.tar.gz")
+b2sums=('c3ef84eebfad6c43c9124d31a29918e929a222adbb66099ea252dd5b53c95c8d51aa5273d4d57210acf585d6d9ca9ea79eca6cd72ca5d74c05fa34c9307287d2')
+
+prepare() {
+  cd $pkgname-$pkgver
+  ./autogen.sh
+}
+
+build() {
+  cd $pkgname-$pkgver
+  ./configure --prefix=/usr
+  make
+}
+
+package() {
+  cd $pkgname-$pkgver
+  make DESTDIR="$pkgdir" install
+}

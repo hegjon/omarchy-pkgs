@@ -1,0 +1,45 @@
+# Maintainer: Levente Polyak <anthraxx[at]archlinux[dot]org>
+# Maintainer: Robin Candau <antiz@archlinux.org>
+# Contributor: Tom Gundersen <teg@jklm.no>
+# Contributor: Angel Velasquez <angvp@archlinux.org>
+# Contributor: Daniel J Griffiths <ghost1227@archlinux.us>
+# Contributor: Aaron Griffin <aaron@archlinux.org>
+# Contributor: Jochem Kossen <j.kossen@home.nl>
+# Contributor: Hendrik Meyer <archlinux@t4cc0.re>
+
+pkgname=lsof
+pkgver=4.99.7
+pkgrel=1
+pkgdesc='Lists open files for running Unix processes'
+url='https://github.com/lsof-org/lsof'
+arch=('x86_64')
+license=('custom')
+depends=(
+  glibc
+  libtirpc
+)
+makedepends=(
+  groff
+)
+source=("${pkgname}-${pkgver}.tar.gz::${url}/archive/refs/tags/${pkgver}.tar.gz")
+sha256sums=('bac1b0acbc50aede42fc97dffaa0b0475e97973e36a6351de5f349c6155afc68')
+b2sums=('73279d59bf7f86cb287dc3e9209903a58d9aa8ff409b0907b51658262baaad68cede04a863706ca28e1f170e80e9184e7dab0f578430086e023d467ee4ed68a4')
+
+build() {
+  cd "${pkgname}-${pkgver}"
+  autoreconf -fiv
+  ./configure \
+    --prefix=/usr \
+    --enable-security \
+    --enable-no-sock-security \
+    --with-libtirpc
+  make
+}
+
+package() {
+  cd "${pkgname}-${pkgver}"
+  make DESTDIR="${pkgdir}" install
+  install -Dm 644 COPYING "${pkgdir}/usr/share/licenses/${pkgname}/COPYING"
+}
+
+# vim: ts=2 sw=2 et:

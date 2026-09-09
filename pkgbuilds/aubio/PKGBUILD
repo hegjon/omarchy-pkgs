@@ -1,0 +1,137 @@
+# Maintainer: David Runge <dvzrv@archlinux.org>
+# Contributor: Ray Rashif <schiv@archlinux.org>
+# Contributor: Tobias Kieslich tobias [funnychar] archlinux org
+
+pkgbase=aubio
+pkgname=(aubio python-aubio)
+pkgver=0.4.9
+pkgrel=25
+pkgdesc="A tool for extracting annotations from audio signals"
+arch=(x86_64)
+url="https://aubio.org/"
+license=(GPL-3.0-or-later)
+makedepends=(
+  doxygen
+  ffmpeg
+  fftw
+  jack
+  libsamplerate
+  libsndfile
+  python-build
+  python-installer
+  python-numpy
+  python-setuptools
+  python-wheel
+  txt2man
+  waf
+)
+checkdepends=(python-pytest)
+source=(
+  https://$pkgbase.org/pub/$pkgbase-$pkgver.tar.bz2
+  $pkgname-0.4.9-ffmpeg5.patch::https://github.com/aubio/aubio/commit/8a05420e5dd8c7b8b2447f82dc919765876511b3.patch
+  https://github.com/aubio/aubio/commit/cdfe9cef.patch
+  https://github.com/aubio/aubio/commit/245deead.patch
+  https://github.com/aubio/aubio/commit/0b947f96.patch
+  https://github.com/aubio/aubio/commit/53bc55cd.patch
+  ffmpeg7.patch
+  numpy-2.0.patch
+)
+sha512sums=('0cb81bb4b15051db3f3f4d160d500af56fdfb237e0a74e3f366f53c2870030aa0a7cee8469a611a9694c36b8866d3d42ffb48241c999de08f3fee43e6d903130'
+            '1e3a39ef16f779cbde58167bf7624f2a0002d6ef6d48effe1f03d19ed0612874a0abf13e9dfb7a5cd6a55102e8b2e275ff9679faddb55c642651e0b1a4222763'
+            '9a9eaa609958f4a5b3994a6da103c3497d3a85239f6c45e95dcdc8fbe304f16d8c07adb6076b4a8832d0b8ca66ec210e0d8ecdcda309e0d12a57d9072e4b2449'
+            '44de7bb0085161b8304eaf3d7c6095bafcc3af745e0606b55722386d63f7dbfbd9156afc020f72d36fe5756c6a8333685363fedaa339b83be244d096cb3cc396'
+            '8207f1183543c2abcb651b13aa6c449474db3f7c5e4b158759e12d01e1a71130c9ba1a4c0e34eaec01c9ab74274d0a79d6c38ad282a515daab06b63720da8d7a'
+            '0ac4d8afcb3833f27453322746ed7e5ac50cd5c3a5a1feb08f2fe1ad46e80de66a4c8421d45967325656ff921eea0c813527b8d4503b96e5b9a46c22347334ef'
+            'b99aaf419a6695c6086c556b269b542b9cc67e2d18545cdd393df8842d727ac4e829fc464715aa933efde1180886a90a7f51e105ec139fc3b73116cc7c0c5dca'
+            'da3e963dcc52abdf2cbf683203cd9cc3e2d1cfcb3350de711168458f7ccfb34dd6f7229717c980d884752ea2707ce8c3a595667ab0bf0e13d2efb8c1a89aca4c')
+b2sums=('b849d92678ea8fb20e17921b1a61fdc85a84d4a528acfefa3278169ab5f7fe935217ec37dd9f931202f0f0a1fd3a9518372afbce34cc2dd3ca30c6b4e5d9a301'
+        'd23cc7b3e2f0f7a7c45f8bdc384f489aced5268c89e49ac8f5d53414d21f7a9ac3fcd9d28cde3cfa8a1b7bdc1db484a1ea3933661fbeb4a2d0b2b6d28a10feda'
+        'f37d42d6631c04b1fef9d6d5aca0c049705f6a306743e9229b4e005c577e58945dd01990a4155cbf261bdfdd0a99d68a695e2d97e6111ed36021aa47e5582f70'
+        '6d85a38a08fe59c4fa27d8f2aadd414c301667187eb4906cef0ad2672b8de41abe32f9a0e0c43c7b229bf031a0ee1d752657a142a0cd9a3612812e5b2988f333'
+        '513b22b4a41bad883e53e950d14415f3798492f640b8e3762b768856d22e06e42efbca4914675ff54d94cbb30ec1c87144b87748981d7915bdb8460118af3353'
+        '8f6aa00ef19312d5aee2cf6f2c4be73a622e8ae0d318ceb5f36286cb9ed714ef0b5c3f5e0cae2f79f40f3d36aef0941d353cb6a461341a861e961cf812927bcb'
+        '6521c7f52152d83e152646f3d9f8b15fd62794f1217b7ed5947797a891630a65fbb00914774a8317249a345fd987d770224bc425cce9631a50aae591d39b66bd'
+        '90d52e814c19727347dd719104bdaabdf790daa7fc9d60dbcd33e4d6d92953ea079ca29798feed63493cf1f68263d7e7ceb64ee4655225e112ded774c29ad1ba')
+
+prepare() {
+  # make compatible with ffmpeg >= 5: https://github.com/aubio/aubio/issues/353
+  patch -Np1 -d $pkgbase-$pkgver -i ../$pkgname-0.4.9-ffmpeg5.patch
+  # Fix build with FFmpeg 7
+  patch -p1 -d $pkgbase-$pkgver -i ../cdfe9cef.patch
+  patch -p1 -d $pkgbase-$pkgver -i ../245deead.patch
+  patch -p1 -d $pkgbase-$pkgver -i ../0b947f96.patch
+  patch -p1 -d $pkgbase-$pkgver -i ../53bc55cd.patch
+  patch -p1 -d $pkgbase-$pkgver -i ../ffmpeg7.patch
+  # Fix build with ffmpeg 8
+  sed -i 's#AV_INPUT_BUFFER_MIN_SIZE#16384#' "$pkgbase-$pkgver"/src/io/source_avcodec.c
+  # Fix test with numpy 2.0
+  patch -p1 -d $pkgbase-$pkgver -i ../numpy-2.0.patch
+  cd $pkgbase-$pkgver
+  rm -rv waflib
+}
+
+build() {
+  local waf_configure_options=(
+    --alltests
+    --enable-fftw3
+    --libdir=/usr/lib
+    --prefix=/usr
+  )
+
+  cd $pkgbase-$pkgver
+  export LINKFLAGS="$LDFLAGS"
+  waf configure "${waf_configure_options[@]}"
+  waf build
+
+  CFLAGS+=" -Wno-incompatible-pointer-types" \
+  python -m build --wheel --no-isolation
+}
+
+check() {
+  local _site_packages=$(python -c "import site; print(site.getsitepackages()[0])")
+
+  cd $pkgbase-$pkgver
+  # install to temporary location
+  python -m installer --destdir=test_dir dist/*.whl
+  export PYTHONPATH="test_dir/$_site_packages:$PYTHONPATH"
+  export LD_LIBRARY_PATH="$PWD/build/src"
+  export PYTHONDONTWRITEBYTECODE=1
+  pytest -vv python/tests
+}
+
+package_aubio() {
+  pkgdesc="A tool for extracting annotations from audio signals"
+  depends=(
+    ffmpeg libavcodec.so libavformat.so libavutil.so libswresample.so
+    fftw
+    glibc
+    jack libjack.so
+    libsamplerate libsamplerate.so
+    libsndfile libsndfile.so
+  )
+  optdepends=('python-aubio: Python bindings')
+  provides=(libaubio.so)
+  groups=(pro-audio)
+
+  cd $pkgbase-$pkgver
+  waf --destdir="$pkgdir" install
+
+  # move doc, as waf configure doesn't honor the htmldir and docdir settings
+  mv -v "$pkgdir/usr/share/doc/lib$pkgname-doc" "$pkgdir/usr/share/doc/$pkgname"
+  install -vDm 644 {AUTHORS,ChangeLog,README.md} -t "$pkgdir/usr/share/doc/$pkgname/"
+}
+
+package_python-aubio() {
+  pkgdesc="Python bindings for aubio"
+  depends=(
+    aubio libaubio.so
+    glibc
+    python
+    python-numpy
+  )
+
+  cd $pkgbase-$pkgver
+  python -m installer --destdir="$pkgdir" dist/*.whl
+  install -vDm 644 {AUTHORS,ChangeLog,README.md} -t "$pkgdir/usr/share/doc/$pkgname/"
+}
+# vim:set ts=2 sw=2 et:

@@ -1,0 +1,45 @@
+# Maintainer: Levente Polyak <anthraxx[at]archlinux[dot]org>
+# Maintainer: Carl Smedstad <carsme@archlinux.org>
+# Contributor: Sven-Hendrik Haase <svenstaro@archlinux.org>
+# Contributor: Alexander Rødseth <rodseth@gmail.com>
+
+pkgname=python-itsdangerous
+pkgver=2.2.0
+pkgrel=2
+pkgdesc='Various helpers to pass trusted data to untrusted environments'
+arch=('any')
+url='https://itsdangerous.palletsprojects.com'
+license=('BSD-3-Clause')
+depends=('python')
+makedepends=(
+  'python-build'
+  'python-flit-core'
+  'python-installer'
+  'python-wheel'
+)
+checkdepends=(
+  'python-freezegun'
+  'python-pytest'
+)
+source=("https://github.com/mitsuhiko/itsdangerous/archive/${pkgver}/${pkgname#python-}-$pkgver.tar.gz")
+sha256sums=('7b0c6d4186e963b88489b69603b7ab2bf7c8e9eb4135a7b13b5f21bd4b937f2b')
+
+build() {
+  cd ${pkgname#python-}-$pkgver
+  python -m build --wheel --no-isolation
+}
+
+check() {
+  cd ${pkgname#python-}-$pkgver
+  python -m venv --system-site-packages test-env
+  test-env/bin/python -m installer dist/*.whl
+  test-env/bin/python -m pytest
+}
+
+package() {
+  cd ${pkgname#python-}-$pkgver
+  python -m installer --destdir="$pkgdir" dist/*.whl
+  install -vDm 644 -t "$pkgdir/usr/share/licenses/$pkgname" LICENSE.txt
+}
+
+# vim:set ts=2 sw=2 et:

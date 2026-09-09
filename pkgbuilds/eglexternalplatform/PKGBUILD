@@ -1,0 +1,36 @@
+# Maintainer: Jan Alexander Steffens (heftig) <heftig@archlinux.org>
+
+pkgname=eglexternalplatform
+pkgver=1.2.1
+pkgrel=1
+pkgdesc="EGL External Platform interface"
+url=https://github.com/NVIDIA/eglexternalplatform
+arch=(any)
+license=(MIT)
+depends=(libegl)
+makedepends=(
+  git
+  meson
+)
+source=("git+$url#tag=$pkgver")
+b2sums=('4a4fa1b3d6086a49cc873a06419de705251a28796151649314c104e6730ac3f89fa3137e6d322f406bd9d5fe1c71c5450750dfd9c0cf5056f20d821c8c249586')
+
+prepare() {
+  cd $pkgname
+}
+
+build() {
+  arch-meson $pkgname build --includedir /usr/include/EGL
+  meson compile -C build
+}
+
+check() {
+  meson test -C build --print-errorlogs
+}
+
+package() {
+  meson install -C build --destdir "$pkgdir"
+  install -Dt "$pkgdir/usr/share/licenses/$pkgname" -m644 $pkgname/COPYING
+}
+
+# vim:set sw=2 sts=-1 et:

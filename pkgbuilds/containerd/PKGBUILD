@@ -1,0 +1,49 @@
+# Maintainer: Morten Linderud <foxboron@archlinux.org>
+# Maintainer: Santiago Torres-Arias <santiago@archlinux.org>
+# Maintainer: Robin Candau <antiz@archlinux.org>
+# Contributor: Sébastien "Seblu" Luttringer
+# Contributor: Iwan Timmer <irtimmer@gmail.com>
+
+pkgname=containerd
+pkgver=2.3.5
+pkgrel=1
+pkgdesc='An open and reliable container runtime'
+url='https://containerd.io/'
+depends=('runc')
+makedepends=('go' 'git' 'btrfs-progs' 'libseccomp' 'containers-common' 'go-md2man')
+checkdepends=('procps-ng')
+provides=('container-runtime')
+arch=('x86_64')
+license=("Apache-2.0")
+source=("git+https://github.com/containerd/containerd.git#tag=v${pkgver}?signed")
+validpgpkeys=("8C7A111C21105794B0E8A27BF58C5D0A4405ACDB"  # Derek McGowan
+              "910C28608D33DDE689C03290997C5A3CD3167CB5"  # Samuel Karp
+              "E11730FCC99E82014347C431F32F8A0F649BC9D4") # Fu Wei
+sha256sums=('d1cf5bb6478ba8e866362b97ebd8074e6c826c603d708d54565a88f1733d0691')
+
+prepare() {
+  # fix paths in service
+  sed -i 's,/sbin,/usr/bin,;s,/usr/local,/usr,' $pkgname/containerd.service
+}
+
+build() {
+  cd "${pkgname}" 
+  export GOFLAGS="-trimpath -mod=readonly -modcacherw"
+  make VERSION=v$pkgver GO_BUILD_FLAGS="-trimpath -mod=readonly -modcacherw" GO_GCFLAGS="" EXTRA_LDFLAGS="-buildid="
+  make VERSION=v$pkgver man
+}
+
+check() {
+  cd "${pkgname}"
+  GOFLAGS="-trimpath" make test
+}
+
+package() {
+  cd "${pkgname}" 
+  make PREFIX=/usr DESTDIR="$pkgdir/" install
+  install -Dm644 containerd.service "$pkgdir"/usr/lib/systemd/system/containerd.service
+  install -Dm644 man/*.8 -t "$pkgdir/usr/share/man/man8"
+  install -Dm644 man/*.5 -t "$pkgdir/usr/share/man/man5"
+  install -Dm644 contrib/autocomplete/ctr "$pkgdir"/usr/share/bash-completion/completions/ctr
+  install -Dm644 contrib/autocomplete/zsh_autocomplete "$pkgdir"/usr/share/zsh/site-functions/_ctr
+}

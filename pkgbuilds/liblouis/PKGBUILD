@@ -1,0 +1,59 @@
+# Maintainer: Balló György <ballogyor+arch at gmail dot com>
+# Contributor: Jan de Groot <jgc@archlinux.org>
+# Contributor: Ionut Biru <ibiru@archlinux.org>
+
+pkgname=liblouis
+pkgver=3.39.0
+pkgrel=1
+pkgdesc='Braille translator and back-translator library'
+arch=(x86_64)
+url='https://liblouis.io/'
+license=('GPL-3.0-or-later AND LGPL-2.1-or-later')
+depends=(
+  glibc
+  libyaml
+)
+makedepends=(
+  git
+  help2man
+  python-build
+  python-installer
+  python-setuptools
+  python-wheel
+)
+optdepends=('python: Python bindings')
+source=("git+https://github.com/liblouis/liblouis.git#tag=v$pkgver")
+b2sums=(ee1f598d5a2a066a3e21aa2df7949b2ad42e5ad28d02253c4973df240f179f548d435815c7ee2acdf26037e22b4022785e356e80a04114630cc58d894b41bf9c)
+validpgpkeys=(E9DDC8901A42F78B79CDC46042A55BD5EA40AB1A) # Christian Egli <christian.egli@sbs.ch>
+
+prepare() {
+  cd $pkgname
+  autoreconf -fiv
+}
+
+build() {
+  cd $pkgname
+  ./configure \
+    --prefix=/usr \
+    --sysconfdir=/etc \
+    --localstatedir=/var \
+    --enable-ucs4
+  sed -i -e 's/ -shared / -Wl,-O1,--as-needed\0/g' libtool
+  make
+
+  cd python
+  python -m build --wheel --no-isolation
+}
+
+check() {
+  cd $pkgname
+  make check
+}
+
+package() {
+  cd $pkgname
+  make DESTDIR="$pkgdir" install
+
+  cd python
+  python -m installer --destdir="$pkgdir" dist/*.whl
+}

@@ -1,0 +1,33 @@
+# Maintainer: Konstantin Gizdov <arch at kge dot pw>
+
+_pkgname='keras'
+pkgname=("python-${_pkgname}")
+pkgdesc='Deep Learning for humans'
+url='https://keras.io/'
+license=('Apache-2.0')
+pkgver=3.15.1
+pkgrel=1
+arch=('any')
+source=("https://files.pythonhosted.org/packages/source/${_pkgname::1}/${_pkgname//-/_}/${_pkgname//-/_}-$pkgver.tar.gz")
+makedepends=('python-build' 'python-installer' 'python-setuptools' 'python-wheel')
+depends=('absl-py' 'python' 'python-h5py' 'python-ml-dtypes' 'python-optree'
+         'python-numpy' 'python-packaging' 'python-pandas' 'python-pillow'
+         'python-pydot' 'python-rich' 'python-scipy' 'python-tensorflow'
+         'tensorboard')
+optdepends=('python-pytorch'
+            'python-requests: for RemoteMonitor'
+            'python-scikit-learn: wrappers for scikit-learn')
+conflicts=('python-keras-applications' 'python-keras-preprocessing')
+provides=('python-keras-applications' 'python-keras-preprocessing')
+replaces=('python-keras-applications' 'python-keras-preprocessing')
+b2sums=('0867c16a22c9c988119ac89cc37710b05ec3478bc79a126e49670f6409fa86a6a09e6a428237e6202835aff29b6d7781b4b1ecea07bdd1402536d9546e7e452d')
+
+build() {
+  cd $_pkgname-$pkgver
+  python -m build --wheel --no-isolation
+}
+
+package () {
+  cd $_pkgname-$pkgver
+  python -m installer --destdir="$pkgdir" dist/*.whl
+}

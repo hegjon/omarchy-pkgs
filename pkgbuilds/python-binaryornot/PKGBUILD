@@ -1,0 +1,43 @@
+# Maintainer: David Runge <dvzrv@archlinux.org>
+
+_name=binaryornot
+pkgname=python-binaryornot
+pkgver=0.6.0
+pkgrel=1
+pkgdesc="Ultra-lightweight pure Python package to check if a file is binary or text"
+arch=(any)
+url="https://github.com/binaryornot/binaryornot"
+license=(BSD-3-Clause)
+depends=(python)
+makedepends=(
+  python-build
+  python-installer
+  python-hatchling
+)
+checkdepends=(
+  python-hypothesis
+  python-pytest
+  uv
+)
+source=(
+  $_name-$pkgver.tar.gz::$url/archive/refs/tags/v$pkgver.tar.gz
+)
+sha512sums=('ccc823895ee23b0bd748b6a780cdc5adaf5961237ab45b4c8f26ccf5a7e78c1a42a58097a548ee6adffb44e9195c82028cb3182de0d23c49ec7494c4d700fde5')
+b2sums=('199e7407289327ea2ae81d7040e008cd970896fe9774abad44c650feac8dd38b8a9bca54c943520e516064de9dba1f32d21237ba174f6f530f4d3640a9d7ad2d')
+
+build() {
+  cd $_name-$pkgver
+  python -m build --wheel --no-isolation
+}
+
+check() {
+  cd $_name-$pkgver
+  PYTHONPATH="src" python -m unittest discover -vs tests
+}
+
+package() {
+  cd $_name-$pkgver
+  python -m installer --destdir="$pkgdir" dist/*.whl
+  install -vDm 644 LICENSE -t "$pkgdir/usr/share/licenses/$pkgname/"
+  install -vDm 644 {CODE_OF_CONDUCT,CONTRIBUTING,README,SECURITY}.md -t "$pkgdir/usr/share/doc/$pkgname/"
+}

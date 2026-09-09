@@ -1,0 +1,33 @@
+# Maintainer: Felix Yan <felixonmars@archlinux.org>
+# Contributor: Philipp Schmidt <philschmidt at gmx dot net>
+# Contributor: Stefan Tatschner <stefan.tatschner at gmail dot com>
+
+pkgname=python-blinker
+pkgver=1.9.0
+pkgrel=4
+pkgdesc="Fast, simple object-to-object and broadcast signaling"
+arch=('any')
+url="https://blinker.readthedocs.io"
+license=('MIT')
+depends=('python')
+makedepends=('python-build' 'python-installer' 'python-flit-core')
+checkdepends=('python-pytest-asyncio')
+source=("https://files.pythonhosted.org/packages/source/b/blinker/blinker-$pkgver.tar.gz")
+sha512sums=('587eaead4750eb742209703d792498293579dc55afc855498066b49a067527b6b3eccbe9a35ddbacc2cb1b7ced0bb3bb7a5716dba82d87b434a6ca8281bd76e5')
+
+build() {
+  cd blinker-$pkgver
+  python -m build --wheel --no-isolation
+}
+
+check() {
+  cd blinker-$pkgver
+  PYTHONPATH="$PWD"/src \
+    python -m pytest
+}
+
+package() {
+  cd blinker-$pkgver
+  python -m installer --destdir="$pkgdir" dist/*.whl 
+  install -Dm644 LICENSE.txt -t "$pkgdir"/usr/share/licenses/$pkgname/
+}

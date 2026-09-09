@@ -1,0 +1,32 @@
+# Maintainer: Felix Yan <felixonmars@archlinux.org>
+
+pkgname=python-kiwisolver
+pkgver=1.5.1
+pkgrel=1
+pkgdesc="A fast implementation of the Cassowary constraint solver"
+url="https://github.com/nucleic/kiwi"
+license=('BSD-3-Clause')
+arch=('x86_64')
+depends=('python')
+makedepends=('git' 'python-cppy' 'python-setuptools-scm' 'python-wheel' 'python-build'
+             'python-installer')
+checkdepends=('python-pytest')
+source=("git+https://github.com/nucleic/kiwi.git#tag=$pkgver")
+sha512sums=('520069cd6f22d072edaf4ea1f78842c64cb779c956d56692287a22ca4f5f114a1ef2bd57ea786cf678db043e35d3801d3658f2566631f3c2004ac3de3202bc82')
+
+build() {
+  cd kiwi
+  python -m build --wheel --no-isolation
+}
+
+check() {
+  cd kiwi
+  local python_version=$(python -c 'import sys; print("".join(map(str, sys.version_info[:2])))')
+  PYTHONPATH="$PWD/build/lib.linux-$CARCH-cpython-$python_version" pytest
+}
+
+package() {
+  cd kiwi
+  python -m installer --destdir="$pkgdir" dist/*.whl
+  install -Dm644 LICENSE -t "$pkgdir"/usr/share/licenses/$pkgname/
+}

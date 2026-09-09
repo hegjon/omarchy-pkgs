@@ -1,0 +1,55 @@
+# Maintainer: Morten Linderud <foxboron@archlinux.org>
+# Maintainer: T.J. Townsend <blakkheim@archlinux.org>
+# Contributor: Felix Yan <felixonmars@archlinux.org>
+
+pkgname=rclone
+pkgver=1.75.1
+pkgrel=1
+pkgdesc="rsync for cloud storage"
+arch=('x86_64')
+url="https://github.com/rclone/rclone"
+license=('MIT')
+depends=('glibc')
+optdepends=('fuse3: for rclone mount')
+makedepends=('python' 'go' 'git' 'fuse3')
+source=("git+https://github.com/rclone/rclone.git#tag=v${pkgver}?signed")
+sha512sums=('fa433ca4427df1df1ef4f0daaad27dbeb47dd2cc615bab6f93c19cc077cc1cdad29bef8cce86c451976900ff8b5ab359fb61418e7333f06ecd99f97e13b76e00')
+validpgpkeys=(E3B358DC858FB307F48170B9CB0DBEBC5F32C81D) # Nick Craig-Wood
+options=(!lto)
+
+build() {
+  cd rclone
+  export GOFLAGS="-buildmode=pie -trimpath"
+  export CGO_LDFLAGS="${LDFLAGS}"
+  export CGO_CFLAGS="${CFLAGS}"
+  export CGO_CPPFLAGS="${CPPFLAGS}"
+  PATH="/build/go/bin:$PATH" make TAG=v$pkgver rclone
+  PATH="/build/go/bin:$PATH" rclone genautocomplete bash rclone.bash_completion
+  PATH="/build/go/bin:$PATH" rclone genautocomplete zsh rclone.zsh_completion
+  PATH="/build/go/bin:$PATH" rclone genautocomplete fish rclone.fish_completion
+}
+
+#check() {
+#  cd rclone
+#  PATH="/build/go/bin:$PATH" make TAG=v$pkgver test
+#}
+
+package() {
+  cd rclone
+
+  install -Dm755 rclone "$pkgdir"/usr/bin/rclone
+
+  install -Dm644 rclone.bash_completion "$pkgdir"/usr/share/bash-completion/completions/rclone
+  install -Dm644 rclone.zsh_completion "$pkgdir"/usr/share/zsh/site-functions/_rclone
+  install -Dm644 rclone.fish_completion "$pkgdir"/usr/share/fish/vendor_completions.d/rclone.fish
+
+  install -Dm644 COPYING "$pkgdir"/usr/share/licenses/$pkgname/COPYING
+
+  install -Dm644 rclone.1 "$pkgdir"/usr/share/man/man1/rclone.1
+  install -d "$pkgdir"/usr/share/doc/$pkgname
+  install -t "$pkgdir"/usr/share/doc/$pkgname -m644 MANUAL.html MANUAL.txt
+
+  # Mount helper symlinks
+  ln -s /usr/bin/rclone "${pkgdir}"/usr/bin/mount.rclone
+  ln -s /usr/bin/rclone "${pkgdir}"/usr/bin/rclonefs
+}

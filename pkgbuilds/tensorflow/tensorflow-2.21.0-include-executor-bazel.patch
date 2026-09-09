@@ -1,0 +1,31 @@
+Frankly I have no idea what upstream is even doing.
+I also can't find any issues about this on their tracker.
+
+Without this patch, we get:
+
+ERROR: /build/tensorflow/src/tensorflow-2.21.0-cuda/tensorflow/core/common_runtime/BUILD:1716:11: Compiling tensorflow/core/common_runtime/renamed_device.cc failed: undeclared inclusion(s) in rule '//tensorflow/core/common_runtime:renamed_device':
+this rule is missing dependency declarations for the following files included by 'tensorflow/core/common_runtime/renamed_device.cc':
+  'external/xla/xla/tsl/concurrency/executor.h'
+
+Apparently this is how we can make bazel add the missed dependency.
+I can't imagine this somehow magically builds on upstream without this patch.
+We even use the same fucking bazel version.
+
+--- a/tensorflow/core/BUILD
++++ b/tensorflow/core/BUILD
+@@ -303,6 +303,7 @@ cc_library(
+         "@com_google_absl//absl/strings",
+         "@com_google_absl//absl/strings:cord",
+         "@com_google_absl//absl/types:optional",
++        "@xla//xla/tsl/concurrency:executor",
+         "@tsl//tsl/platform:protobuf",
+     ],
+ )
+@@ -1635,6 +1636,7 @@ cc_library(
+         ":framework_internal_headers_lib",
+         ":lib",
+         "@eigen_archive//:eigen3",
++        "@xla//xla/tsl/concurrency:executor",
+     ] + if_static(
+         extra_deps = [
+             ":framework_internal_impl",
