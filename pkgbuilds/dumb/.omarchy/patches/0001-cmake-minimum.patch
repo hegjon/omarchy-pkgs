@@ -1,0 +1,9 @@
+Build with CMake 4, which refuses a cmake_minimum_required below 3.5: this 2019 release asks for less.
+
+--- a/PKGBUILD
++++ b/PKGBUILD
+@@ -20,3 +20,4 @@
+   cmake "$srcdir/$pkgname-$pkgver" \
++    -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
+     -DCMAKE_BUILD_TYPE=Release \
+     -DCMAKE_INSTALL_PREFIX=/usr \

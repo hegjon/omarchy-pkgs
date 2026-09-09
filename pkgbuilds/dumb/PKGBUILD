@@ -5,7 +5,7 @@
 
 pkgname=dumb
 pkgver=2.0.3
-pkgrel=4
+pkgrel=4.1
 pkgdesc='IT, XM, S3M and MOD player library'
 arch=(x86_64)
 license=(custom:dumb GPL)
@@ -18,6 +18,7 @@ build() {
   mkdir -p build
   cd build
   cmake "$srcdir/$pkgname-$pkgver" \
+    -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_INSTALL_PREFIX=/usr \
     -DCMAKE_INSTALL_LIBDIR=lib \

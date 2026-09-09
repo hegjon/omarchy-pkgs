@@ -5,7 +5,7 @@
 pkgname=devtools
 epoch=1
 pkgver=1.5.1
-pkgrel=1
+pkgrel=1.1
 pkgdesc='Tools for Arch Linux package maintainers'
 arch=('any')
 license=('GPL-3.0-or-later')
@@ -57,6 +57,14 @@ sha256sums=('4968ee684cae62216ffafe11ac684559a7c03a7f254ec3a1b1152ced2bf8e4fa'
             'SKIP')
 b2sums=('42eee98b5363eb83519cf3953b382ba38af38257fc440f700540713767a53dbb3f7c3c23ef5146eaf63586ba6a0fd114a9dcb354e34d8670c341a138c511602f'
         'SKIP')
+
+prepare() {
+  cd ${pkgname}-${pkgver}
+  # a pkgbase ending in + (libsigc++, dbus-c++) normalizes to a hostname
+  # label ending in -, which systemd-nspawn rejects: drop a - before a .
+  sed -i 's/^\tmachine=${machine%%-}$/&\n\tmachine=${machine\/\/-.\/.}/' src/lib/util/machine.sh
+  grep -qF 'machine//-./.' src/lib/util/machine.sh
+}
 
 build() {
   cd ${pkgname}-${pkgver}

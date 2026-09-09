@@ -1,0 +1,16 @@
+A pkgbase ending in + (libsigc++, dbus-c++, libxml++) normalizes to a machine name whose first hostname label ends in -, which systemd-nspawn rejects ("Invalid machine name"). Drop such a dash before the dot.
+
+--- a/PKGBUILD
++++ b/PKGBUILD
+@@ -60,3 +60,11 @@
+ 
++prepare() {
++  cd ${pkgname}-${pkgver}
++  # a pkgbase ending in + (libsigc++, dbus-c++) normalizes to a hostname
++  # label ending in -, which systemd-nspawn rejects: drop a - before a .
++  sed -i 's/^\tmachine=${machine%%-}$/&\n\tmachine=${machine\/\/-.\/.}/' src/lib/util/machine.sh
++  grep -qF 'machine//-./.' src/lib/util/machine.sh
++}
++
+ build() {
+   cd ${pkgname}-${pkgver}

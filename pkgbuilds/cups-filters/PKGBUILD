@@ -2,7 +2,7 @@
 
 pkgname=cups-filters
 pkgver=2.0.1
-pkgrel=2
+pkgrel=2.1
 pkgdesc="OpenPrinting CUPS Filters"
 arch=('x86_64')
 url="https://wiki.linuxfoundation.org/openprinting/cups-filters"
@@ -19,6 +19,8 @@ sha256sums=('39e71de3ce06762b342749f1dc7cba6817738f7bf4d322c1bb9ab10b8569ab80')
 
 build() {
   cd "$pkgname"-$pkgver
+  # GCC 15 rejects foomatic-rip's start_process() argument types
+  export CFLAGS+=" -Wno-error=incompatible-pointer-types"
   ./configure --prefix=/usr  \
     --sysconfdir=/etc \
     --sbindir=/usr/bin \
