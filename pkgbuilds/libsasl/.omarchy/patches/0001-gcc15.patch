@@ -1,0 +1,10 @@
+Build with GCC 15, whose C23 default rejects the K&R prototype of MD5_memcpy.
+
+--- a/PKGBUILD
++++ b/PKGBUILD
+@@ -95,3 +95,5 @@
+ 
+   cd $_name
++  # GCC 15 defaults to C23, where md5.c's K&R prototypes no longer compile
++  export CFLAGS+=" -std=gnu17"
+   ./configure "${configure_options[@]}"

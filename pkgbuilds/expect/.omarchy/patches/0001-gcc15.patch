@@ -1,0 +1,12 @@
+Build with GCC 15, which makes incompatible pointer types an error: this 2018 release's Tcl stub prototypes trip it.
+
+--- a/PKGBUILD
++++ b/PKGBUILD
+@@ -33,5 +33,7 @@
+ build() {
+   cd expect${pkgver}
++  # GCC 15 rejects the Tcl command prototypes in exp_command.h
++  export CFLAGS+=" -Wno-error=incompatible-pointer-types"
+   ./configure --prefix=/usr --mandir=/usr/share/man
+   make
+ }

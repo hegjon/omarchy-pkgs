@@ -3,7 +3,7 @@
 
 pkgname=expect
 pkgver=5.45.4
-pkgrel=5
+pkgrel=5.1
 pkgdesc='A tool for automating interactive applications'
 arch=(x86_64)
 url='https://www.nist.gov/el/msid/expect.cfm'
@@ -32,6 +32,8 @@ prepare() {
 
 build() {
   cd expect${pkgver}
+  # GCC 15 rejects the Tcl command prototypes in exp_command.h
+  export CFLAGS+=" -Wno-error=incompatible-pointer-types"
   ./configure --prefix=/usr --mandir=/usr/share/man
   make
 }

@@ -1,0 +1,9 @@
+Build against the glib2 the repositories ship (2.88.3): the glib2=2.86.3 pin no longer resolves.
+
+--- a/PKGBUILD
++++ b/PKGBUILD
+@@ -19,3 +19,3 @@
+ )
+-_glibver=2.86.3
++_glibver=2.88.3
+ makedepends=(
