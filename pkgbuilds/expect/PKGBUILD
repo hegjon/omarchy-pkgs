@@ -32,8 +32,8 @@ prepare() {
 
 build() {
   cd expect${pkgver}
-  # GCC 15 rejects the Tcl command prototypes in exp_command.h
-  export CFLAGS+=" -Wno-error=incompatible-pointer-types"
+  # GCC 15 defaults to C23: expect's K&R-era prototypes need gnu17
+  export CFLAGS+=" -std=gnu17 -Wno-error=incompatible-pointer-types"
   ./configure --prefix=/usr --mandir=/usr/share/man
   make
 }
