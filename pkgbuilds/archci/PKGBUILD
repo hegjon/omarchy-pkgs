@@ -19,15 +19,16 @@
 pkgbase=archci
 pkgname=(archci archci-cli archci-master archci-worker archci-signer
          archci-worker-qemu-aarch64 archci-worker-qemu-riscv64)
-pkgver=0.3.14
+pkgver=0.3.15
 pkgrel=1
 pkgdesc='Headless build farm for Arch Linux packages: builds a PKGBUILD repository into a signed pacman repository'
 arch=(any)
 url='https://github.com/hegjon/archci'
 license=(MIT)
 makedepends=(gnupg devtools)
+checkdepends=(ruby git rsync openssh gnupg zstd shellcheck)
 source=("https://github.com/hegjon/archci/archive/refs/tags/v${pkgver}.tar.gz")
-sha256sums=('18427f18b9d1afaf1a3db628caa3189bf35235283c942dfc0201e084c173a113')
+sha256sums=('657b3372ae4481a9149fcc5ad81f0c5b10a8453c794ddf974ee4481e40570a21')
 _src="archci-$pkgver"
 
 _libdir=/usr/lib/archci
@@ -46,6 +47,13 @@ _install_role() {
     install -m644 "config/systemd/$f" "$pkgdir/usr/lib/systemd/system/$f"
   done
   install -Dm644 "config/systemd/archci-$role.tmpfiles" "$pkgdir/usr/lib/tmpfiles.d/archci-$role.conf"
+}
+
+# The test suite (test/run.sh) runs in check(): lint, the master's queue,
+# the signing chain, the worker, all on throwaway directories, no network.
+check() {
+  cd "$srcdir/$_src"
+  test/run.sh
 }
 
 package_archci() {
