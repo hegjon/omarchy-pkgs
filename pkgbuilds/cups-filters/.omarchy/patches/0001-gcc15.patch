@@ -1,11 +1,11 @@
-Build with GCC 15, which makes incompatible pointer types an error: foomatic-rip's start_process call trips it.
+Build with GCC 15: its C23 default reads an empty parameter list as (void), which makes foomatic-rip's own prototypes conflict, and incompatible pointer types are errors now.
 
 --- a/PKGBUILD
 +++ b/PKGBUILD
 @@ -20,4 +20,6 @@
  build() {
    cd "$pkgname"-$pkgver
-+  # GCC 15 rejects foomatic-rip's start_process() argument types
-+  export CFLAGS+=" -Wno-error=incompatible-pointer-types"
++  # GCC 15 defaults to C23: foomatic-rip's K&R-era prototypes need gnu17
++  export CFLAGS+=" -std=gnu17 -Wno-error=incompatible-pointer-types"
    ./configure --prefix=/usr  \
      --sysconfdir=/etc \
