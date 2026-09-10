@@ -1,4 +1,4 @@
-Build with flit-core 4: the pyproject pin flit_core<4,>=3.11 predates it and nothing needs it.
+Build with flit-core 4: the pyproject pin on flit_core<4 (written "flit_core>=3.11,<4") predates it and nothing needs it.
 
 --- a/PKGBUILD
 +++ b/PKGBUILD
@@ -6,6 +6,6 @@ Build with flit-core 4: the pyproject pin flit_core<4,>=3.11 predates it and not
  build() {
    cd ${pkgname#python-}-$pkgver
 +  # flit_core<4 is a pin, not a need: flit-core 4 builds it (Arch has 4.0.2)
-+  sed -i 's/flit_core<4,/flit_core/' pyproject.toml
++  sed -i 's/,<4"/"/; s/flit_core<4,\?/flit_core/' pyproject.toml
    python -m build --wheel --no-isolation
  }

@@ -23,7 +23,7 @@ b2sums=('c2dc5eeb6b7e1ea8a4381fa657b753fdb3afdd5fd348987b8fcac4118a625f2689d1911
 build() {
   cd ${pkgname#python-}-$pkgver
   # flit_core<4 is a pin, not a need: flit-core 4 builds it (Arch has 4.0.2)
-  sed -i 's/flit_core<4,/flit_core/' pyproject.toml
+  sed -i 's/,<4"/"/; s/flit_core<4,\?/flit_core/' pyproject.toml
   python -m build --wheel --no-isolation
 }
 
