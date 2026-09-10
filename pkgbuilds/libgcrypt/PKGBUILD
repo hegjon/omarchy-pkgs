@@ -6,7 +6,7 @@
 
 pkgname=libgcrypt
 pkgver=1.12.3
-pkgrel=1
+pkgrel=1.1
 pkgdesc="General purpose cryptographic library based on the code from GnuPG"
 arch=(x86_64)
 url="https://www.gnupg.org"
@@ -29,7 +29,8 @@ sha256sums=('98d1b0b3202d2b03fa754a35aa3cbbfcf526a3260d8d2ee213748001b1043006'
 # validpgpkeys=('6DAA6E64A76D2840571B4902528897B826403ADA'  # "Werner Koch (dist signing 2020)"
 #               'AC8E115BF73E2D8D47FA9908E98E9B2D19C6C8BD') # Niibe Yutaka (GnuPG Release Key)
 
-validpgpkeys=('6DAA6E64A76D2840571B4902528897B826403ADA')  # "Werner Koch (dist signing 2020)"
+validpgpkeys=('6DAA6E64A76D2840571B4902528897B826403ADA'  # "Werner Koch (dist signing 2020)"
+              'AC8E115BF73E2D8D47FA9908E98E9B2D19C6C8BD') # Niibe Yutaka (GnuPG Release Key)
 
 prepare() {
   cd "${pkgname}"-${pkgver}

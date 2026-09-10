@@ -1,0 +1,11 @@
+The tarball on gnupg.org is now signed by the GnuPG release key (Niibe Yutaka), which Arch's PKGBUILD lists but has commented out; its own build used a cached download. Trust both keys, as the commented line already does.
+
+--- a/PKGBUILD
++++ b/PKGBUILD
+@@ -30,3 +30,4 @@
+ #               'AC8E115BF73E2D8D47FA9908E98E9B2D19C6C8BD') # Niibe Yutaka (GnuPG Release Key)
+ 
+-validpgpkeys=('6DAA6E64A76D2840571B4902528897B826403ADA')  # "Werner Koch (dist signing 2020)"
++validpgpkeys=('6DAA6E64A76D2840571B4902528897B826403ADA'  # "Werner Koch (dist signing 2020)"
++              'AC8E115BF73E2D8D47FA9908E98E9B2D19C6C8BD') # Niibe Yutaka (GnuPG Release Key)
+ 

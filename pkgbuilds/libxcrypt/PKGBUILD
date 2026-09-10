@@ -3,7 +3,7 @@
 pkgbase=libxcrypt
 pkgname=(libxcrypt libxcrypt-compat)
 pkgver=4.5.2
-pkgrel=1
+pkgrel=1.1
 pkgdesc='Modern library for one-way hashing of passwords'
 arch=('x86_64')
 url='https://github.com/besser82/libxcrypt/'
@@ -18,6 +18,8 @@ sha256sums=('71513a31c01a428bccd5367a32fd95f115d6dac50fb5b60c779d5c7942aec071'
 
 build() {
   mkdir build-libxcrypt build-libxcrypt-compat
+  # GCC 15: crypt-gost-yescrypt.c initializes a pointer from a const one
+  export CFLAGS+=" -Wno-error=discarded-qualifiers"
 
   cd "${srcdir}/build-libxcrypt/"
   "${srcdir}/${pkgbase}-${pkgver}"/configure \

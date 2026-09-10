@@ -1,0 +1,11 @@
+Build with GCC 15: crypt-gost-yescrypt.c discards a const qualifier, which -Werror turns fatal.
+
+--- a/PKGBUILD
++++ b/PKGBUILD
+@@ -19,4 +19,6 @@
+ build() {
+   mkdir build-libxcrypt build-libxcrypt-compat
++  # GCC 15: crypt-gost-yescrypt.c initializes a pointer from a const one
++  export CFLAGS+=" -Wno-error=discarded-qualifiers"
+ 
+   cd "${srcdir}/build-libxcrypt/"
