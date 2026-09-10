@@ -1,0 +1,11 @@
+Build with GCC 15: its C23 default reads an empty parameter list as (void), which makes lqr_energy.c's own prototypes conflict.
+
+--- a/PKGBUILD
++++ b/PKGBUILD
+@@ -17,4 +17,6 @@
+ build() {
+   cd $pkgname
++  # GCC 15 defaults to C23: liblqr's K&R-era prototypes need gnu17
++  export CFLAGS+=" -std=gnu17"
+   ./configure \
+     --prefix=/usr 
