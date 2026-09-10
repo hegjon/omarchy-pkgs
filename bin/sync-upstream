@@ -971,6 +971,10 @@ EOF
   check "malformed upstream fails the sync instead of skipping" "1" "$((FAILED - prev_failed))"
   FAILED=0
 
+  if ! bash "$BUILD_ROOT/pkgbuilds/cua-driver-bin/.omarchy/upstream-test.sh"; then
+    failures=$((failures + 1))
+  fi
+
   echo ""
   if [[ "$failures" -eq 0 ]]; then
     print_success "Self-test passed"
