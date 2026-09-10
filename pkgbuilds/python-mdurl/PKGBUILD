@@ -3,7 +3,7 @@
 _pkgname=mdurl
 pkgname=python-$_pkgname
 pkgver=0.1.2
-pkgrel=9
+pkgrel=9.1
 pkgdesc='URL utilities for markdown-it'
 arch=('any')
 url='https://github.com/executablebooks/mdurl'
@@ -16,6 +16,8 @@ sha512sums=('e301ca3ab6d80df1ad28b9c2725d66b6e6cf139d93e5f7fd2a70333678616a3f6db
 
 build() {
   cd $_pkgname-$pkgver
+  # flit_core<4 is a pin, not a need: flit-core 4 builds it (Arch has 4.0.2)
+  sed -i 's/,<4"/"/; s/flit_core<4,\?/flit_core/' pyproject.toml
 
   python -m build -nw
 }

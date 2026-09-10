@@ -4,7 +4,7 @@
 
 pkgname=python-blinker
 pkgver=1.9.0
-pkgrel=4
+pkgrel=4.1
 pkgdesc="Fast, simple object-to-object and broadcast signaling"
 arch=('any')
 url="https://blinker.readthedocs.io"
@@ -17,6 +17,8 @@ sha512sums=('587eaead4750eb742209703d792498293579dc55afc855498066b49a067527b6b3e
 
 build() {
   cd blinker-$pkgver
+  # flit_core<4 is a pin, not a need: flit-core 4 builds it (Arch has 4.0.2)
+  sed -i 's/,<4"/"/; s/flit_core<4,\?/flit_core/' pyproject.toml
   python -m build --wheel --no-isolation
 }
 

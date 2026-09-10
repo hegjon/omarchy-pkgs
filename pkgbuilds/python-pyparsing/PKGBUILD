@@ -7,7 +7,7 @@
 
 pkgname=python-pyparsing
 pkgver=3.3.2
-pkgrel=1
+pkgrel=1.1
 pkgdesc='General parsing module for Python'
 arch=(any)
 url='https://github.com/pyparsing/pyparsing/'
@@ -33,6 +33,8 @@ b2sums=('284f4dc66ea9b0316acb8b83541717f53c1fd7fb02f241ed62169fa88f283ab0b8a46d3
 
 build() {
   cd "$pkgname"
+  # flit_core<4 is a pin, not a need: flit-core 4 builds it (Arch has 4.0.2)
+  sed -i 's/,<4"/"/; s/flit_core<4,\?/flit_core/' pyproject.toml
 
   python -m build --wheel --no-isolation
 }

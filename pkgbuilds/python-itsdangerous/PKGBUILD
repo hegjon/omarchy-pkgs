@@ -5,7 +5,7 @@
 
 pkgname=python-itsdangerous
 pkgver=2.2.0
-pkgrel=2
+pkgrel=2.1
 pkgdesc='Various helpers to pass trusted data to untrusted environments'
 arch=('any')
 url='https://itsdangerous.palletsprojects.com'
@@ -26,6 +26,8 @@ sha256sums=('7b0c6d4186e963b88489b69603b7ab2bf7c8e9eb4135a7b13b5f21bd4b937f2b')
 
 build() {
   cd ${pkgname#python-}-$pkgver
+  # flit_core<4 is a pin, not a need: flit-core 4 builds it (Arch has 4.0.2)
+  sed -i 's/,<4"/"/; s/flit_core<4,\?/flit_core/' pyproject.toml
   python -m build --wheel --no-isolation
 }
 
