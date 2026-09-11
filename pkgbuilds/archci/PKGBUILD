@@ -5,24 +5,24 @@
 # change that one, then regenerate this with the next tag.
 #
 # archci: what every role shares (lib/, config, user). archci-master, -worker,
-# -signer: one role each (scripts under /usr/lib/archci/<role>/, units, state
+# -signer, -sourcer: one role each (scripts under /usr/lib/archci/<role>/, units, state
 # dirs, its `archci` command line). Keys, R2 config, enabling units: manual.
 # Built from the tag's tarball; tools/release-pkgbuild fills in pkgver and the
 # checksum for the copy the farm builds.
 
 pkgbase=archci
-pkgname=(archci archci-master archci-worker archci-signer
+pkgname=(archci archci-master archci-worker archci-signer archci-sourcer
          archci-worker-qemu-aarch64 archci-worker-qemu-riscv64)
-pkgver=0.4.3
+pkgver=0.4.4
 pkgrel=1
 pkgdesc='Headless build farm for Arch Linux packages: builds a PKGBUILD repository into a signed pacman repository'
 arch=(any)
 url='https://github.com/hegjon/archci'
 license=(MIT)
-makedepends=(gnupg devtools)
+makedepends=(gnupg)
 checkdepends=(ruby git rsync openssh gnupg zstd shellcheck)
 source=("https://github.com/hegjon/archci/archive/refs/tags/v${pkgver}.tar.gz")
-sha256sums=('c8e807133019d00b7b351733df5a93645332bc9a41a8a0f7d711fe9834695a17')
+sha256sums=('39e797c9c177c7bb168026e6243f5e95fdbb625348ab13f36d01ae83ecc5b59c')
 _src="archci-$pkgver"
 
 _libdir=/usr/lib/archci
@@ -108,20 +108,12 @@ package_archci-worker() {
   install -Dm644 config/systemd/worker/journald@archci.conf "$pkgdir/usr/lib/systemd/journald@archci.conf.d/archci.conf"
   install -Dm644 config/systemd/worker/systemd-journal-upload.service.d/archci.conf \
     "$pkgdir/usr/lib/systemd/system/systemd-journal-upload.service.d/archci.conf"
-  # chroot makepkg.conf per port arch: devtools' x86_64 one (and conf.d) through
-  # arch/<arch>/makepkg.conf.sed; fails if a substitution no longer matches
-  local dt=/usr/share/devtools/makepkg.conf.d sedf a out f
-  for sedf in arch/*/makepkg.conf.sed; do
-    a=${sedf#arch/}; a=${a%%/*}; out=$pkgdir$_libdir/arch/$a
-    install -d "$out/makepkg.conf.d"
-    sed -f "$sedf" "$dt/x86_64.conf" >"$out/makepkg.conf"
-    for f in "$dt"/x86_64.conf.d/*.conf; do
-      sed -f "$sedf" "$f" >"$out/makepkg.conf.d/${f##*/}"
-    done
-    grep -q "^CARCH=\"$a\"$" "$out/makepkg.conf" || { echo "$sedf did not set CARCH=$a" >&2; return 1; }
-    if grep -rE 'x86|cf-protection|leaf-frame-pointer|lib32' "$out" | grep -v '^[^:]*:#'; then
-      echo "x86-only flags survived $sedf; update it for this devtools" >&2; return 1
-    fi
+  # chroot makepkg.conf per port arch (arch/<arch>/, kept in step with devtools' x86_64 one by hand)
+  local a
+  for a in arch/*/; do
+    a=${a%/}; a=${a#arch/}
+    install -Dm644 "arch/$a/makepkg.conf" "$pkgdir$_libdir/arch/$a/makepkg.conf"
+    install -Dm644 arch/"$a"/makepkg.conf.d/*.conf -t "$pkgdir$_libdir/arch/$a/makepkg.conf.d"
   done
 }
 
@@ -158,6 +150,14 @@ package_archci-worker-qemu-riscv64() {
   install=archci-worker-qemu-riscv64.install
   backup=(etc/binfmt.d/qemu-riscv64-static.conf etc/archci/riscv64/extra.conf)
   _package_qemu_arch riscv64
+}
+
+package_archci-sourcer() {
+  pkgdesc='Headless build farm for Arch Linux packages (sourcer: fetches upstream sources into source packages on R2 for the workers)'
+  depends=("archci=$pkgver-$pkgrel" git rclone gnupg openssh libarchive debugedit)
+
+  _install_role sourcer archci-sourcer.service archci-sourcer.timer
+  _install_cli sourcer
 }
 
 package_archci-signer() {
