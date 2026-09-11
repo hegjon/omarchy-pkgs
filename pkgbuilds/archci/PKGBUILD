@@ -15,16 +15,16 @@
 pkgbase=archci
 pkgname=(archci archci-master archci-worker archci-signer archci-sourcer archci-remote-logging
          archci-worker-qemu-aarch64 archci-worker-qemu-riscv64)
-pkgver=0.4.6
+pkgver=0.4.7
 pkgrel=1
 pkgdesc='Headless build farm for Arch Linux packages: builds a PKGBUILD repository into a signed pacman repository'
 arch=(any)
 url='https://github.com/hegjon/archci'
 license=(MIT)
 makedepends=(gnupg)
-checkdepends=(ruby jq git rsync openssh gnupg zstd shellcheck)
+checkdepends=(ruby jq git rsync openssh gnupg zstd shellcheck attr)
 source=("https://github.com/hegjon/archci/archive/refs/tags/v${pkgver}.tar.gz")
-sha256sums=('685c9dee5013d0b5ef8bfeda91305354272a8bb434bd10e64c741580fd896525')
+sha256sums=('1f7b7229a1a1fc52ba3ff8c22685da7393f4335f200ff59cac70dd9fb85ddcab')
 _src="archci-$pkgver"
 
 _libdir=/usr/lib/archci
@@ -78,11 +78,10 @@ _install_cli() {
 
 package_archci-master() {
   pkgdesc='Headless build farm for Arch Linux packages (master: sync the PKGBUILD repository, hand out jobs, stage results)'
-  depends=("archci=$pkgver-$pkgrel" bash-completion ruby jq rsync openssh rclone)
+  depends=("archci=$pkgver-$pkgrel" bash-completion ruby jq rsync openssh rclone attr btrfs-progs)
   # the release key is never on the master
   conflicts=(archci-signer)
-  optdepends=('btrfs-progs: btrfs subvolumes for the state directories'
-              'libmicrohttpd: receive worker journals with systemd-journal-remote')
+  optdepends=('libmicrohttpd: receive worker journals with systemd-journal-remote')
 
   _install_role master archci-scan.service archci-scan.timer \
     archci-housekeeping.service archci-housekeeping.timer archci-stage.service archci-stage.timer \
@@ -99,9 +98,8 @@ package_archci-master() {
 
 package_archci-worker() {
   pkgdesc='Headless build farm for Arch Linux packages (worker: builds jobs in clean devtools chroots)'
-  depends=("archci=$pkgver-$pkgrel" "archci-remote-logging=$pkgver-$pkgrel" devtools rsync openssh gnupg)
+  depends=("archci=$pkgver-$pkgrel" "archci-remote-logging=$pkgver-$pkgrel" devtools rsync openssh gnupg btrfs-progs)
   conflicts=(archci-sourcer)   # one role's /usr/bin/archci per host
-  optdepends=('btrfs-progs: snapshot-based clean chroots')
 
   _install_role worker archci-worker@.service archci-build@.service archci-worker-setup.service
   _install_cli worker
