@@ -1,0 +1,58 @@
+# Maintainer: George Rawlinson <grawlinson@archlinux.org>
+# Contributor: Felix Yan <felixonmars@archlinux.org>
+# Contributor: Daniel Wallace <danielwallace at gtmanfred dot com>
+# Contributor: Giovanni Scafora <giovanni@archlinux.org>
+
+pkgname=python-beautifulsoup4
+_pkgname="${pkgname#python-}"
+pkgver=4.15.0
+pkgrel=1
+pkgdesc='A Python HTML/XML parser designed for quick turnaround projects like screen-scraping'
+arch=(any)
+url='https://www.crummy.com/software/BeautifulSoup/'
+license=(MIT)
+depends=(
+  python
+  python-soupsieve
+  python-typing_extensions
+)
+makedepends=(
+  python-build
+  python-installer
+  python-hatchling
+)
+checkdepends=(python-pytest)
+optdepends=(
+  'python-cchardet: alternative to autodetect character encodings'
+  'python-chardet: to autodetect character encodings'
+  'python-lxml: alternative HTML parser'
+  'python-html5lib: alternative HTML parser'
+)
+source=("$pkgname-$pkgver.tar.gz::https://www.crummy.com/software/BeautifulSoup/bs4/download/${pkgver%.*}/$_pkgname-$pkgver.tar.gz")
+sha512sums=('ccf07cac23ca52f50802b3d6271b42c1367022e2bc409b1be2924bbbd274cebce3b5afde1c1c4f253802b7a58f907cb60a29d347ae2765c33ce85bec9dcc473c')
+b2sums=('c9c3745b338ffdf4c8d51246d914f52f7a0caf45933ef413c16f4c7a5a80b9c090463efa9960044065b074b9790db80271cc1cb51af50714bb809c991cca8477')
+
+build() {
+  cd "$_pkgname-$pkgver"
+
+  python -m build --wheel --no-isolation
+}
+
+check() {
+  cd "$_pkgname-$pkgver"
+
+  local deselected=(
+    bs4/tests/test_htmlparser.py::TestHTMLParserTreeBuilder::test_rejected_input
+  )
+
+  pytest -v ${deselected[@]/#/--deselect }
+}
+
+package() {
+  cd "$_pkgname-$pkgver"
+
+  python -m installer --destdir="$pkgdir" dist/*.whl
+
+  # license
+  install -vDm644 -t "$pkgdir/usr/share/licenses/$pkgname" LICENSE
+}

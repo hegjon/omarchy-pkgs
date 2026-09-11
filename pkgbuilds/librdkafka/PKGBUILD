@@ -1,0 +1,64 @@
+# Maintainer: Anatol Pomozov
+# Maintainer: Carl Smedstad <carsme@archlinux.org>
+# Contributor: Andrew Sun <adsun701 at gmail dot com>
+# Contributor: Joel Teichroeb <joel at teichroeb dot net>
+# Contributor: Alim Gokkaya <alimgokkaya at gmail dot com>
+
+pkgname=librdkafka
+pkgver=2.14.2
+pkgrel=1
+pkgdesc='The Apache Kafka C/C++ library'
+arch=(x86_64)
+url='https://github.com/confluentinc/librdkafka'
+license=(
+  Apache-2.0
+  BSD-2-Clause
+  BSD-3-Clause
+  MIT
+  Zlib
+)
+depends=(
+  curl
+  glibc
+  libgcc
+  libsasl
+  libstdc++
+  lz4
+  openssl
+  zlib
+  zstd
+)
+makedepends=(
+  cmake
+  python
+  rapidjson
+)
+provides=(librdkafka.so)
+source=("$url/archive/v$pkgver/$pkgname-$pkgver.tar.gz")
+b2sums=('061f4997df98d68678f678e212c10c43d78b8ae153c9c83153bd9bea0ea4e3b6cc220f7f37a9d545296abb2ee7a0c006be56a0fc63d1cb074786292e96ee985e')
+
+build() {
+  cd $pkgname-$pkgver
+  cmake -S . -B build \
+    -DCMAKE_BUILD_TYPE=None \
+    -DCMAKE_INSTALL_PREFIX=/usr \
+    -Wno-dev
+  cmake --build build
+}
+
+check() {
+  cd $pkgname-$pkgver
+  local skip_tests=(
+	  RdKafkaTestInParallel
+	  RdKafkaTestSequentially
+    RdKafkaTestBrokerLess
+  )
+  local skip_tests_pattern="${skip_tests[0]}$(printf '|%s' "${skip_tests[@]:1}")"
+  ctest --test-dir build --output-on-failure -E "$skip_tests_pattern"
+}
+
+package() {
+  cd $pkgname-$pkgver
+  DESTDIR="$pkgdir" cmake --install build
+  install -vDm644 -t "$pkgdir/usr/share/doc/$pkgname" ./*.md
+}

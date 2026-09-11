@@ -1,0 +1,64 @@
+# Maintainer: George Rawlinson <grawlinson@archlinux.org>
+# Contributor: Adrian Perez de Castro <aperez@igalia.com>
+
+pkgname=mold
+pkgver=2.42.1
+pkgrel=1
+pkgdesc='A Modern Linker'
+arch=('x86_64')
+url='https://github.com/rui314/mold'
+license=('MIT')
+# bundled: xxhash, mimalloc
+depends=(
+  glibc
+  libblake3
+  libstdc++
+  tbb
+  zlib
+  zstd
+)
+makedepends=(
+  cmake
+  ninja
+  git
+  mold
+  python
+)
+checkdepends=(
+  clang
+  libdwarf
+)
+source=("${pkgname}::git+${url}.git#tag=v${pkgver}")
+sha512sums=('5c814aecf420de9c523b86584651e687e36f1e8afc0c5a2c62c62b5e7cd52e4b5af75b120332a99f070d0b35110fce3c3f23fc75db59c99568505f340d5c4b46')
+b2sums=('74edddf9760b7f556ad96b1616c19419157fa2500445c4fb9aeea51eaf66dcae56cca2ee451ec40489870658fc33793dba898e859b99a421c4778b320b968df0')
+
+build() {
+  local cmake_options=(
+    -B build
+    -S "$pkgname"
+    -G Ninja
+    -W no-dev
+    -D CMAKE_BUILD_TYPE=None
+    -D CMAKE_INSTALL_PREFIX=/usr
+    -D CMAKE_INSTALL_LIBEXECDIR=lib
+    -D MOLD_USE_SYSTEM_MIMALLOC=OFF
+    -D MOLD_USE_SYSTEM_TBB=ON
+    -D MOLD_LTO=ON
+    -D MOLD_USE_MOLD=ON
+  )
+
+  cmake "${cmake_options[@]}"
+
+  cmake --build build
+}
+
+check() {
+  ctest --test-dir build --output-on-failure -j$(nproc)
+}
+
+package() {
+  DESTDIR="$pkgdir" cmake --install build
+
+  # license
+  install -vDm644 -t "$pkgdir/usr/share/licenses/$pkgname" "$pkgname/LICENSE"
+}

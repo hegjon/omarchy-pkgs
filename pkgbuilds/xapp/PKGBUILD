@@ -1,0 +1,59 @@
+# Maintainer: Bruno Pagani <archange@archlinux.org>
+# Contributor: Eli Schwartz <eschwartz@archlinux.org>
+# Contributor: Alex Filgueira <alexfilgueira (at antergos.com)>
+# Contributor: Nate Simon <aurpkg (at natesimon.net)>
+
+pkgname=xapp
+pkgver=3.2.3
+pkgrel=1
+pkgdesc="Common library for X-Apps project"
+arch=(x86_64)
+url='https://github.com/linuxmint/xapp'
+license=('GPL-3.0-only AND LGPL-3.0-only')
+depends=(
+  bash
+  cairo
+  dconf
+  libgcc
+  gdk-pixbuf2
+  glib2
+  glibc
+  gtk3
+  hicolor-icon-theme
+  libdbusmenu-gtk3
+  libgnomekbd
+  libx11
+  libxkbfile
+  pango
+  python
+  python-gobject
+  python-setproctitle
+  xapp-symbolic-icons
+)
+makedepends=(
+  git
+  glib2-devel
+  gobject-introspection
+  meson
+  vala
+)
+provides=(xapps)
+conflicts=(xapps)
+replaces=(xapps)
+source=("git+https://github.com/linuxmint/xapp.git#tag=$pkgver")
+sha256sums=('0d34cdd60428bb1b0d77e596df511ed7fd08118a87912e037bd12375f87edfda')
+b2sums=('d1716222f03c7cd91c85bd4fe756c48f8f909de13fdfb681823d8911774009b933d649bfad73e751f3680e455f4b7dff63aeacd0bb270cc6f05fd1129d60fc48')
+
+build() {
+  arch-meson $pkgname build \
+    -D docs=true
+  meson compile -C build
+}
+
+package(){
+  meson install -C build --destdir="$pkgdir"
+
+  # byte-compile python modules since meson does not implement autotools’ py-compile.
+  local site_packages=$(python -c "import site; print(site.getsitepackages()[0])")
+  python -m compileall -o 0 -o 1 -o 2 --hardlink-dupes -s "$pkgdir" "$pkgdir"$site_packages
+}

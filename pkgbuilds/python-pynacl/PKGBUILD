@@ -1,0 +1,49 @@
+# Maintainer: Johannes Löthberg <johannes@kyriasis.com>
+# Maintainer: Carl Smedstad <carsme@archlinux.org>
+# Contributor: Ivan Shapovalov <intelfx@intelfx.name>
+
+pkgname=python-pynacl
+pkgver=1.6.2
+pkgrel=1
+pkgdesc='Python binding to the Networking and Cryptography (NaCl) library'
+arch=('x86_64')
+url='https://github.com/pyca/pynacl'
+license=('Apache-2.0')
+depends=(
+  'glibc'
+  'libsodium'
+  'python'
+  'python-cffi'
+)
+makedepends=(
+  'python-build'
+  'python-installer'
+  'python-pycparser'
+  'python-setuptools'
+  'python-wheel'
+)
+checkdepends=(
+  'python-hypothesis'
+  'python-pytest'
+)
+source=("$url/archive/$pkgver/$pkgname-$pkgver.tar.gz")
+b2sums=('6df2326873b5cac01cf4d427946fc3c57228f6b87b006d6d54c36ae882d3c2277c490be2f328e9c52e6213ba749c6cb9e0ea3b5745c04cc68e5691692eaf64b4')
+
+build() {
+  cd ${pkgname#python-}-$pkgver
+  export SODIUM_INSTALL=system
+  python -m build --wheel --no-isolation
+}
+
+check() {
+  cd ${pkgname#python-}-$pkgver
+  python -m venv --system-site-packages test-env
+  test-env/bin/python -m installer dist/*.whl
+  test-env/bin/python -m pytest
+}
+
+package() {
+  cd ${pkgname#python-}-$pkgver
+  export SODIUM_INSTALL=system
+  python -m installer --destdir="$pkgdir" dist/*.whl
+}

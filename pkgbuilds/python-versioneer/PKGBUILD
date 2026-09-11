@@ -1,0 +1,45 @@
+# Maintainer: George Rawlinson <grawlinson@archlinux.org>
+
+pkgname=python-versioneer
+pkgver=0.29
+pkgrel=5
+pkgdesc='A tool for managing a recorded version number in setuptools-based python projects'
+arch=(any)
+url='https://github.com/python-versioneer/python-versioneer'
+license=(Unlicense)
+depends=(python python-setuptools)
+makedepends=(
+  git
+  python-build
+  python-installer
+  python-wheel
+)
+source=("$pkgname::git+$url#tag=$pkgver")
+sha512sums=('d161b7eadacb4b4b9cabc63d8073ead23b0b1f7b59b3bfad7b2099a899c1fef61d5da645dca328a0643c73cf174eeaa078dd9de67dafba13f9d8ec598fa6e6e3')
+b2sums=('eaa8095cad7d2ecb5330383334c9905223e32e69c5347dd6142ed9fef806acdd3991e487236e3115a097e7a76af94aedeb87ed2031a540ce9da91723385d2061')
+
+build() {
+  cd "$pkgname"
+
+  python -m build --wheel --no-isolation
+}
+
+check() {
+  cd "$pkgname"
+
+  # temporary install
+  python -m installer --destdir="$(pwd)/tmp" dist/*.whl
+  local site_packages=$(python -c "import site; print(site.getsitepackages()[0])")
+  export PYTHONPATH="$(pwd)/tmp/$site_packages"
+
+  python -m unittest discover test
+}
+
+package() {
+  cd "$pkgname"
+
+  python -m installer --destdir="$pkgdir" dist/*.whl
+
+  # license
+  install -vDm644 -t "$pkgdir/usr/share/licenses/$pkgname" LICENSE
+}

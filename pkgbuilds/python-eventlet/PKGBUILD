@@ -1,0 +1,66 @@
+# Maintainer: Levente Polyak <anthraxx[at]archlinux[dot]org>
+# Maintainer: Carl Smedstad <carsme@archlinux.org>
+
+pkgname=python-eventlet
+pkgver=0.41.0
+pkgrel=1
+pkgdesc='Highly concurrent networking library'
+url='https://eventlet.net'
+arch=('any')
+license=('MIT')
+depends=(
+  'python'
+  'python-dnspython'
+  'python-greenlet'
+)
+makedepends=(
+  'python-build'
+  'python-hatch-vcs'
+  'python-hatchling'
+  'python-installer'
+  'python-sphinx'
+  'python-sphinxcontrib-apidoc'
+)
+checkdepends=(
+  'python-httplib2'
+  'python-psycopg2'
+  'python-pyopenssl'
+  'python-pytest'
+  'python-pyzmq'
+)
+optdepends=(
+  'python-httplib2: non-blocking HTTP support'
+  'python-psycopg2: non-blocking PostgreSQL support'
+  'python-pyopenssl: non-blocking SSL support'
+  'python-pyzmq: non-blocking ZeroMQ support'
+)
+source=("https://github.com/eventlet/eventlet/archive/$pkgver/${pkgname#python-}-$pkgver.tar.gz")
+sha512sums=('fc913b05fddb8690b9136fc87777655e4e4398f0fb9156bb8995c2bb5481e88f01451348141196fb0f12371796a410c0e81e5bc2ac81aacc7cc939729c4d6b70')
+b2sums=('165d9cb9ef29cd176618f013e9240bc782bf487dbe63dc732098640d91e39c9524e5ff1955f2bba98faca3941a59f10081cf6a88ad63baa7bfe50b80a8222d8d')
+
+build() {
+  cd ${pkgname#python-}-$pkgver
+  export SETUPTOOLS_SCM_PRETEND_VERSION=$pkgver
+  python -m build --wheel --no-isolation
+
+  python -m venv --system-site-packages doc-env
+  doc-env/bin/python -m installer dist/*.whl
+  local site_packages=$(doc-env/bin/python -c "import site; print(site.getsitepackages()[0])")
+  PYTHONPATH="$site_packages" sphinx-build -d /tmp -b text doc/source doc/build/html
+}
+
+check() {
+  cd ${pkgname#python-}-$pkgver
+  # test_ssl_close already failed under Python3.12 "known regression"
+  pytest tests --deselect=tests/ssl_test.py::SSLTest::test_ssl_close 
+}
+
+package() {
+  cd ${pkgname#python-}-$pkgver
+  python -m installer --destdir="$pkgdir" dist/*.whl
+  install -vDm 644 -t "$pkgdir/usr/share/licenses/$pkgname" LICENSE
+
+  install -vdm 755 "$pkgdir/usr/share/doc/$pkgname"
+  cp -vr doc/build/html "$pkgdir/usr/share/doc/$pkgname"
+  cp -vr examples "$pkgdir/usr/share/doc/$pkgname"
+}

@@ -1,0 +1,56 @@
+# Maintainer: Jan Alexander Steffens (heftig) <heftig@archlinux.org>
+# Contributor: Bruno Santos <brunomanuelsantos@tecnico.ulisboa.pt>
+
+pkgname=python-sphinx-hawkmoth
+pkgver=0.22.0
+pkgrel=3
+pkgdesc="Sphinx autodoc C extension"
+url="https://github.com/jnikula/hawkmoth"
+arch=(x86_64)
+license=(BSD-2-Clause)
+depends=(
+  clang
+  python
+  python-docutils
+  python-sphinx
+)
+makedepends=(
+  git
+  python-build
+  python-hatchling
+  python-installer
+  python-setuptools
+  python-wheel
+)
+checkdepends=(
+  python-pytest
+  python-pytest-xdist
+  python-strictyaml
+)
+source=(
+  "git+https://github.com/jnikula/hawkmoth?signed#tag=v$pkgver"
+)
+b2sums=('63dd375e16f1c9c7aedb73e05c504ae258bb4ea923c1271ae597c2344a1d3ff4400dab4eafaac2c1e5618c168431525a01cfef8a9300ea2148f9c0533b87d3d2')
+validpgpkeys=(
+  3FE6F7606966ED87707760B6A14C59DFEDB4CE88 # Jani Nikula <jani@nikula.org>
+)
+
+prepare() {
+  cd hawkmoth
+}
+
+build() {
+  python -m build --wheel --no-isolation hawkmoth
+}
+
+check() {
+  cd hawkmoth
+  PYTHONPATH="$PWD/src" make test-verbose
+}
+
+package() {
+  python -m installer --destdir="$pkgdir" hawkmoth/dist/*.whl
+  install -Dm644 hawkmoth/LICENSE -t "$pkgdir/usr/share/licenses/$pkgname"
+}
+
+# vim:set sw=2 sts=-1 et:

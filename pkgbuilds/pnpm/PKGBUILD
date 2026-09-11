@@ -1,0 +1,68 @@
+# Maintainer: Daniel M. Capella <polyzen@archlinux.org>
+# Contributor: Severen Redwood <me@severen.dev>
+# Contributor: Tomasz Jakub Rup <tomasz.rup@gmail.com>
+
+_bootstrap=0
+pkgname=pnpm
+pkgver=11.26.0
+pkgrel=1
+pkgdesc='Fast, disk space efficient package manager'
+arch=(any)
+url=https://pnpm.io
+license=(MIT)
+depends=(node-gyp)
+makedepends=(
+  git
+  pnpm
+)
+if (( _bootstrap == 0 )); then
+  makedepends+=(
+    npm
+    python
+  )
+fi
+source=("git+https://github.com/$pkgname/$pkgname.git#tag=v$pkgver?signed")
+if (( _bootstrap == 1 )); then
+  source+=("pnpm-linux-x64-v$pkgver.tar.gz::https://github.com/pnpm/pnpm/releases/download/v$pkgver/pnpm-linux-x64.tar.gz")
+  noextract=("pnpm-linux-x64-v$pkgver.tar.gz")
+fi
+b2sums=('b948e21a66cbb65f6e973a739dbcf8165281f228be5fa0dfc51895b13ec3898adbdf5ec71045b893c76b8d3fadf19e8c21b75e4ac1f8c9c1fa5083ed23d11885')
+validpgpkeys=(7B74D1299568B586BA9962B5649E4D4AF74E7DEC) # Zoltan Kochan <z@kochan.io>
+
+prepare() {
+  if (( _bootstrap == 1 )); then
+    mkdir tmp
+    bsdtar xf pnpm-linux-x64-v$pkgver.tar.gz -C tmp
+    ln -sr tmp/pn{pm,}
+    export PATH="$srcdir/tmp:$PATH"
+  fi
+
+  cd $pkgname/${pkgname}11/$pkgname
+  pnpm install --frozen-lockfile
+
+}
+
+build() {
+  if (( _bootstrap == 1 )); then
+    export PATH="$srcdir/tmp:$PATH"
+  fi
+
+  cd $pkgname/${pkgname}11/$pkgname
+  pnpm run compile
+}
+
+package() {
+  local mod_dir=/usr/lib/node_modules/$pkgname
+
+  install -d "$pkgdir"/{usr/bin,$mod_dir/dist}
+  ln -s $mod_dir/bin/$pkgname.mjs "$pkgdir"/usr/bin/$pkgname
+  ln -s $mod_dir/bin/$pkgname.mjs "$pkgdir"/usr/bin/pn
+  ln -s $mod_dir/bin/pnpx.mjs "$pkgdir"/usr/bin/pnpx
+  ln -s $mod_dir/bin/pnpx.mjs "$pkgdir"/usr/bin/pnx
+
+  cd $pkgname/${pkgname}11/$pkgname
+  cp -r bin package.json "$pkgdir"/$mod_dir
+  install -Dt "$pkgdir"/usr/share/licenses/$pkgname LICENSE
+  cd dist
+  cp -r $pkgname.mjs pnpmrc templates worker.js "$pkgdir"/$mod_dir/dist
+}

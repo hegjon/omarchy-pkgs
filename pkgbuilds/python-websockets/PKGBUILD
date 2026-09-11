@@ -1,0 +1,46 @@
+# Maintainer: Levente Polyak <anthraxx[at]archlinux[dot]org>
+# Maintainer: Carl Smedstad <carsme@archlinux.org>
+# Contributor: Sherlock Holo <sherlockya@gmail.com>
+# Contributor: user6553591 <Message on Reddit>
+
+pkgname=python-websockets
+pkgver=16.1.1
+pkgrel=1
+pkgdesc='Python implementation of the WebSocket Protocol (RFC 6455)'
+arch=('x86_64')
+url='https://github.com/aaugustin/websockets'
+license=('BSD-3-Clause')
+depends=(
+  'glibc'
+  'python'
+)
+makedepends=(
+  'python-build'
+  'python-installer'
+  'python-setuptools'
+  'python-wheel'
+)
+checkdepends=('python-werkzeug')
+source=("$url/archive/$pkgver/$pkgname-$pkgver.tar.gz")
+sha512sums=('7eeff69ebf0b92c93149ce030fd92440787c3d3b9007b5b0669f0f37cc4c297bb2a207a7742e0450e3ecf1b973fe0306ac9e5dcb96c0d2d907956279c41b6cbd')
+b2sums=('65cf3cb3d755ce131d9f342ef57c3db4fdc7434479eb2e6a86728976ef4245c18245380a7ffad2f135f9b459fe0f54c9682299caa13e3286535f6766985a0438')
+
+build() {
+  cd ${pkgname#python-}-${pkgver}
+  python -m build --wheel --skip-dependency-check --no-isolation
+}
+
+check() {
+  cd ${pkgname#python-}-${pkgver}
+  python -m venv --system-site-packages test-env
+  test-env/bin/python -m installer dist/*.whl
+  test-env/bin/python -m unittest discover -v
+}
+
+package() {
+  cd ${pkgname#python-}-${pkgver}
+  python -m installer --destdir="$pkgdir" dist/*.whl
+  install -vDm644 -t "$pkgdir/usr/share/licenses/$pkgname" LICENSE
+}
+
+# vim: ts=2 sw=2 et:

@@ -1,0 +1,30 @@
+# Maintainer: Giovanni Scafora <giovanni@archlinux.org>
+# Contributor: Gergely Imreh <imrehg(at)gmail(dot)com>
+# Contributor: Ghost of Kendo <ghostofkendo at gmail dot com>
+
+pkgname=python-netifaces
+pkgver=0.11.0
+pkgrel=9
+pkgdesc="Portable module to access network interface information in Python"
+arch=('x86_64')
+url="https://alastairs-place.net/netifaces/"
+license=('MIT')
+depends=('python')
+makedepends=('git' 'python-build' 'python-installer' 'python-setuptools' 'python-wheel')
+source=("git+https://github.com/al45tair/netifaces.git#tag=release_${pkgver//./_}")
+sha512sums=('b25c3b28c8867dba1d1449e250ae30c30216eb825da7d19d046476c55f283692b6e394769209badaade286997664ba8b41b32fde6eeb48eb25a0f49297679300')
+
+build() {
+  cd netifaces
+
+  python -m build --wheel --no-isolation
+}
+
+package() {
+  cd netifaces
+
+  python -m installer --destdir="${pkgdir}" dist/*.whl
+
+  # Install license, that is inside the readme file
+  install -Dm644 README.rst "${pkgdir}/usr/share/licenses/${pkgname}/LICENSE"
+}

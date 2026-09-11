@@ -1,0 +1,37 @@
+# Maintainer: Andreas Radke <andyrtr@archlinux.org>
+
+pkgname=librevenge
+pkgver=0.0.6
+pkgrel=1
+pkgdesc="library for REVerses ENGineered formats filters"
+arch=('x86_64')
+url="https://sf.net/p/libwpd/librevenge/"
+# src/lib/RVNGOLEStream.{h,cpp} are BSD
+license=('LGPL-2.1-or-later OR MPL-2.0' 'BSD-3-Clause')
+depends=('zlib' 'glibc' 'libstdc++' 'libgcc')
+makedepends=('boost' 'doxygen' 'cppunit')
+source=(https://sourceforge.net/projects/libwpd/files/librevenge/$pkgname-$pkgver/$pkgname-$pkgver.tar.xz)
+sha256sums=('19eacf5ce55d7fe6a990a45142589cdf7da0c7b68701797f133482cb44f189fa')
+
+prepare() {
+  cd $pkgname-$pkgver
+  autoreconf -fiv
+}
+
+build() {
+  cd $pkgname-$pkgver
+  ./configure --prefix=/usr --disable-werror
+  sed -i -e 's/ -shared / -Wl,-O1,--as-needed\0/g' libtool
+  make
+}
+
+check() {
+  cd $pkgname-$pkgver
+  make check
+}
+
+package() {
+  cd $pkgname-$pkgver
+  make DESTDIR="$pkgdir/" install
+  install -D -m644 COPYING.{LGPL,MPL} -t "${pkgdir}/usr/share/licenses/${pkgname}/"
+}

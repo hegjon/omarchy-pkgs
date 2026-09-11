@@ -1,0 +1,46 @@
+# Maintainer: George Rawlinson <grawlinson@archlinux.org>
+# Contributor: Felix Yan <felixonmars@archlinux.org>
+# Contributor: Lex Black <autumn-wind at web dot de>
+# Contributor: Igor Nemilentsev <trezorg@gmail.com>
+# Contributor: Alexander Diana <alexander@rouk.org>
+
+pkgname=python-bcrypt
+pkgver=5.0.0
+pkgrel=2
+pkgdesc="Modern password hashing for your software and your servers"
+arch=(x86_64)
+url="https://github.com/pyca/bcrypt"
+license=(Apache-2.0)
+depends=(python)
+makedepends=(
+  git
+  python-build
+  python-installer
+  python-setuptools-rust
+  python-wheel
+)
+checkdepends=(python-pytest)
+source=("$pkgname::git+$url#tag=$pkgver")
+sha512sums=('e836f971530aa4ac042fd2e52a4bc50fba72bb35e75368ee5645c7b564d4bb9c11f3f937c33f3d18b10593e30a71413bb0f1dd42c7483df90c950674c1f02c09')
+b2sums=('7dc2b6805bda6789ca0554b746abbdeb1eaf26d6613b77c082fc842f38b185a6d2c9eb9cd0d1b4ba1403faaa1c120c4dc5908f4d2a82938209f8b292799292e0')
+
+build() {
+  cd "$pkgname"
+
+  python -m build --wheel --no-isolation
+}
+
+check() {
+  cd "$pkgname"
+
+  python -m installer --destdir=test_dir dist/*.whl
+
+  local _site_packages=$(python -c "import site; print(site.getsitepackages()[0])")
+  PYTHONPATH="test_dir/$_site_packages:$PYTHONPATH" pytest
+}
+
+package() {
+  cd "$pkgname"
+
+  python -m installer --destdir="$pkgdir" dist/*.whl
+}

@@ -1,0 +1,42 @@
+# Maintainer: Felix Yan <felixonmars@archlinux.org>
+# Contributor: Clément DEMOULINS <clement@archivel.fr>
+
+pkgname=python-networkx
+pkgver=3.6.1
+pkgrel=1
+pkgdesc='Python package for the creation, manipulation, and study of the structure, dynamics, and functions of complex networks.'
+arch=('any')
+license=('BSD-3-Clause')
+url="https://networkx.org/"
+depends=('python-numpy' 'python-scipy' 'python-matplotlib' 'python-pandas')
+optdepends=('python-lxml: for GraphML XML format'
+            'python-pydot: for graph drawing and graph layout algorithms in pure Python via GraphViz'
+            'python-pygraphviz: for graph drawing and graph layout algorithms with bindings to GraphViz'
+            'python-sympy: for polynomial algorithms')
+makedepends=('python-build' 'python-installer' 'python-wheel' 'python-setuptools' 'git')
+checkdepends=('python-pytest' 'python-lxml' 'python-pydot' 'python-pygraphviz')
+source=("git+https://github.com/networkx/networkx#tag=networkx-$pkgver")
+sha512sums=('9627fd12e8432652005b61cc379c1b063276b663c594684d7fce232404c99332726689bb51e4018b0a46d0ef8e618a4b3c0fbc330053edf137235caffd977825')
+
+prepare() {
+  cd networkx
+  git cherry-pick -n d3eb7b5abf7e9c5af5c3304977597a47234c2ae6 # Fix tests with graphviz 13
+}
+
+build() {
+  cd networkx
+  python -m build --wheel --no-isolation
+}
+
+check() {
+  cd networkx
+  pytest -v
+}
+
+package() {
+  cd networkx
+  python -m installer --destdir="$pkgdir" dist/*.whl
+  install -D -m 644 LICENSE.txt "$pkgdir"/usr/share/licenses/$pkgname/LICENSE.txt
+  mkdir -p "$pkgdir"/usr/share/doc/$pkgname
+  cp -r examples "$pkgdir"/usr/share/doc/$pkgname
+}

@@ -1,0 +1,17 @@
+version = 1
+
+[[annotations]]
+path = [
+    "PKGBUILD",
+    ".SRCINFO",
+    ".nvchecker.toml",
+]
+SPDX-FileCopyrightText = "Arch Linux contributors"
+SPDX-License-Identifier = "0BSD"
+
+[[annotations]]
+path = [
+    "fix-test.patch",
+]
+SPDX-FileCopyrightText = "python-requests-mock contributors"
+SPDX-License-Identifier = "Apache-2.0"

@@ -1,0 +1,45 @@
+# Maintainer: Antonio Rojas <arojas@archlinux.org>
+# Contributor: Kyle Keen <keenerd@gmail.com>
+
+_pyname=traitlets
+pkgname=python-$_pyname
+pkgver=5.16.1
+pkgrel=1
+pkgdesc='A configuration system for Python applications'
+arch=(any)
+url='https://traitlets.readthedocs.io/en/stable'
+license=(BSD-3-Clause)
+depends=(python
+         python-argcomplete
+         python-typing_extensions)
+makedepends=(git
+             python-build
+             python-hatchling
+             python-installer)
+checkdepends=(python-pytest-mock)
+source=(git+https://github.com/ipython/traitlets#tag=v$pkgver)
+sha256sums=('4a1e100d8e9aa579114cd8b1a71d40398af5e1bb697f5fad405b2a1d2fd2b94b')
+
+prepare() {
+  cd $_pyname
+  git cherry-pick -n -X theirs e3d5c5a66de52c623da02b4cafd9c34f5b0ff3bb # Support python 3.14
+  rm tests/test_typing.py
+}
+
+build() {
+  cd $_pyname
+  python -m build --wheel --no-isolation
+}
+
+check() {
+  cd $_pyname
+  python -m venv --system-site-packages test-env
+  test-env/bin/python -m installer dist/*.whl
+  test-env/bin/python -m pytest -v -k 'not mypy_dict_typing'
+}
+
+package() {
+  cd $_pyname
+  python -m installer --destdir="$pkgdir" dist/*.whl
+  install -Dm644 LICENSE -t "$pkgdir"/usr/share/licenses/$pkgname
+}

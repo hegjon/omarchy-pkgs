@@ -1,0 +1,88 @@
+# Maintainer: Jan Alexander Steffens (heftig) <heftig@archlinux.org>
+# Contributor: Ionut Biru <ibiru@archlinux.org>
+
+pkgbase=gtkmm3
+pkgname=(
+  gtkmm3
+  gtkmm3-docs
+)
+pkgver=3.24.11
+pkgrel=1
+pkgdesc="C++ bindings for GTK+ 3"
+url="https://www.gtkmm.org/"
+arch=(x86_64)
+license=(LGPL-2.1-or-later)
+depends=(
+  atkmm
+  cairomm
+  gdk-pixbuf2
+  glib2
+  glibc
+  glibmm
+  gtk3
+  libgcc
+  libsigc++
+  libstdc++
+  pangomm
+)
+makedepends=(
+  atkmm-docs
+  cairomm-docs
+  git
+  glibmm-docs
+  libsigc++-docs
+  meson
+  mm-common
+  pangomm-docs
+)
+checkdepends=(xorg-server-xvfb)
+options=(!emptydirs)
+source=("git+https://gitlab.gnome.org/GNOME/gtkmm.git#tag=$pkgver")
+b2sums=('e6c2d3c9e0e307e5cb4ccaecd5b677c041fcced5c855fd59b2f4ade24ebaf2f1291ba8499e7f81212e9c0af2999419cacb786944e5a53d5de129e676073ed473')
+
+prepare() {
+  cd gtkmm
+}
+
+build() {
+  local meson_options=(
+    -D maintainer-mode=true
+  )
+
+  arch-meson gtkmm build "${meson_options[@]}"
+  meson compile -C build
+}
+
+check() {
+  xvfb-run -s '-nolisten local' meson test -C build --print-errorlogs
+}
+
+package_gtkmm3() {
+  depends+=(
+    libatkmm-1.6.so
+    libcairomm-1.0.so
+    libglibmm-2.4.so
+    libpangomm-1.4.so
+    libsigc-2.0.so
+  )
+  provides=(
+    libgdkmm-3.0.so
+    libgtkmm-3.0.so
+  )
+
+  meson install -C build --destdir "$pkgdir"
+
+  # Split -docs
+  mkdir -p docs/usr/share
+  mv -t docs/usr/share "$pkgdir"/usr/share/{devhelp,doc}
+}
+
+package_gtkmm3-docs() {
+  pkgdesc+=" (documentation)"
+  depends=()
+  options=(!strip)
+
+  mv -t "$pkgdir" docs/*
+}
+
+# vim:set sw=2 sts=-1 et:

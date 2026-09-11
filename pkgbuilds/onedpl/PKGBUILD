@@ -1,0 +1,55 @@
+# Maintainer: Torsten Keßler <tpkessler@archlinux.org>
+pkgname=onedpl
+pkgver=2022.12.0
+pkgrel=1
+pkgdesc="oneAPI DPC++ Library"
+arch=("any")
+url="https://www.intel.com/content/www/us/en/developer/tools/oneapi/dpc-library.html"
+license=("Apache-2.0 WITH LLVM-exceptions")
+depends=(
+	level-zero-loader
+	intel-oneapi-common
+	intel-oneapi-tbb
+	intel-oneapi-compiler-dpcpp-cpp-runtime-libs
+	intel-oneapi-compiler-shared-runtime-libs
+)
+makedepends=(
+	git
+	cmake
+	ninja
+	intel-oneapi-dpcpp-cpp
+	intel-oneapi-openmp
+)
+optdepends=(
+	"intel-oneapi-dpcpp-cpp: Develop applications on Intel GPUs"
+	"intel-oneapi-openmp: Framework for thread or data parallel applications"
+)
+source=(
+	"$pkgname::git+https://github.com/uxlfoundation/oneDPL#tag=oneDPL-release-$pkgver"
+	fix-install-destdir.patch
+)
+sha256sums=('1a0ba10fbae4145635affc6a641aabbd3a118bf34171e828e9d7d5e6e36d9656'
+            '6db42540e47cbc19d2568b401ca624f15842f5deed33848b576a181ae4c2a73a')
+
+prepare() {
+	cd $pkgname
+	patch -Np1 -i ../fix-install-destdir.patch
+}
+
+build() {
+	local _cmake_args=(
+		-Wno-dev
+		-G Ninja
+		-B build
+		-S $pkgname
+		-D CMAKE_BUILD_TYPE=None
+		-D CMAKE_INSTALL_PREFIX=/usr
+	)
+	cmake "${_cmake_args[@]}"
+	cmake --build build
+}
+
+package() {
+	DESTDIR="$pkgdir" cmake --install build
+	install -vDm644 -t "$pkgdir"/usr/share/licenses/$pkgname/LICENSE $pkgname/LICENSE.txt
+}

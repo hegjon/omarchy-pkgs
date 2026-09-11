@@ -1,0 +1,48 @@
+# Maintainer: Daniel M. Capella <polyzen@archlinux.org>
+# Contributor: Felix Yan <felixonmars@archlinux.org>
+# Contributor: Bruno Galeotti <bgaleotti at gmail dot com>
+
+_name=TypeScript
+pkgname=typescript
+pkgver=6.0.3
+pkgrel=1
+pkgdesc='JavaScript with syntax for types'
+arch=(any)
+url=http://www.typescriptlang.org
+license=(Apache-2.0)
+depends=(nodejs)
+makedepends=(
+  git
+  npm
+  rsync
+)
+source=("git+https://github.com/microsoft/$_name.git#tag=v$pkgver")
+b2sums=('88d24a857f85e695e32b5d4b1bdff74cdbe6f3e46c12c00cebdf927412d9446e2592b34b9d05bd089c89ab9a0d4fd76ec77845be1b69b78fadc32dedffd06e74')
+
+prepare() {
+  cd $_name
+  npm ci
+}
+
+build() {
+  cd $_name
+  npx hereby LKG
+}
+
+check() {
+  cd $_name
+  npm run test
+}
+
+package() {
+  local mod_dir=/usr/lib/node_modules/$pkgname
+
+  install -d "$pkgdir"/{usr/bin,$mod_dir}
+  ln -s $mod_dir/bin/{tsc,tsserver} "$pkgdir"/usr/bin
+
+  cd $_name
+  rsync -r --exclude=.gitattributes bin lib package.json "$pkgdir"/$mod_dir
+  install -Dm644 -t "$pkgdir"/usr/share/doc/$pkgname README.md SECURITY.md
+  install -Dm644 -t "$pkgdir"/usr/share/licenses/$pkgname \
+    ThirdPartyNoticeText.txt
+}

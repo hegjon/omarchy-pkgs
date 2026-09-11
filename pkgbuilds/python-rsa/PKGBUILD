@@ -1,0 +1,25 @@
+# Maintainer: Massimiliano Torromeo <massimiliano.torromeo@gmail.com>
+
+pkgname=python-rsa
+pkgver=4.9.1
+pkgrel=2
+_libname=rsa
+pkgdesc="Pure-Python RSA implementation"
+arch=(any)
+url="https://github.com/sybrenstuvel/python-rsa/"
+license=('Apache-2.0')
+source=(https://files.pythonhosted.org/packages/source/${_libname:0:1}/$_libname/$_libname-$pkgver.tar.gz)
+depends=(python-pyasn1)
+makedepends=(python-poetry-core python-build python-installer python-wheel)
+sha256sums=('e7bdbfdb5497da4c07dfd35530e1a902659db6ff241e39d9953cad06ebd0ae75')
+
+build() {
+	cd "$srcdir/$_libname-$pkgver"
+	python -m build --wheel --no-isolation
+}
+
+package() {
+	cd "$srcdir/$_libname-$pkgver"
+	python -m installer --destdir="$pkgdir" dist/*.whl
+	install -m0644 -D "LICENSE" "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+}

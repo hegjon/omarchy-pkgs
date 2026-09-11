@@ -1,0 +1,34 @@
+# Maintainer: Levente Polyak <anthraxx[at]archlinux[dot]org>
+# Contributor: Anatol Pomozov <anatol.pomozov@gmail.com>
+
+pkgname=cmocka
+pkgver=2.0.2
+pkgrel=1
+pkgdesc='Elegant unit testing framework for C with support for mock objects'
+arch=('x86_64')
+url='https://cmocka.org/'
+license=('Apache-2.0')
+depends=('glibc')
+makedepends=('cmake')
+options=('!lto')
+source=("https://cmocka.org/files/${pkgver%.*}/cmocka-${pkgver}.tar.xz"{,.asc})
+sha512sums=('d02d65f0881f18f30b9e46c325acfa349261339daa2c1bf3a4e6360976f13b31588e997415197220f6def156f77d9864994d4e3cfd09c8f16a8594d0a4789a16'
+            'SKIP')
+validpgpkeys=('8DFF53E18F2ABC8D8F3C92237EE0FC4DCC014E3D') # Andreas Schneider <asn@cryptomilk.org>
+
+build() {
+  cmake -S ${pkgname}-${pkgver} -B build \
+    -DCMAKE_BUILD_TYPE=None \
+    -DCMAKE_INSTALL_PREFIX=/usr \
+    -Wno-dev \
+    -DUNIT_TESTING=ON
+  cmake --build build
+}
+
+check() {
+  ctest --test-dir build --output-on-failure
+}
+
+package() {
+  DESTDIR="${pkgdir}" cmake --install build
+}

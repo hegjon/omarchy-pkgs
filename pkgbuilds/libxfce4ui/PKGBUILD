@@ -1,0 +1,51 @@
+# Maintainer: Evangelos Foutras <foutrelis@archlinux.org>
+# Maintainer: Robin Candau <antiz@archlinux.org>
+# Contributor: Xavier Devlamynck <magicrhesus@ouranos.be>
+
+pkgname=libxfce4ui
+pkgver=4.20.2
+pkgrel=1
+pkgdesc="Widgets library for the Xfce desktop environment"
+arch=('x86_64')
+url="https://docs.xfce.org/xfce/libxfce4ui/start"
+license=('GPL-2.0-only')
+depends=('libxfce4util' 'gtk3' 'xfconf' 'libsm' 'startup-notification'
+         'libgtop' 'libepoxy' 'hicolor-icon-theme' 'libgudev')
+makedepends=('git' 'glib2-devel' 'gobject-introspection' 'vala' 'xfce4-dev-tools')
+source=("git+https://gitlab.xfce.org/xfce/libxfce4ui.git#tag=$pkgname-$pkgver")
+sha256sums=('60f017035fbdafab61da4bc803b206095b6e57b3f9865e0c692fdf1b45f56f2e')
+
+prepare() {
+  cd $pkgname
+  NOCONFIGURE=1 ./autogen.sh
+}
+
+build() {
+  cd $pkgname
+  ./configure \
+    --build=$CBUILD \
+    --host=$CHOST \
+    --target=$CTARGET \
+    --prefix=/usr \
+    --sysconfdir=/etc \
+    --localstatedir=/var \
+    --enable-x11 \
+    --enable-wayland \
+    --disable-debug \
+    --enable-gtk-doc \
+    --with-vendor-info='Arch Linux' \
+    --enable-maintainer-mode
+  make
+}
+
+check() {
+  cd $pkgname
+  make check
+}
+
+package() {
+  cd $pkgname
+  make DESTDIR="$pkgdir" install
+}
+
+# vim:set ts=2 sw=2 et:

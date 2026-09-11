@@ -1,0 +1,51 @@
+# Maintainer: Massimiliano Torromeo <massimiliano.torromeo@gmail.com>
+
+pkgname=python-oauthlib
+_name=${pkgname#python-}
+pkgver=3.3.1
+pkgrel=2
+pkgdesc="A generic, spec-compliant, thorough implementation of the OAuth request-signing logic"
+arch=(any)
+url="https://github.com/oauthlib/oauthlib"
+license=('BSD-3-Clause')
+depends=(python)
+makedepends=(
+	python-build
+	python-installer
+	python-setuptools
+	python-wheel
+)
+checkdepends=(
+	python-blinker
+	python-cryptography
+	python-pyjwt
+	python-pytest
+)
+optdepends=(
+	'python-blinker: for signals support'
+	'python-cryptography: for RSA and signed token support'
+	'python-pyjwt: for signed token support'
+)
+source=($_name-$pkgver.tar.gz::$url/archive/refs/tags/v$pkgver.tar.gz)
+sha256sums=('eb93759adad48251a472c5d20fbce3e08ee53fcec2909a22448d48c9fa100ea0')
+
+build() {
+	cd "$_name-$pkgver"
+	python -m build --wheel --no-isolation
+}
+
+check() {
+	local pytest_options=(
+		-vv
+	)
+
+	cd "$_name-$pkgver"
+	pytest "${pytest_options[@]}"
+}
+
+package_python-oauthlib() {
+	cd "$_name-$pkgver"
+	python -m installer --destdir="$pkgdir" dist/*.whl
+	install -m0644 -D "LICENSE" "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+	chmod -R a+r "$pkgdir/usr/lib"
+}

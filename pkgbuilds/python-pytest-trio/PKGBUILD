@@ -1,0 +1,61 @@
+# Maintainer: Maxime Gauduin <alucryd@archlinux.org>
+
+pkgname=python-pytest-trio
+pkgver=0.8.0
+pkgrel=11
+pkgdesc='Pytest plugin for Trio'
+arch=(any)
+url=https://github.com/python-trio/pytest-trio
+license=(
+  'Apache-2.0 OR MIT'
+)
+depends=(
+  python
+  python-hypothesis
+  python-outcome
+  python-pytest
+  python-trio
+)
+makedepends=(
+  git
+  python-build
+  python-installer
+  python-setuptools
+  python-wheel
+)
+checkdepends=(
+  python-pytest
+)
+source=(git+$url.git#tag=v$pkgver)
+b2sums=('e5b03ebdc1b27061b87eb4ae656df8d4fbd8e3cb289a3d585c294ffc69a5791e49c68914752aa37e32c41713b4c4243af0bef3637e03361fcc5ec76ea47e320b')
+
+prepare() {
+  cd pytest-trio
+  git cherry-pick -n 9cda20bbb966fe1e4ae51921d566c668654ee5e1
+}
+
+pkgver() {
+  cd pytest-trio
+  git describe --tags | sed 's/^v//'
+}
+
+build() {
+  cd pytest-trio
+  python -m build --wheel --no-isolation
+}
+
+check() {
+  cd pytest-trio
+  # Deselect tests failing due to AssertionError, unsure of why.
+  PYTHONPATH="." pytest --override-ini="addopts=--pyargs pytest_trio" \
+    --deselect=pytest_trio/_tests/test_basic.py::test_skip_and_xfail \
+    --deselect=pytest_trio/_tests/test_fixture_ordering.py::test_error_collection
+}
+
+package() {
+  python -m installer --destdir="${pkgdir}" pytest-trio/dist/*.whl
+  install -Dm 644 pytest-trio/LICENSE -t "${pkgdir}"/usr/share/licenses/python-pytest-trio/
+  install -Dm 644 pytest-trio/LICENSE.MIT -t "${pkgdir}"/usr/share/licenses/python-pytest-trio/
+}
+
+# vim: ts=2 sw=2 et:

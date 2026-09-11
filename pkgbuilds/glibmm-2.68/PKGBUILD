@@ -1,0 +1,73 @@
+# Maintainer: Jan Alexander Steffens (heftig) <heftig@archlinux.org>
+# Contributor: Jan de Groot <jgc@archlinux.org>
+# Contributor: Tom Newsom <Jeepster@gmx.co.uk>
+
+pkgbase=glibmm-2.68
+pkgname=(
+  glibmm-2.68
+  glibmm-2.68-docs
+)
+pkgver=2.88.1
+pkgrel=1
+pkgdesc="C++ bindings for GLib"
+url="https://www.gtkmm.org/"
+arch=(x86_64)
+license=(LGPL-2.1-or-later)
+depends=(
+  glib2
+  glibc
+  libgcc
+  libsigc++-3.0
+  libstdc++
+  perl
+)
+makedepends=(
+  clang
+  git
+  libsigc++-3.0-docs
+  meson
+  mm-common
+  perl-xml-parser
+)
+checkdepends=(glib-networking)
+options=(!emptydirs)
+source=("git+https://gitlab.gnome.org/GNOME/glibmm.git#tag=$pkgver")
+b2sums=('039b2ab8b0163e286e6482e874a87ce78a4e1513f907ba1317f51c835b29e6868577b29ee371a95158111387dd4b1bb94d08cf026ec723c9e88e8699339cbadf')
+
+prepare() {
+  cd glibmm
+}
+
+build() {
+  local meson_options=(
+    -D maintainer-mode=true
+  )
+
+  arch-meson glibmm build "${meson_options[@]}"
+  meson compile -C build
+}
+
+check() {
+  meson test -C build --print-errorlogs
+}
+
+package_glibmm-2.68() {
+  depends+=(libsigc-3.0.so)
+  provides=(libg{lib,io}mm-2.68.so)
+
+  meson install -C build --destdir "$pkgdir"
+
+  # Split -docs
+  mkdir -p docs/usr/share
+  mv -t docs/usr/share "$pkgdir"/usr/share/{devhelp,doc}
+}
+
+package_glibmm-2.68-docs() {
+  pkgdesc+=" (documentation)"
+  depends=()
+  options=(!strip)
+
+  mv -t "$pkgdir" docs/*
+}
+
+# vim:set sw=2 sts=-1 et:

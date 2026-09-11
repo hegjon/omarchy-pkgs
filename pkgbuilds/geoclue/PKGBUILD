@@ -1,0 +1,67 @@
+# Maintainer: Jan Alexander Steffens (heftig) <heftig@archlinux.org>
+# Contributor: György Balló <ballogy@freestart.hu>
+
+pkgname=geoclue
+pkgver=2.8.2
+pkgrel=1
+pkgdesc="Modular geoinformation service built on the D-Bus messaging system"
+url="https://gitlab.freedesktop.org/geoclue/geoclue/-/wikis/home"
+arch=(x86_64)
+license=(
+  LGPL-2.1-or-later
+  GPL-2.0-or-later
+)
+depends=(
+  avahi
+  glib2
+  glibc
+  json-glib
+  libgcc
+  libmm-glib
+  libsoup3
+)
+makedepends=(
+  git
+  glib2-devel
+  gobject-introspection
+  gtk-doc
+  libnotify
+  meson
+  systemd
+  vala
+)
+optdepends=('libnotify: Demo Agent')
+provides=("geoclue2=$pkgver-$pkgrel")
+conflicts=(geoclue2)
+replaces=(geoclue2)
+backup=(etc/geoclue/geoclue.conf)
+source=(
+  "git+https://gitlab.freedesktop.org/geoclue/geoclue.git#tag=$pkgver"
+)
+b2sums=('4a143cb4e001ca545fd64969cb4a96c89c954fafbd94442135fef27858320d1eed1428b7867adccd9df26570ec8bdb1006ce01cffe40aa5d8deb33be47cd9830')
+
+prepare() {
+  cd geoclue
+}
+
+build() {
+  local meson_options=(
+    -D dbus-srv-user=geoclue
+  )
+
+  arch-meson geoclue build "${meson_options[@]}"
+  meson compile -C build
+}
+
+check() {
+  meson test -C build --print-errorlogs
+}
+
+package() {
+  meson install -C build --destdir "$pkgdir"
+
+  echo 'd /var/lib/geoclue 0755 geoclue geoclue' |
+    install -Dm644 /dev/stdin "$pkgdir/usr/lib/tmpfiles.d/geoclue.conf"
+}
+
+# vim:set sw=2 sts=-1 et:

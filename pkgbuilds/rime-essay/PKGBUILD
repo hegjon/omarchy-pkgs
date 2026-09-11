@@ -1,0 +1,18 @@
+# Maintainer: Felix Yan <felixonmars@archlinux.org>
+
+pkgname=rime-essay
+pkgver=0.0.0.20250227
+_commit=668db9973d74095252e3d0593a778ce52ce5f88b
+pkgrel=1
+pkgdesc="Essential files for building up your Rime configuration"
+arch=('any')
+url="https://github.com/rime/rime-essay"
+license=('LGPL')
+makedepends=(git)
+source=("git+https://github.com/rime/rime-essay.git#commit=$_commit")
+sha512sums=('87944ed5f5975ee682551d3ad2205021fdbf522a817703b504b12b3ce5fd1352510a66b9e1b944ca5bfc8f9a9b7dbf7e4e907de1802093bd48c1829f76b09089')
+
+package() {
+  cd $pkgname
+  install -Dm644 *.txt -t "$pkgdir"/usr/share/rime-data/
+}

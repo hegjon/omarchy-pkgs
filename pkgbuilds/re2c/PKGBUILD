@@ -1,0 +1,42 @@
+# Maintainer: Anatol Pomozov <anatol.pomozov@gmail.com>
+# Maintainer: Carl Smedstad <carsme@archlinux.org>
+# Contributor: nut543 <kfs1@online.no>
+# Contributor: Dale Blount <dale@archlinux.org>
+
+pkgname=re2c
+pkgver=4.6
+pkgrel=1
+arch=(x86_64)
+pkgdesc='A tool for generating C-based recognizers from regular expressions'
+url='https://re2c.org'
+license=(LicenseRef-re2c)
+depends=(
+  glibc
+  libgcc
+  libstdc++
+)
+makedepends=(
+  cmake
+  python
+)
+source=("https://github.com/skvadrik/re2c/archive/$pkgver/re2c-$pkgver.tar.gz")
+b2sums=('988004c8b42967dd891dd1aabb9572d9a416ca7c3e2af8e28988306afb0108ce0c873e0965ac38de3e0985fc6347da7f2ea511288b28d0e8245b2bdb389850cc')
+
+build() {
+  # CMAKE_BUILD_TYPE=None explicitly disallowed in cmake/Re2cBuildType.cmake
+  cmake -S $pkgname-$pkgver -B build \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_INSTALL_PREFIX=/usr \
+    -Wno-dev
+  cmake --build build
+}
+
+check() {
+  ctest --test-dir build --output-on-failure
+}
+
+package() {
+  DESTDIR="$pkgdir" cmake --install build
+  cd $pkgname-$pkgver
+  install -vDm644 -t "$pkgdir/usr/share/licenses/$pkgname" LICENSE
+}

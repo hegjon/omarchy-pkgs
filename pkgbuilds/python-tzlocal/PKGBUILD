@@ -1,0 +1,52 @@
+# Maintainer: David Runge <dvzrv@archlinux.org>
+# Maintainer: Daniel M. Capella <polyzen@archlinux.org>
+# Contributor: eolianoe <eolianoe At GoogleMAIL DoT com>
+# Contributor: Étienne Deparis <etienne [at] depar.is>
+# Contributor: Patrice Peterson <runiq at archlinux dot us>
+# Contributor: Patrick Burroughs <celticmadman at gmail dot com>
+
+pkgname=python-tzlocal
+_name=${pkgname#python-}
+pkgver=5.4.4
+pkgrel=1
+epoch=1
+pkgdesc="Tzinfo object for the local timezone"
+arch=('any')
+url=https://github.com/regebro/tzlocal
+license=('MIT')
+depends=('python')
+makedepends=(
+  'git'
+  'python-build'
+  'python-installer'
+  'python-setuptools'
+  'python-wheel'
+)
+checkdepends=(
+  'python-pytest'
+  'python-pytest-mock'
+)
+source=("git+$url.git#tag=$pkgver")
+b2sums=('f2fca957d2b32969a54d828eaee586e060eec771172eaec9636cf28a58a768c62f173dcaf9de5e6ccf90ec19b0bdf1445291c3a5b7dc3071f2348e2059bfcb75')
+
+build() {
+  cd "$_name"
+  python -m build --wheel --skip-dependency-check --no-isolation
+}
+
+check() {
+  cd "$_name"
+  export PYTHONPATH="build:$PYTHONPATH"
+  pytest -v
+}
+
+package() {
+  cd "$_name"
+  python -m installer --destdir="$pkgdir" dist/*.whl
+  # docs
+  install -vDm 644 {CHANGES.txt,README.rst} \
+    -t "$pkgdir/usr/share/doc/$_name"
+  install -vDm 644 LICENSE.txt -t "$pkgdir/usr/share/licenses/$pkgname/"
+}
+
+# vim:set ts=2 sw=2 et:

@@ -1,0 +1,53 @@
+# Maintainer: Bruno Pagani <archange@archlinux.org>
+# Maintainer: Jakub Klinkovský <lahwaacz at archlinux dot org>
+# Contributor: Muflone http://www.muflone.com/contacts/english/
+# Contributor: Chris Warrick <aur@chriswarrick.com>
+
+_pkg=cloudpickle
+pkgname=python-${_pkg}
+pkgver=3.1.2
+pkgrel=3
+pkgdesc="Extended pickling support for Python objects"
+arch=(any)
+url="https://github.com/cloudpipe/cloudpickle"
+license=(BSD-3-Clause)
+depends=(python)
+makedepends=(
+  python-build
+  python-installer
+  python-flit-core
+  python-wheel
+)
+checkdepends=(
+  python-pytest
+  python-psutil
+  python-tornado
+  python-numpy
+)
+options=(!emptydirs)
+source=($pkgname-$pkgver.tar.gz::$url/archive/refs/tags/v$pkgver.tar.gz
+        0001-Use-PEP-621-metadata-to-fix-building-with-flit-core-.patch)
+sha256sums=('7acae4307459d436eee740eea52ec9056f37b8b907d6aef7b0a97a1ccff90ff9'
+            'd12b8786ff1929f4ab6fb24f65922cf336272ec9e26d4d06d759e54f02d8a0fb')
+
+prepare() {
+  cd ${_pkg}-${pkgver}
+  # Use PEP 621 metadata to fix building with flit-core >= 4 (#598)
+  patch -Np1 -i ../0001-Use-PEP-621-metadata-to-fix-building-with-flit-core-.patch
+}
+
+build() {
+  cd ${_pkg}-${pkgver}
+  python -m build --wheel --no-isolation
+}
+
+check() {
+  cd ${_pkg}-${pkgver}
+  PYTHONPATH=. pytest .
+}
+
+package() {
+  cd ${_pkg}-${pkgver}
+  python -m installer --destdir="$pkgdir" dist/*.whl
+  install -Dm644 LICENSE -t "${pkgdir}"/usr/share/licenses/${pkgname}/
+}

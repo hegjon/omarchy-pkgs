@@ -1,0 +1,42 @@
+# Maintainer: Felix Yan <felixonmars@archlinux.org>
+# Contributor: Alexander F. Rødseth <xyproto@archlinux.org>
+# Contributor: Sergej Pupykin <pupykin.s+arch@gmail.com>
+# Contributor: Vesa Kaihlavirta <vegai@iki.fi>
+# Contributor: Philip Nilsson <pnilsson@nullref.se>
+
+pkgname=alex
+pkgver=3.5.4.2
+pkgrel=1
+pkgdesc='Lexical analyser generator for Haskell'
+arch=(x86_64)
+url='https://hackage.haskell.org/package/alex'
+license=(BSD-3-Clause)
+depends=(ghc-libs)
+makedepends=(ghc)
+source=("https://hackage.haskell.org/packages/archive/$pkgname/$pkgver/$pkgname-$pkgver.tar.gz")
+sha512sums=('a70c2781b5635f32563b3fb0cdbcf18af82ee9cb091c1e2c4d931bf99285f85b0f28a16371b813bc37e566001e536ff83b90394e659bc5d67e924972d6cacf52')
+
+build() {
+  cd $pkgname-$pkgver
+  runhaskell Setup configure -O --enable-shared --enable-debug-info --enable-executable-dynamic --disable-library-vanilla \
+    --prefix=/usr --docdir=/usr/share/doc/$pkgname --datasubdir=$pkgname --enable-tests \
+    --dynlibdir=/usr/lib --libsubdir=\$compiler/site-local/\$pkgid \
+    --ghc-option=-optl-Wl\,-z\,relro\,-z\,now \
+    --ghc-option='-pie'
+  runhaskell Setup build $MAKEFLAGS
+}
+
+check() {
+  cd $pkgname-$pkgver
+  HC="ghc -dynamic" runhaskell Setup test --show-details=direct
+}
+
+package() {
+  cd $pkgname-$pkgver
+  runhaskell Setup copy --destdir="$pkgdir"
+  install -Dm644 LICENSE -t "$pkgdir"/usr/share/licenses/$pkgname/
+  rm -f "$pkgdir"/usr/share/doc/$pkgname/LICENSE
+}
+
+# getver: hackage.haskell.org/package/alex/changelog
+# vim: ts=2 sw=2 et:

@@ -1,0 +1,30 @@
+# Maintainer: Felix Yan <felixonmars@archlinux.org>
+# Contributor: Andrea Scarpino <andrea@archlinux.org>
+# Contributor: Tobias Powalowski <tpowa@archlinux.org>
+
+pkgname=libvncserver
+pkgver=0.9.15
+pkgrel=1
+pkgdesc="Cross-platform C libraries that allow you to easily implement VNC server or client functionality"
+arch=('x86_64')
+url="https://libvnc.github.io/"
+license=('GPL-2.0-or-later')
+depends=('gnutls' 'libgcrypt' 'libjpeg-turbo' 'libpng' 'libsasl' 'lzo' 'systemd-libs')
+makedepends=('git' 'sdl2' 'cmake')
+source=("git+https://github.com/LibVNC/libvncserver.git#tag=LibVNCServer-$pkgver")
+sha256sums=('f7878c247c3c934e0c310b1582cf6f014900abbba60b2271743da03d7ea586b0')
+
+build() {
+  cd $pkgname
+  cmake -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_POLICY_VERSION_MINIMUM=3.5 .
+  make
+}
+
+check() {
+  ctest --test-dir $pkgname --output-on-failure
+}
+
+package() {
+  cd $pkgname
+  make DESTDIR="$pkgdir" install
+}

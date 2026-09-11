@@ -1,0 +1,40 @@
+# Maintainer: Felix Yan <felixonmars@archlinux.org>
+# Contributor: Michael Schubert <mschu.dev at gmail>
+
+pkgname=python-pysocks
+pkgver=1.7.1
+_commit=f660e75d4844e64e4b162b0c01f8df8d866ee000
+pkgrel=12
+pkgdesc="SOCKS4, SOCKS5 or HTTP proxy (Anorov fork PySocks replaces socksipy)"
+arch=('any')
+license=('BSD-3-Clause')
+url="https://github.com/Anorov/PySocks"
+makedepends=('git' 'python-build' 'python-installer' 'python-wheel' 'python-setuptools')
+source=("git+https://github.com/Anorov/PySocks.git#commit=$_commit")
+sha512sums=('bc3b29a520249ef98f15544bf6ece95f1c56c5c00522cba5ea34a3c9bd00d2c1aab2490409e16d97404038de567659bb88a6e3a0d137d3d5160b4996f8e55d35')
+
+build() {
+  cd PySocks
+  python -m build --wheel --no-isolation
+}
+
+# Tests disabled as it requires external services to run
+# Fox: Removed depends. I didn't want to remove the code<3
+check_disabled() {
+  cd PySocks/test
+  python sockstest.py
+
+  ./mocks shutdown
+
+  kill $_SOCKS4SERVER $_HTTPPROXY
+}
+
+package() {
+  depends=('python')
+  provides=('python-socks')
+  replaces=('python-socks')
+
+  cd PySocks
+  python -m installer --destdir="$pkgdir" dist/*.whl
+  install -Dm644 LICENSE -t "$pkgdir"/usr/share/licenses/$pkgname/
+}

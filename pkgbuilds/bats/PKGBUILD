@@ -1,0 +1,64 @@
+# Maintainer: Levente Polyak <anthraxx[at]archlinux[dot]org>
+# Maintainer: Felix Yan <felixonmars@archlinux.org>
+# Maintainer: Morten Linderud <foxboron@archlinux.org>
+# Maintainer: Robin Candau <antiz@archlinux.org>
+# Contributor: Andre Schröder <andre.schroedr at gmail dot com>
+# Contributor: Jan-Erik Rediger <badboy at archlinux dot us>
+
+pkgname=bats
+pkgver=1.14.0
+pkgrel=1
+pkgdesc='Bash Automated Testing System'
+url='https://github.com/bats-core/bats-core'
+arch=(any)
+license=(MIT)
+depends=(
+  bash
+  coreutils
+  ncurses
+  parallel
+)
+makedepends=(
+  git
+)
+checkdepends=(
+  procps-ng
+)
+provides=(bats-core)
+replaces=(bash-bats)
+source=("git+${url}.git#tag=v${pkgver}?signed")
+sha256sums=('4d6d22b88ec983ed39813b52e8d208a234c4277ccc1793f2141abb9027bdb87b')
+b2sums=('6f3feeee082309ed8c64d2d8a1c359879faaf4af4c328c29c85c63109bb104328c69b87b7703203556cb70e1a08412283863d41d1284f3057bbcc94b59ee9814')
+validpgpkeys=('3561E98F5A6BCA770F8E13BEE49BC732E729C954') # Martin Schulze <martin.schulze@vireso.de>
+
+prepare() {
+  cd "bats-core"
+  # move everything to /usr/lib instead of /usr/libexec
+  sed 's|libexec|lib|g' -i \
+    bin/* \
+    libexec/bats-core/* \
+    lib/bats-core/* \
+    test/*.bats \
+    *install.sh
+  mv -v libexec/bats-core/* lib/bats-core/
+}
+
+check() {
+  cd "bats-core"
+  TERM=linux bin/bats --tap test
+}
+
+package() {
+  cd "bats-core"
+
+  install -Dm 755 bin/bats -t "${pkgdir}/usr/bin"
+  install -Dm 644 lib/bats-core/*.bash -t "${pkgdir}/usr/lib/bats-core"
+  install -Dm 755 lib/bats-core/bats* -t "${pkgdir}/usr/lib/bats-core"
+
+  install -Dm 644 man/bats.1 -t "${pkgdir}/usr/share/man/man1"
+  install -Dm 644 man/bats.7 -t "${pkgdir}/usr/share/man/man7"
+  install -Dm 644 LICENSE.md -t "${pkgdir}/usr/share/licenses/${pkgname}"
+  install -Dm 644 README.md -t "${pkgdir}/usr/share/doc/${pkgname}"
+}
+
+# vim: ts=2 sw=2 et:

@@ -1,0 +1,82 @@
+# Maintainer: Daniel Bermond <dbermond@archlinux.org>
+# Maintainer: Bruno Pagani <archange@archlinux.org>
+# Maintainer: Torsten Keßler <tpkessler@archlinux.org>
+
+pkgname=intel-compute-runtime
+pkgver=26.31.39395.13
+pkgrel=1
+pkgdesc='Intel(R) Graphics Compute Runtime for oneAPI Level Zero and OpenCL(TM) Driver'
+arch=('x86_64')
+url='https://github.com/intel/compute-runtime/'
+license=('MIT')
+depends=(
+    'glibc'
+    'intel-gmmlib'
+    'intel-graphics-compiler'
+    'libgcc'
+    'libstdc++')
+makedepends=(
+    'cmake'
+    'igsc<1.0.0'
+    'level-zero-headers'
+    'libnl>=3.0.0'
+    'libnl<4.0.0'
+    'libva'
+    'systemd-libs')
+optdepends=(
+    'igsc<1.0.0: for discrete GPU firmware enumeration through Level Zero' # libigsc.so.0
+    'libdrm: for cl_intel_va_api_media_sharing OpenCL extension'
+    'libnl>=3.0.0: for using Fabric related APIs in Level Zero' # libnl-genl-3.so.200
+    'libnl<4.0.0: for using Fabric related APIs in Level Zero' # libnl-genl-3.so.200
+    'libva: for cl_intel_va_api_media_sharing OpenCL extension'
+    'systemd-libs: for using Sysman events API in Level Zero' # libudev.so
+)
+provides=(
+    'level-zero-driver'
+    'opencl-driver')
+source=("https://github.com/intel/compute-runtime/archive/${pkgver}/${pkgname}-${pkgver}.tar.gz"
+        '010-intel-compute-runtime-disable-werror.patch')
+sha256sums=('c5dbcf3e4b88d64060cc85a368777fe24ea0b135463772d451e819ac48a4da14'
+            '9632812a91598c7e376795540bcc862b970f315e3f361218443525c997e1d70a')
+
+prepare() {
+    patch -d "compute-runtime-${pkgver}" -Np1 -i "${srcdir}/010-intel-compute-runtime-disable-werror.patch"
+}
+
+build() {
+    # fix runtime error in blender
+    export CFLAGS+=' -DSANITIZER_BUILD=1'
+    export CXXFLAGS+=' -DSANITIZER_BUILD=1'
+    
+    # fix warning: "_FORTIFY_SOURCE" redefined
+    # note: upstream forces _FORTIFY_SOURCE=2
+    export CFLAGS="${CFLAGS/-Wp,-D_FORTIFY_SOURCE=?/}"
+    export CXXFLAGS="${CXXFLAGS/-Wp,-D_FORTIFY_SOURCE=?/}"
+    
+    # opencl-headers supported by upstream are already in the source tree
+    # https://github.com/intel/compute-runtime/blob/26.31.39395.13/third_party/opencl_headers/.version#L2
+    local _opencl_headers_dir="${srcdir}/compute-runtime-${pkgver}/third_party/opencl_headers"
+    export CXXFLAGS+=" -isystem${_opencl_headers_dir}"
+    
+    cmake -B build -S "compute-runtime-${pkgver}" \
+        -G 'Unix Makefiles' \
+        -DCMAKE_BUILD_TYPE='Release' \
+        -DCMAKE_INSTALL_LIBDIR='lib' \
+        -DCMAKE_INSTALL_PREFIX='/usr' \
+        -DNEO_BUILD_UNVERSIONED_OCLOC='ON' \
+        -DNEO_DISABLE_LD_GOLD:BOOL='ON' \
+        -DNEO_OCL_VERSION_MAJOR="${pkgver%%.*}" \
+        -DNEO_OCL_VERSION_MINOR="$(printf "$pkgver" | cut -d . -f2)" \
+        -DNEO_VERSION_BUILD="$(printf "$pkgver" | cut -d . -f3)" \
+        -DKHRONOS_GL_HEADERS_DIR='/usr/include' \
+        -DKHRONOS_HEADERS_DIR="$_opencl_headers_dir" \
+        -Wno-author
+    cmake --build build
+}
+
+package() {
+    DESTDIR="$pkgdir" cmake --install build
+    install -D -m644 "compute-runtime-${pkgver}/LICENSE.md" -t "${pkgdir}/usr/share/licenses/${pkgname}"
+    
+    ln -s "$(find "${pkgdir}/usr/lib" -regex '.*libze_intel_gpu.so.[0-9]*' -exec basename {} \;)" "${pkgdir}/usr/lib/libze_intel_gpu.so"
+}

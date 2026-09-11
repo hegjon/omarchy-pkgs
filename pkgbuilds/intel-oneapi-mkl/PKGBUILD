@@ -1,0 +1,148 @@
+# Maintainer: Konstantin Gizdov <arch at kge dot pw>
+# Maintainer: Torsten Keßler <tpkessler at archlinux dot org>
+# Contributor: Martin Rodriguez Reboredo <yakoyoku@gmail.com>
+# Contributor: huyz
+# Contributor: Jingbei Li <i@jingbei.li>
+pkgbase=intel-oneapi-mkl
+pkgname=("${pkgbase}" "${pkgbase}-sycl")
+pkgver=2026.0.0_908
+_pkgver=$(echo $pkgver | sed 's/_/-/')
+_majmin=$(echo $pkgver | cut -d. -f1,2)
+pkgrel=1
+_pkgdesc="Intel oneAPI Math Kernel Library"
+arch=('x86_64')
+url='https://software.intel.com/content/www/us/en/develop/tools/oneapi.html'
+license=("LicenseRef-Intel-Simplified")
+makedepends=('dpkg')
+source=(
+        "https://apt.repos.intel.com/oneapi/pool/main/${pkgname}-devel-${_majmin}-${_pkgver}_amd64.deb"
+        "https://apt.repos.intel.com/oneapi/pool/main/${pkgname}-classic-${_majmin}-${_pkgver}_amd64.deb"
+        "https://apt.repos.intel.com/oneapi/pool/main/${pkgname}-classic-devel-${_majmin}-${_pkgver}_amd64.deb"
+        "https://apt.repos.intel.com/oneapi/pool/main/${pkgname}-classic-include-${_majmin}-${_pkgver}_amd64.deb"
+        "https://apt.repos.intel.com/oneapi/pool/main/${pkgname}-core-${_majmin}-${_pkgver}_amd64.deb"
+        "https://apt.repos.intel.com/oneapi/pool/main/${pkgname}-core-devel-${_majmin}-${_pkgver}_amd64.deb"
+        "https://apt.repos.intel.com/oneapi/pool/main/${pkgname}-cluster-${_majmin}-${_pkgver}_amd64.deb"
+        "https://apt.repos.intel.com/oneapi/pool/main/${pkgname}-cluster-devel-${_majmin}-${_pkgver}_amd64.deb"
+        "https://apt.repos.intel.com/oneapi/pool/main/${pkgname}-sycl-${_majmin}-${_pkgver}_amd64.deb"
+        "https://apt.repos.intel.com/oneapi/pool/main/${pkgname}-sycl-include-${_majmin}-${_pkgver}_amd64.deb"
+        "https://apt.repos.intel.com/oneapi/pool/main/${pkgname}-sycl-devel-${_majmin}-${_pkgver}_amd64.deb"
+        "https://apt.repos.intel.com/oneapi/pool/main/${pkgname}-sycl-blas-${_majmin}-${_pkgver}_amd64.deb"
+        "https://apt.repos.intel.com/oneapi/pool/main/${pkgname}-sycl-lapack-${_majmin}-${_pkgver}_amd64.deb"
+        "https://apt.repos.intel.com/oneapi/pool/main/${pkgname}-sycl-dft-${_majmin}-${_pkgver}_amd64.deb"
+        "https://apt.repos.intel.com/oneapi/pool/main/${pkgname}-sycl-sparse-${_majmin}-${_pkgver}_amd64.deb"
+        "https://apt.repos.intel.com/oneapi/pool/main/${pkgname}-sycl-data-fitting-${_majmin}-${_pkgver}_amd64.deb"
+        "https://apt.repos.intel.com/oneapi/pool/main/${pkgname}-sycl-rng-${_majmin}-${_pkgver}_amd64.deb"
+        "https://apt.repos.intel.com/oneapi/pool/main/${pkgname}-sycl-stats-${_majmin}-${_pkgver}_amd64.deb"
+        "https://apt.repos.intel.com/oneapi/pool/main/${pkgname}-sycl-vm-${_majmin}-${_pkgver}_amd64.deb"
+        "${pkgname}.conf"
+        "${pkgname}.sh")
+options=('staticlibs' '!debug')
+noextract=(
+		   "${pkgbase}-devel-${_majmin}-${_pkgver}_amd64.deb"
+		   "${pkgbase}-classic-${_majmin}-${_pkgver}_amd64.deb"
+		   "${pkgbase}-classic-devel-${_majmin}-${_pkgver}_amd64.deb"
+           "${pkgbase}-classic-include-${_majmin}-${_pkgver}_amd64.deb"
+           "${pkgbase}-core-${_majmin}-${_pkgver}_amd64.deb"
+           "${pkgbase}-core-devel-${_majmin}-${_pkgver}_amd64.deb"
+           "${pkgbase}-cluster-${_majmin}-${_pkgver}_amd64.deb"
+           "${pkgbase}-cluster-devel-${_majmin}-${_pkgver}_amd64.deb"
+           "${pkgbase}-sycl-${_majmin}-${_pkgver}_amd64.deb"
+           "${pkgbase}-sycl-include-${_majmin}-${_pkgver}_amd64.deb"
+           "${pkgbase}-sycl-devel-${_majmin}-${_pkgver}_amd64.deb"
+           "${pkgbase}-sycl-blas-${_majmin}-${_pkgver}_amd64.deb"
+           "${pkgbase}-sycl-lapack-${_majmin}-${_pkgver}_amd64.deb"
+           "${pkgbase}-sycl-dft-${_majmin}-${_pkgver}_amd64.deb"
+           "${pkgbase}-sycl-sparse-${_majmin}-${_pkgver}_amd64.deb"
+           "${pkgbase}-sycl-data-fitting-${_majmin}-${_pkgver}_amd64.deb"
+           "${pkgbase}-sycl-rng-${_majmin}-${_pkgver}_amd64.deb"
+           "${pkgbase}-sycl-stats-${_majmin}-${_pkgver}_amd64.deb"
+           "${pkgbase}-sycl-vm-${_majmin}-${_pkgver}_amd64.deb"
+           )
+sha256sums=('922b068582f403335cc1a468f98cd415fa052a72aa79188eba7bfe87d125d4ba'
+            '2d7c1511564fe1f56ccc41ab5ee599a6529a64d7f0e02c121885a3bd7c7f7de6'
+            'fc4753d8735b3234ca75c70b8707c1af51e5cbe1fcdd2b60b97f4abf3495c380'
+            'c6df2a80d444736037fe44f4f681cf04a85759cf66f6756b13864f4f1acf26be'
+            '3cc588084e9820af237c90dba4c1546e50f2d7e02a15d0072504ed4ccf764ec0'
+            '5c0d13c36849fd58c21975950e1343cd9770b7d81fc7f26cebee09365cbf8d21'
+            '3146729238008bae02486bd24943ffd0b92009506ce6a3eade416af93964aee9'
+            'ed5d7e96fbadcb7e82c08e42aa4957d56f5aaa930cd6f1bac9342b97d6ec6d14'
+            '776c4ff4d21de67d94bd4a28e4c6abc9ed24c78b124bfdb322bdf6bc8e63c41b'
+            'e30e1e14ae32bd1824ed28be178ea88921c271ad72ab7f1e2b9214dc9d2de719'
+            '08a5f9941360b21dc4a93df2c071d1778b229a9932bdfdf53c4bef5ff3999eab'
+            'b32078f1805ab126f78333276bb860f288d3a2785dc101b4b9df499cd35fa76d'
+            '5a31d222fa527c96bd7aa8bbc7819a11417cc7e6ba38803b55e224541aab68c3'
+            'e4168ed1fce35e19552125fdc27bce0820e7348eb42842f4373f05f7fc5f3635'
+            '1552782efcad141280666f05db5983cfcec4e094a57672170786c7b5e1ff5f9c'
+            'd84b0e2351c8a2de3b503600e604befb689041a561d4702c77b40699acf2e891'
+            'ae6910cd6226a9a380df846849288bf07c5eda0387896b90820cf904a29ee4a0'
+            'f13aefc7b2c7d5222428f2b8c2140ce5e1e70cf635386fadcf9338f91468dc77'
+            '5d519d5fe0a4cdf6cd689eea4f97f1bdbeb3eed1d508d46486a57f072f633cd6'
+            'cd787d9843146ad5ccf28ec72311d76d95d6bb9e42974dd614d8b5aa76bb5bd9'
+            '85a56750e03ad99a5b99e7296dcea411fb88c4a0a25e674c86ab48f5648d9ae9')
+
+package_intel-oneapi-mkl() {
+    pkgdesc="$_pkgdesc"
+    depends=('intel-oneapi-common' 'intel-oneapi-tbb' 'intel-oneapi-openmp'
+		     'glibc' 'gcc-libs' 'bash')
+    replaces=('intel-mkl' 'intel-mkl-static')
+    provides=('intel-mkl' 'intel-mkl-static')
+    conflicts=('intel-mkl' 'intel-mkl-static' 'intel-oneapi-basekit')
+
+    dpkg-deb -X ${pkgbase}-devel-${_majmin}-${_pkgver}_amd64.deb "${pkgdir}"
+    dpkg-deb -X ${pkgbase}-classic-${_majmin}-${_pkgver}_amd64.deb "${pkgdir}"
+    dpkg-deb -X ${pkgbase}-core-${_majmin}-${_pkgver}_amd64.deb "${pkgdir}"
+    dpkg-deb -X ${pkgbase}-cluster-${_majmin}-${_pkgver}_amd64.deb "${pkgdir}"
+    dpkg-deb -X ${pkgbase}-classic-include-${_majmin}-${_pkgver}_amd64.deb "${pkgdir}"
+    dpkg-deb -X ${pkgbase}-core-devel-${_majmin}-${_pkgver}_amd64.deb "${pkgdir}"
+    dpkg-deb -X ${pkgbase}-classic-devel-${_majmin}-${_pkgver}_amd64.deb "${pkgdir}"
+    dpkg-deb -X ${pkgbase}-cluster-devel-${_majmin}-${_pkgver}_amd64.deb "${pkgdir}"
+
+    # symlink mkl version
+    ln -s "$_majmin" "${pkgdir}"/opt/intel/oneapi/mkl/latest
+
+    install -Dm644 ${pkgbase}.conf "${pkgdir}"/etc/ld.so.conf.d/${pkgbase}.conf
+    install -Dm644 ${pkgbase}.sh "${pkgdir}"/etc/profile.d/${pkgbase}.sh
+
+    install -d "${pkgdir}"/usr/share/licenses/"${pkgname}"
+    ln -s /usr/share/licenses/intel-oneapi "${pkgdir}"/usr/share/licenses/"${pkgname}"/oneapi
+    ln -s /opt/intel/oneapi/mkl/latest/licensing "${pkgdir}"/usr/share/licenses/"${pkgname}"/mkl
+
+    # pkgconfig
+    cd "${pkgdir}"/opt/intel/oneapi/mkl/"${_majmin}"/lib/pkgconfig
+    install -d "${pkgdir}"/usr/share/pkgconfig
+    for _file in *.pc; do
+        __file="$(basename ${_file})"
+        ln -s /opt/intel/oneapi/mkl/"${_majmin}"/lib/pkgconfig/${__file} "${pkgdir}"/usr/share/pkgconfig/${__file}
+        sed -e 's@prefix=.*@prefix=/opt/intel/oneapi/mkl/latest@g' -i ${__file}
+    done
+
+    # provide old intel-mkl
+    install -d "${pkgdir}"/usr/bin
+    install -d "${pkgdir}"/opt/intel/mkl
+    install -d "${pkgdir}"/opt/intel/mkl/lib
+    ln -sf /opt/intel/oneapi/mkl/latest/bin/intel64 "${pkgdir}"/opt/intel/mkl/bin
+    ln -sf /opt/intel/oneapi/mkl/latest/lib/intel64 "${pkgdir}"/opt/intel/mkl/lib/intel64
+    ln -sf /opt/intel/oneapi/mkl/latest/lib/intel64 "${pkgdir}"/opt/intel/mkl/lib/intel64_lin
+    ln -sf /opt/intel/oneapi/mkl/latest/include "${pkgdir}"/opt/intel/mkl/include
+    ln -sf /opt/intel/mkl/bin/mkl_link_tool "${pkgdir}"/usr/bin/mkl_link_tool
+}
+
+package_intel-oneapi-mkl-sycl() {
+    pkgdesc="$_pkgdesc (GPU offloading)"
+    depends=('intel-oneapi-mkl' 'intel-oneapi-compiler-dpcpp-cpp-runtime-libs'
+             'intel-oneapi-common' 'intel-oneapi-compiler-shared-runtime-libs'
+             'glibc' 'gcc-libs' 'bash')
+    conflicts=('intel-oneapi-basekit')
+
+    dpkg-deb -X ${pkgbase}-sycl-${_majmin}-${_pkgver}_amd64.deb "${pkgdir}"
+    dpkg-deb -X ${pkgbase}-sycl-include-${_majmin}-${_pkgver}_amd64.deb "${pkgdir}"
+    dpkg-deb -X ${pkgbase}-sycl-devel-${_majmin}-${_pkgver}_amd64.deb "${pkgdir}"
+    dpkg-deb -X ${pkgbase}-sycl-blas-${_majmin}-${_pkgver}_amd64.deb "${pkgdir}"
+    dpkg-deb -X ${pkgbase}-sycl-lapack-${_majmin}-${_pkgver}_amd64.deb "${pkgdir}"
+    dpkg-deb -X ${pkgbase}-sycl-dft-${_majmin}-${_pkgver}_amd64.deb "${pkgdir}"
+    dpkg-deb -X ${pkgbase}-sycl-sparse-${_majmin}-${_pkgver}_amd64.deb "${pkgdir}"
+    dpkg-deb -X ${pkgbase}-sycl-data-fitting-${_majmin}-${_pkgver}_amd64.deb "${pkgdir}"
+    dpkg-deb -X ${pkgbase}-sycl-rng-${_majmin}-${_pkgver}_amd64.deb "${pkgdir}"
+    dpkg-deb -X ${pkgbase}-sycl-stats-${_majmin}-${_pkgver}_amd64.deb "${pkgdir}"
+    dpkg-deb -X ${pkgbase}-sycl-vm-${_majmin}-${_pkgver}_amd64.deb "${pkgdir}"
+}

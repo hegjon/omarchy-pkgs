@@ -1,0 +1,28 @@
+# Maintainer: Antonio Rojas <arojas@archlinux.org>
+
+pkgname=plasma-wayland-protocols
+pkgver=1.22.0
+pkgrel=1
+pkgdesc='Plasma Specific Protocols for Wayland'
+arch=(any)
+url='https://kde.org/plasma-desktop'
+license=(LGPL-2.0-or-later)
+depends=()
+makedepends=(extra-cmake-modules
+             qt6-base)
+source=(https://download.kde.org/stable/$pkgname/$pkgname-$pkgver.tar.xz{,.sig})
+sha256sums=('f628585c4c2d5e3a9f447a6274e2f59d7811272da557e75341e36948aa3f9d43'
+            'SKIP')
+validpgpkeys=(CA1B4E348D22755A67EF4E1A6A4F2C4CDC8BC77F  # Aleix Pol Gonzalez <aleixpol@kde.org>
+              EC5516B514543DA145169FD12276F09AF4A790F4  # Vlad Zahorodnii <vlad.zahorodnii@kde.org>
+              E0A3EB202F8E57528E13E72FD7574483BB57B18D  # Jonathan Esk-Riddell <jr@jriddell.org>
+              0AAC775BB6437A8D9AF7A3ACFE0784117FBCE11D) # Bhushan Shah (mykolab address) <bshah@mykolab.com>
+
+build() {
+  cmake -B build -S $pkgname-$pkgver
+  cmake --build build
+}
+
+package() {
+  DESTDIR="$pkgdir" cmake --install build
+}

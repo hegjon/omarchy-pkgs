@@ -1,0 +1,76 @@
+# Maintainer: Levente Polyak <anthraxx[at]archlinux[dot]org>
+# Maintainer: Christian Heusel <gromit@archlinux.org>
+# Contributor: Baptiste Jonglez <archlinux at bitsofnetworks dot org>
+# Contributor: Bart Verhagen <barrie.verhagen at gmail dot com>
+
+pkgname=catch2
+pkgver=3.16.0
+pkgrel=1
+pkgdesc="Modern, C++-native, header-only, test framework for unit-tests, TDD and BDD"
+arch=('x86_64')
+url="https://github.com/catchorg/catch2"
+license=(BSL-1.0)
+#depends=('gcc-libs' 'glibc') # only needed when building shared library
+makedepends=(
+  git
+  cmake
+  python  # python seems to be necessary for building tests (FS#60273)
+)
+conflicts=('catch2-v2')
+source=(${pkgname}::"git+https://github.com/catchorg/Catch2#tag=v${pkgver}?signed")
+sha512sums=('2e1d461eeebe132137af0a9ac8006c928cf99b2de21c223d0cfef4a4ec69c8363339e42062bbe9e6a45a36f00d98d7c73205593811f25c55c8ea5d6a9a572325')
+# Upstream keeps a MAINTAINERS.md as trustpath
+validpgpkeys=(
+  FC5D2FD9051354DBF834F9FD56FB686C9DFC8E2C # Chris Thrasher
+  E29C46F3B8A7502860793B7DECC9C20E314B2360 # Martin Hořeňovský
+)
+
+options=(!lto)
+
+prepare() {
+  cd "${pkgname}"
+
+  # https://github.com/catchorg/Catch2/issues/3006
+  # git revert -n 3839e27f056cd975e5be2faa9adb5a8cf1f5dcf4
+}
+
+build() {
+  local cmake_options=(
+    -B build
+    -S "${pkgname}"
+    -DCMAKE_INSTALL_PREFIX=/usr
+    -DCMAKE_INSTALL_LIBDIR=lib
+    -DCATCH_BUILD_EXAMPLES=OFF
+    -DCATCH_ENABLE_COVERAGE=OFF
+    -DCATCH_ENABLE_WERROR=OFF
+    -DBUILD_TESTING=ON
+    -DCATCH_DEVELOPMENT_BUILD=ON
+    -Wno-dev
+    -DBUILD_SHARED_LIBS=OFF
+  )
+
+  cmake "${cmake_options[@]}"
+  cmake --build build
+}
+
+check() {
+  # test are only built whith build option
+  #  -DCATCH_DEVELOPMENT_BUILD=ON
+  local excluded_tests="ApprovalTests"
+  local ctest_flags=(
+    --test-dir build
+    # show the stdout and stderr when the test fails
+    --output-on-failure
+    # execute tests in parallel
+    --parallel $(nproc)
+    # exclude problematic tests
+    --exclude-regex "$excluded_tests"
+  )
+  ctest "${ctest_flags[@]}"
+}
+
+package() {
+  DESTDIR="${pkgdir}" cmake --install build
+}
+
+# vim: ts=2 sw=2 et:

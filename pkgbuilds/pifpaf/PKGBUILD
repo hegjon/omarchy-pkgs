@@ -1,0 +1,77 @@
+# Maintainer: Felix Yan <felixonmars@archlinux.org>
+# Maintainer: Carl Smedstad <carsme@archlinux.org>
+
+pkgname=pifpaf
+pkgver=3.4.0
+pkgrel=2
+pkgdesc='Suite of tools and fixtures to manage daemons for testing'
+arch=('any')
+url='https://github.com/jd/pifpaf'
+license=('Apache-2.0')
+depends=(
+  'python'
+  'python-click'
+  'python-daiquiri'
+  'python-fixtures'
+  'python-jinja'
+  'python-packaging'
+  'python-psutil'
+  'python-xattr'
+)
+makedepends=(
+  'git'
+  'python-build'
+  'python-installer'
+  'python-setuptools'
+  'python-setuptools-scm'
+  'python-wheel'
+)
+checkdepends=(
+  # 'couchdb' # Test skipped even if installed
+  # 'influxdb' # Fails
+  # 'kafka' # Fails
+  'consul'
+  'httpbin'
+  'memcached'
+  'postgresql'
+  'python-requests'
+  'python-testtools'
+  'rabbitmq'
+  'valkey'
+)
+provides=("python-pifpaf=$pkgver")
+conflicts=('python-pifpaf')
+replaces=('python-pifpaf')
+source=(
+  "git+$url.git#tag=$pkgver"
+  "$pkgname-skip-failing-tests.patch"
+)
+sha512sums=('f6b0db3fbf4d53a38850957761837a895345b53e008dbc3ab40ae176950861f1a2eb1a6e9a9340a9873d3b1ff952a9e0d5a07ef1f3f237a3d411d17e9f560137'
+            '40af139e6e142f5b476eff46a056bc53a688bcb65d93b21462ce7089e158a4ac852921c8de34054eb2b8739749028fc35db9a55fc573335a9362000f13ca4530')
+# Versions 3.2.0+ are not signed.
+# validpgpkeys=('5361BD40015B74382739101A611BA9508B78A5C2') # Julien Danjou <julien@danjou.info>
+
+prepare() {
+  cd $pkgname
+  patch -Np1 -i ../$pkgname-skip-failing-tests.patch
+  # Move tests out of package to avoid installing.
+  mv pifpaf/tests tests
+}
+
+build() {
+  cd $pkgname
+  python -m build --wheel --no-isolation
+}
+
+check() {
+  cd $pkgname
+  python -m venv --system-site-packages test-env
+  test-env/bin/python -m installer dist/*.whl
+  PATH="$PWD/test-env/bin:$PATH" \
+    test-env/bin/python -m unittest discover -v
+}
+
+package() {
+  cd $pkgname
+  python -m installer --destdir="$pkgdir" dist/*.whl
+}

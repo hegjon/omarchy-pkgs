@@ -1,0 +1,31 @@
+diff --git a/cmake/scripts/generate_config.cmake b/cmake/scripts/generate_config.cmake
+index dba4db8c5..f1d7cc6d8 100644
+--- a/cmake/scripts/generate_config.cmake
++++ b/cmake/scripts/generate_config.cmake
+@@ -42,20 +42,20 @@ string(REGEX REPLACE ".*#define ONEDPL_VERSION_PATCH ([0-9]+).*" "\\1" _onedpl_v
+ set(PROJECT_VERSION "${_onedpl_ver_major}.${_onedpl_ver_minor}.${_onedpl_ver_patch}")
+ 
+ configure_file("${ONEDPL_ROOT}/cmake/templates/oneDPLConfig.cmake.in"
+-               "${OUTPUT_DIR}/oneDPLConfig.cmake"
++               "$ENV{DESTDIR}/${OUTPUT_DIR}/oneDPLConfig.cmake"
+                @ONLY)
+ configure_file("${ONEDPL_ROOT}/cmake/templates/oneDPLConfigVersion.cmake.in"
+-               "${OUTPUT_DIR}/oneDPLConfigVersion.cmake"
++               "$ENV{DESTDIR}/${OUTPUT_DIR}/oneDPLConfigVersion.cmake"
+                @ONLY)
+ 
+ if (SKIP_HEADERS_SUBDIR)
+     set(_onedpl_pkgconfig_header_suffix include)
+-    configure_file("${ONEDPL_ROOT}/integration/pkgconfig/dpl.pc.in" "${OUTPUT_DIR}/dpl.pc" @ONLY)
++    configure_file("${ONEDPL_ROOT}/integration/pkgconfig/dpl.pc.in" "$ENV{DESTDIR}/${OUTPUT_DIR}/dpl.pc" @ONLY)
+ else()
+     set(_onedpl_pkgconfig_header_suffix windows/include)
+-    configure_file("${ONEDPL_ROOT}/integration/pkgconfig/dpl.pc.in" "${OUTPUT_DIR}/pkgconfig-win/dpl.pc" @ONLY)
++    configure_file("${ONEDPL_ROOT}/integration/pkgconfig/dpl.pc.in" "$ENV{DESTDIR}/${OUTPUT_DIR}/pkgconfig-win/dpl.pc" @ONLY)
+     set(_onedpl_pkgconfig_header_suffix linux/include)
+-    configure_file("${ONEDPL_ROOT}/integration/pkgconfig/dpl.pc.in" "${OUTPUT_DIR}/pkgconfig-lin/dpl.pc" @ONLY)
++    configure_file("${ONEDPL_ROOT}/integration/pkgconfig/dpl.pc.in" "$ENV{DESTDIR}/${OUTPUT_DIR}/pkgconfig-lin/dpl.pc" @ONLY)
+ endif()
+ 
+-message(STATUS "oneDPL ${PROJECT_VERSION} configuration files were created in '${OUTPUT_DIR}'")
++message(STATUS "oneDPL ${PROJECT_VERSION} configuration files were created in '$ENV{DESTDIR}/${OUTPUT_DIR}'")

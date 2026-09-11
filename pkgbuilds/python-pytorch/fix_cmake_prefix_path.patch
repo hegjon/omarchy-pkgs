@@ -1,0 +1,13 @@
+diff --git a/torch/utils/__init__.py b/torch/utils/__init__.py
+index 1c3ec157900..f67f379a150 100644
+--- a/torch/utils/__init__.py
++++ b/torch/utils/__init__.py
+@@ -29,7 +29,7 @@ def set_module(obj, mod):
+     obj.__module__ = mod
+ 
+ 
+-cmake_prefix_path = _osp.join(_osp.dirname(_osp.dirname(__file__)), "share", "cmake")
++cmake_prefix_path = "/usr/lib/cmake"
+ 
+ 
+ def swap_tensors(t1, t2):

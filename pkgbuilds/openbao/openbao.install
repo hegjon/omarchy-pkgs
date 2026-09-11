@@ -1,0 +1,9 @@
+post_upgrade() {
+  if (( $(vercmp "2.5.5-1" "$2") < 0 )); then
+    echo ""
+    echo "Build-in KMS plugins will be removed in OpenBao 2.7.0."
+    echo "Please switch to the openbao-plugin-kms-* packages."
+    echo ""
+  fi
+}
+# vim: ft=sh ts=4 sw=4 et

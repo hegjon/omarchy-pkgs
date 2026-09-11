@@ -1,0 +1,92 @@
+# Maintainer: Jelle van der Waa <jelle@archlinux.org>
+# Contributor: Daniel M. Capella <polyzen@archlinux.org>
+# Contributor: Bruno Pagani <archange@archlinux.org>
+# Contributor: Felix Yan <felixonmars@archlinux.org>
+
+pkgname=nodejs-lts-jod
+pkgver=22.23.2
+pkgrel=1
+pkgdesc='Evented I/O for V8 javascript (LTS release: Jod)'
+arch=(x86_64)
+url=https://nodejs.org/
+license=(MIT)
+depends=(openssl zlib icu libuv c-ares brotli libnghttp2 zstd) # http-parser v8)
+makedepends=(python procps-ng ninja)
+optdepends=('npm: nodejs package manager')
+provides=("nodejs=$pkgver")
+conflicts=(nodejs)
+options=(!lto)
+source=(
+  "https://nodejs.org/dist/v${pkgver}/node-v${pkgver}.tar.xz"
+  update-icu-tests.patch
+)
+# https://nodejs.org/download/release/latest-jod/SHASUMS256.txt.asc
+sha256sums=('bbe768df8d5815d7fa76124052985332452e0a4742d39f32027550d1aab8f6fb'
+            '43da0fb7469e34a239b2711876475f303a4012151e44f72e636a5a7fcf21bff8')
+
+_set_flags() {
+  # /usr/lib/libnode.so uses malloc_usable_size, which is incompatible with fortification level 3
+  CFLAGS="${CFLAGS/_FORTIFY_SOURCE=3/_FORTIFY_SOURCE=2}"
+  CXXFLAGS="${CXXFLAGS/_FORTIFY_SOURCE=3/_FORTIFY_SOURCE=2}"
+}
+
+prepare() {
+  cd node-v${pkgver}
+  # Update ICU tests https://github.com/nodejs/node/pull/60523
+  patch -Np1 -i ../update-icu-tests.patch
+}
+
+build() {
+  _set_flags
+  cd node-v${pkgver}
+
+  ./configure \
+    --prefix=/usr \
+    --ninja \
+    --with-intl=system-icu \
+    --without-corepack \
+    --without-npm \
+    --shared-openssl \
+    --shared-zlib \
+    --shared-libuv \
+    --experimental-http-parser \
+    --shared-brotli \
+    --shared-cares \
+    --shared-nghttp2 \
+    --shared-zstd
+    # --shared-v8
+    # --shared-http-parser
+
+  make
+}
+
+check() {
+  _set_flags
+  cd node-v${pkgver}
+  rm test/parallel/test-http-outgoing-end-cork.js
+  rm test/parallel/test-http2-client-set-priority.js
+  rm test/parallel/test-http2-client-unescaped-path.js
+  rm test/parallel/test-http2-max-invalid-frames.js
+  rm test/parallel/test-http2-misbehaving-flow-control.js
+  rm test/parallel/test-http2-misbehaving-flow-control-paused.js
+  rm test/parallel/test-http2-multi-content-length.js
+  rm test/parallel/test-http2-priority-event.js
+  rm test/parallel/test-http2-reset-flood.js
+  rm test/parallel/test-tls-ocsp-callback.js
+
+  # https://github.com/nodejs/node/pull/60523
+  rm test/parallel/test-datetime-change-notify.js
+  rm test/parallel/test-icu-env.js
+
+  # https://github.com/nodejs/node/issues/63914
+  rm test/parallel/test-snapshot-reproducible.js
+
+  make test-only
+}
+
+package() {
+  _set_flags
+  cd node-v${pkgver}
+  make DESTDIR="${pkgdir}" install
+  install -Dm644 LICENSE -t "${pkgdir}"/usr/share/licenses/${pkgname}/
+}

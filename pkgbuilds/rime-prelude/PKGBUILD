@@ -1,0 +1,28 @@
+# Maintainer: Felix Yan <felixonmars@archlinux.org>
+
+pkgbase=rime-prelude
+pkgname=(rime-prelude librime-data)
+pkgver=0.0.0.20251229
+_commit=db691d2420b8e656a79692a94f9db0fb3e7aa12b
+pkgrel=1
+pkgdesc="Essential files for building up your Rime configuration"
+arch=('any')
+url="https://github.com/rime/rime-prelude"
+license=('LGPL')
+makedepends=('git')
+source=("git+https://github.com/rime/rime-prelude.git#commit=$_commit")
+sha512sums=('e5d6e93b7ceb440d2b15c388086f60df48bd0e990b1726bd4c155833f56b4c251ca7dde4360b3e0f405a820231952a21f7e42950c77c5ef23d02631d041744ed')
+
+package_rime-prelude() {
+  pkgdesc="Essential files for building up your Rime configuration"
+
+  cd $pkgname
+  install -Dm644 *.yaml -t "$pkgdir"/usr/share/rime-data/
+}
+
+package_librime-data() {
+  pkgdesc="Meta package of preset librime data"
+  depends=('rime-prelude' 'rime-essay' 'rime-luna-pinyin' 'rime-bopomofo' 'rime-cangjie' 'rime-stroke' 'rime-terra-pinyin')
+  replaces=('brise')
+  conflicts=('brise')
+}

@@ -1,0 +1,41 @@
+# Maintainer: Massimiliano Torromeo <massimiliano.torromeo@gmail.com>
+# Contributor: Philipp Claßen <philipp.classen@posteo.de>
+
+pkgname=benchmark
+pkgver=1.9.5
+pkgrel=2
+pkgdesc="A microbenchmark support library"
+arch=('x86_64')
+url="https://github.com/google/benchmark"
+license=('Apache-2.0')
+depends=('glibc' 'libgcc' 'libstdc++')
+makedepends=('cmake')
+
+source=("https://github.com/google/$pkgname/archive/v$pkgver/$pkgname-$pkgver.tar.gz")
+sha256sums=('9631341c82bac4a288bef951f8b26b41f69021794184ece969f8473977eaa340')
+
+prepare() {
+  cd "$srcdir/$pkgname-$pkgver"
+  mkdir -p build
+}
+
+build() {
+  cd "$srcdir/$pkgname-$pkgver/build"
+
+  cmake \
+    -DCMAKE_BUILD_TYPE=None \
+    -DCMAKE_CXX_FLAGS="${CXXFLAGS} -DNDEBUG" \
+    -DCMAKE_INSTALL_PREFIX=/usr \
+    -DCMAKE_INSTALL_LIBDIR=lib \
+    -DBUILD_SHARED_LIBS=ON \
+    -DBENCHMARK_ENABLE_LTO=ON \
+    -DBENCHMARK_ENABLE_GTEST_TESTS=OFF \
+    ..
+
+  make VERBOSE=1
+}
+
+package() {
+  cd "$srcdir/$pkgname-$pkgver/build"
+  make DESTDIR="$pkgdir/" install
+}

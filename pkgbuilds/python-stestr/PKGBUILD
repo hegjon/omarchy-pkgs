@@ -1,0 +1,34 @@
+# Maintainer: Felix Yan <felixonmars@archlinux.org>
+# Contributor: Simon Sapin <simon dot sapin at exyr dot org>
+# Contributor: Kyle Keen <keenerd@gmail.com>
+
+pkgname=python-stestr
+pkgver=4.2.1
+pkgrel=1
+pkgdesc="A test runner runner similar to testrepository"
+url="https://stestr.readthedocs.io/en/latest/"
+license=('Apache-2.0')
+arch=('any')
+depends=('python-cliff' 'python-subunit' 'python-fixtures' 'python-testtools'
+         'python-yaml' 'python-voluptuous' 'python-tomlkit')
+makedepends=('git' 'python-build' 'python-installer' 'python-flit-core')
+checkdepends=('python-ddt')
+source=("git+https://github.com/mtreinish/stestr.git#tag=$pkgver")
+sha512sums=('698d0585df0c3599ca89407e5950db9fadb425c325513f5659022bf7fc800786121bc7ec3510a1f55be5fb4af516c3c8302aae89961b7ece2f1c62575c664eaa')
+
+build() {
+  cd stestr
+  python -m build --wheel --no-isolation
+}
+
+check() {
+  cd stestr
+  python -m venv --system-site-packages testenv
+  testenv/bin/python -m installer dist/*.whl
+  PATH="$PWD/testenv/bin:$PATH" testenv/bin/stestr run
+}
+
+package() {
+  cd stestr
+  python -m installer --destdir="$pkgdir" dist/*.whl
+}

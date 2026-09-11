@@ -1,0 +1,46 @@
+# Maintainer: Sven-Hendrik Haase <svenstaro@archlinux.org>
+# Maintainer: Carl Smedstad <carsme@archlinux.org>
+# Contributor: David Runge <dvzrv@archlinux.org>
+# Contributor: Markus Martin <markus@archwyrm.net>
+
+pkgname=yaml-cpp
+pkgver=0.9.0
+pkgrel=1
+pkgdesc="YAML parser and emitter in C++, written around the YAML 1.2 spec"
+arch=('x86_64')
+url="https://github.com/jbeder/yaml-cpp"
+license=('MIT')
+depends=(
+  'glibc'
+  'libgcc'
+  'libstdc++'
+)
+makedepends=(
+  'cmake'
+  'git'
+)
+provides=('libyaml-cpp.so')
+source=("git+$url.git#tag=yaml-cpp-$pkgver")
+b2sums=('757d0b3724536b411b6c0e505540e02117c06449ddc5059b24f9a59bbdbd1fab8710dd1746c10d17ad61decc5cd2bd1c081791a06b79af1fe6aa3a50dbe238d5')
+
+build() {
+  cmake -S $pkgname -Bbuild \
+    -DCMAKE_BUILD_TYPE=None \
+    -DCMAKE_INSTALL_PREFIX=/usr \
+    -Wno-dev \
+    -DYAML_CPP_BUILD_TESTS=ON \
+    -DBUILD_SHARED_LIBS=ON \
+    -DYAML_BUILD_SHARED_LIBS=ON
+  cmake --build build
+}
+
+check() {
+  ctest --test-dir build --output-on-failure
+}
+
+package() {
+  DESTDIR="$pkgdir" cmake --install build
+  cd $pkgname
+  install -vDm 644 -t "$pkgdir/usr/share/doc/$pkgname" {CONTRIBUTING,README}.md
+  install -vDm 644 -t "$pkgdir/usr/share/licenses/$pkgname" LICENSE
+}

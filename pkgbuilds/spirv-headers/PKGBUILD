@@ -1,0 +1,46 @@
+# Maintainer: Jan Alexander Steffens (heftig) <heftig@archlinux.org>
+# Maintainer: Daurnimator <daurnimator@archlinux.org>
+# Maintainer: Felix Yan <felixonmars@archlinux.org>
+# Maintainer: Bruno Pagani <archange@archlinux.org>
+# Maintainer: Robin Candau <antiz@archlinux.org>
+
+pkgname=spirv-headers
+pkgver=1.4.357.0
+pkgrel=1
+epoch=1
+pkgdesc="SPIR-V header files and registry"
+url="https://www.khronos.org/spirv/"
+arch=(any)
+license=(MIT)
+makedepends=(
+  cmake
+  git
+  ninja
+)
+groups=(vulkan-devel)
+source=("git+https://github.com/KhronosGroup/SPIRV-Headers#tag=vulkan-sdk-$pkgver")
+b2sums=('be3ebd7dd3635cf82435d3d14f48570cc42ca6b8a428f0bcfdb2d9679433c815903d03642ac758a45fad5b94ed4312919bdfb6a506149b20947e9a4aa9f83ab7')
+
+build() {
+  local cmake_options=(
+    -D CMAKE_BUILD_TYPE=Release
+    -D CMAKE_INSTALL_PREFIX=/usr
+    -D CMAKE_INSTALL_SYSCONFDIR=/etc
+    -D CMAKE_SKIP_INSTALL_RPATH=ON
+  )
+
+  cmake -S SPIRV-Headers -B build -G Ninja "${cmake_options[@]}"
+  cmake --build build
+}
+
+check() {
+  ctest --test-dir build --output-on-failure --stop-on-failure
+}
+
+package() {
+  DESTDIR="$pkgdir" cmake --install build
+
+  install -Dm644 SPIRV-Headers/LICENSE -t "$pkgdir/usr/share/licenses/$pkgname"
+}
+
+# vim:set sw=2 sts=-1 et:

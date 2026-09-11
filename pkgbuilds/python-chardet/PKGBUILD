@@ -1,0 +1,47 @@
+# Maintainer: George Rawlinson <grawlinson@archlinux.org>
+# Contributor: Felix Yan <felixonmars@archlinux.org>
+# Contributor: Ionut Biru <ibiru@archlinux.org>
+# Contributor: William Rea <sillywilly@gmail.com>
+
+pkgname=python-chardet
+pkgver=6.0.0.post1
+pkgrel=1
+pkgdesc='Universal encoding detector for Python'
+arch=(any)
+url='https://chardet.readthedocs.io/'
+license=(LGPL-2.1-or-later)
+depends=(python)
+makedepends=(
+  git
+  python-build
+  python-installer
+  python-hatchling
+  python-hatch-vcs
+)
+checkdepends=(
+  python-pytest
+  python-pytest-timeout
+  python-pytest-xdist
+  python-hypothesis
+)
+source=("$pkgname::git+https://github.com/chardet/chardet#tag=$pkgver")
+sha512sums=('f0e45eaa9eb4ee619f593140c895a6fc2318d16dfe1ec6fe6f2113355a1d170f301ae850306f12d44a9ced8a7747be9a1d75e2359a830d9de9a0d42914a29f82')
+b2sums=('5aa0f7f3da193a551c8bde0ee70199c071f303436170b4d962295518086a62bc915b2836f986539d7f9d2bd818333a5718786c963710643242d37d5e90306831')
+
+build() {
+  cd "$pkgname"
+
+  python -m build --wheel --no-isolation
+}
+
+check() {
+  cd "$pkgname"
+
+  pytest -v
+}
+
+package() {
+  cd "$pkgname"
+
+  python -m installer --destdir="$pkgdir" dist/*.whl
+}

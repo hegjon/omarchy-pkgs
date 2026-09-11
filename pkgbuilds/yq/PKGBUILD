@@ -1,0 +1,39 @@
+# Maintainer: Felix Yan <felixonmars@archlinux.org>
+# Maintainer: Daurnimator <daurnimator@archlinux.org>
+# Maintainer: Caleb Maclennan <caleb@alerque.com>
+# Contributor: Daniel M. Capella <polyzen@archlinux.org>
+
+pkgname=yq
+pkgver=4.1.2
+pkgrel=1
+pkgdesc="Command-line YAML, XML, TOML processor - jq wrapper for YAML/XML/TOML documents"
+arch=('any')
+url="https://github.com/kislyuk/yq"
+license=(Apache-2.0)
+depends=(jq
+         python-argcomplete
+         python-tomlkit
+         python-xmltodict
+         python-yaml)
+makedepends=(python-{build,installer,wheel}
+             python-hatch-vcs
+             python-hatchling)
+conflicts=(go-yq)
+source=("https://files.pythonhosted.org/packages/source/y/$pkgname/$pkgname-$pkgver.tar.gz")
+sha256sums=('a8f148930f8beb3170f451d67f29cbe0b3ac713cd2fc91ecf51d43b4879e6b4c')
+b2sums=('1aa1c54d11cc9e33109ab2bb382493872e27c2af025ff3ebe551ea07325f91c331ab9d6221089a521a5a15297780e84a67331a899bae8ad5de3ccdd216f2e69e')
+
+build() {
+  cd $pkgname-$pkgver
+  python -m build -wn
+}
+
+check() {
+  cd $pkgname-$pkgver
+  python test/test.py
+}
+
+package() {
+  cd $pkgname-$pkgver
+  python -m installer -d "$pkgdir" dist/*.whl
+}

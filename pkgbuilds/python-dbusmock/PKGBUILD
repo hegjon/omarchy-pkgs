@@ -1,0 +1,45 @@
+# Maintainer: Jan Alexander Steffens (heftig) <heftig@archlinux.org>
+
+pkgname=python-dbusmock
+pkgver=0.38.1
+pkgrel=1
+pkgdesc="Mock D-Bus objects for tests"
+url="https://github.com/martinpitt/python-dbusmock"
+arch=(any)
+license=(LGPL-3.0-or-later)
+depends=(
+  glib2
+  python
+  python-dbus
+  python-gobject
+)
+makedepends=(
+  git
+  python-build
+  python-installer
+  python-setuptools
+  python-setuptools-scm
+  python-wheel
+)
+source=("git+https://github.com/martinpitt/python-dbusmock#tag=$pkgver")
+b2sums=('39ab9bced7a556ee93e5b20d2957fd564fd513d6dfd1cc13cfd743689356e2f39232885880975ad3930ab4d1c9b4dba456ed311e46993daa461cc26d19853702')
+validpgpkeys=(
+  3DB46B55EFA59D40E6232148D14EF15DAFE11347 # Martin Pitt <martin@piware.de>
+)
+
+prepare() {
+  cd $pkgname
+}
+
+build() {
+  # Suppress local version
+  export SETUPTOOLS_SCM_PRETEND_VERSION="$pkgver"
+
+  python -m build --wheel --no-isolation $pkgname
+}
+
+package() {
+  python -m installer --destdir="$pkgdir" $pkgname/dist/*.whl
+}
+
+# vim:set sw=2 sts=-1 et:

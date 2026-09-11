@@ -1,0 +1,41 @@
+# Maintainer: Sergej Pupykin <arch+pub@sergej.pp.ru>
+# Contributor: John D Jones III AKA jnbek <jnbek1972 -_AT_- g m a i l -_Dot_- com>
+# Generator  : CPANPLUS::Dist::Arch 1.32
+
+pkgname='perl-yaml-libyaml'
+pkgver=0.910.0
+pkgrel=1
+pkgdesc="Perl YAML Serialization using XS and libyaml"
+arch=('x86_64')
+license=('PerlArtistic' 'GPL')
+options=('!emptydirs')
+depends=('perl')
+makedepends=()
+checkdepends=('perl-test-warnings')
+url='https://search.cpan.org/dist/YAML-LibYAML/'
+source=("https://cpan.metacpan.org/authors/id/T/TI/TINITA/YAML-LibYAML-v$pkgver.tar.gz")
+sha256sums=('04310e9840b918383a5b9ae9ca4b3bde1b2771ec786c758bd2fffd79d409332b')
+
+build() {
+  ( export PERL_MM_USE_DEFAULT=1 PERL5LIB=""                 \
+      PERL_AUTOINSTALL=--skipdeps                            \
+      PERL_MM_OPT="INSTALLDIRS=vendor DESTDIR='"$pkgdir"'"     \
+      PERL_MB_OPT="--installdirs vendor --destdir '"$pkgdir"'" \
+      MODULEBUILDRC=/dev/null
+    cd "$srcdir/YAML-LibYAML-v$pkgver"
+    /usr/bin/perl Makefile.PL
+    make
+  )
+}
+
+check() {
+  cd "$srcdir/YAML-LibYAML-v$pkgver"
+  ( export PERL_MM_USE_DEFAULT=1 PERL5LIB=""
+    make test
+  )
+}
+
+package() {
+  cd "$srcdir/YAML-LibYAML-v$pkgver"
+  make install
+}

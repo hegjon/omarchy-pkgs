@@ -1,0 +1,155 @@
+# Maintainer: Torsten Keßler <tpkessler at archlinux dot org>
+# Maintainer: Christian Heusel <gromit@archlinux.org>
+# Contributor: acxz <akashpatel at yahoo dot com>
+# Contributor: JP-Ellis <josh@jpellis.me>
+
+pkgname=miopen-hip
+pkgver=7.2.4
+pkgrel=1
+# pin frugally-deep version as workaround workaround for https://github.com/ROCm/MIOpen/issues/3588
+_fdeep_ver=0.15.31
+pkgdesc="AMD's Machine Intelligence Library (HIP backend)"
+arch=('x86_64')
+url="https://rocm.docs.amd.com/projects/MIOpen/en/latest/index.html"
+license=('MIT')
+depends=(
+  'bzip2'
+  'comgr'
+  'composable-kernel'
+  'glibc'
+  'hip-runtime-amd'
+  'hipblas'
+  'hipblaslt'
+  'libgcc'
+  'rocblas'
+  'rocm-core'
+  'rocrand'
+  'roctracer'
+  'sqlite'
+)
+makedepends=(
+  'boost'
+  'boost-libs'
+  'cmake'
+  'eigen'
+  'functional-plus'
+  'git'
+  'git-lfs'
+  'lbzip2'
+  'ninja'
+  'nlohmann-json'
+  'rocm-cmake'
+  'rocm-toolchain'
+  'rocm-llvm'
+)
+provides=('miopen')
+conflicts=('miopen')
+_mlir='https://github.com/ROCm/rocMLIR'
+_mlir_ver=7.2.2
+_git='https://github.com/ROCm/rocm-libraries'
+source=(
+  "rocm-libraries::git+$_git.git#tag=rocm-$pkgver"
+  "${pkgname}-MIFin::git+https://github.com/ROCm/MIFin.git"
+  "${pkgname}-rocmlir::git+https://github.com/ROCm/rocMLIR#tag=rocm-$_mlir_ver"
+  "${pkgname}-half::git+https://github.com/ROCm/half#tag=rocm-$pkgver"
+  "${pkgname}-frugally-deep::git+https://github.com/Dobiasd/frugally-deep#tag=v$_fdeep_ver"
+)
+sha256sums=('b476acbcd0f4017c800e4b05533e6dfb875bde32242729c8df557d4624379623'
+            'SKIP'
+            '674cf03c6d5d0fb65e7b57c71cb0671cc29e1672446f4abb39c13cd9296aa9ef'
+            'f21d7a04cae40af1d843ad9ca81416bb469f0540607f68b2e35b642362c89b42'
+            'd1e1d55945eded7219c50f59f55967327118d6792df5a283c01131b18a3f061f')
+options=(!lto)
+_dirname="rocm-libraries/projects/miopen"
+
+prepare() {
+  cd "$_dirname"
+  git submodule init
+
+  git config submodule."fin".url "${srcdir}/${pkgname}"-MIFin
+
+  git -c protocol.file.allow=always submodule update --init --recursive
+
+  # Disable tests as they require an AMD GPU at build time
+  sed -i '/add_subdirectory(test)/d' CMakeLists.txt
+
+  # All 'return {var};' patterns that cause Boost::optional errors and fix them
+  sed -i 's/return {ovr_rec};/return ovr_rec;/g' src/include/miopen/sqlite_db.hpp
+  sed -i 's/return {rec};/return rec;/g' src/include/miopen/sqlite_db.hpp
+  sed -i 's/return {res};/return res;/g' src/find_controls.cpp
+}
+
+build() {
+  local fdeep_args=(
+    -S $pkgname-frugally-deep
+        -B build-frugally-deep
+        -Wno-dev
+        -DCMAKE_BUILD_TYPE=None
+        -DCMAKE_INSTALL_PREFIX=/usr
+    -DCMAKE_POLICY_VERSION_MINIMUM=3.5
+  )
+  cmake "${fdeep_args[@]}"
+  cmake --build build-frugally-deep
+  DESTDIR="$srcdir/deps" cmake --install build-frugally-deep
+
+  local llvm_args=(
+    -Wno-dev
+    -G Ninja
+    -B build-mlir
+    -S "$pkgname-rocmlir"
+    # -fcf-protection is not supported by HIP, see
+    # https://rocm.docs.amd.com/projects/llvm-project/en/latest/reference/rocmcc.html#support-status-of-other-clang-options
+    -D CMAKE_CXX_FLAGS="${CXXFLAGS} -fcf-protection=none"
+    -D CMAKE_INSTALL_PREFIX=/usr
+    -D CMAKE_BUILD_TYPE=Release
+    -D CMAKE_C_COMPILER=amdclang
+    -D CMAKE_CXX_COMPILER=amdclang++
+    # Set ROCm test chipset to Vega in order to pass the configuration step.
+    -D ROCM_TEST_CHIPSET=gfx900
+    -D BUILD_FAT_LIBROCKCOMPILER=ON
+    -D CMAKE_POLICY_VERSION_MINIMUM=3.5
+  )
+  cmake "${llvm_args[@]}"
+  cmake --build build-mlir
+  DESTDIR="$srcdir/deps" cmake --install build-mlir
+
+  local half_args=(
+    -Wno-dev
+    -G Ninja
+    -B build-half
+    -S "$pkgname-half"
+    -D CMAKE_INSTALL_PREFIX=/usr
+    -D CMAKE_BUILD_TYPE=None
+    -D CMAKE_POLICY_VERSION_MINIMUM=3.5
+  )
+  cmake "${half_args[@]}"
+  cmake --build build-half
+  DESTDIR="$srcdir/deps" cmake --install build-half
+
+  # define NDEBUG to silence internal logging (mimics cmake release build)
+  # https://rocmsoftwareplatform.github.io/MIOpen/doc/html/DebugAndLogging.html
+  local cmake_args=(
+    -Wno-dev
+    -G Ninja
+    -B build
+    -S "$_dirname"
+    -D CMAKE_CXX_FLAGS="${CXXFLAGS} -fcf-protection=none -DNDEBUG"
+    -D CMAKE_INSTALL_PREFIX=/opt/rocm
+    -D CMAKE_BUILD_TYPE=None
+    -D CMAKE_C_COMPILER=amdclang
+    -D CMAKE_CXX_COMPILER=amdclang++
+    -D MIOPEN_BACKEND=HIP
+    -D HALF_INCLUDE_DIR="$srcdir/deps/usr/include"
+    -D CMAKE_PREFIX_PATH="$srcdir/deps/usr/lib/cmake"
+    -D CMAKE_POLICY_VERSION_MINIMUM=3.5
+    -D GPU_TARGETS="$(rocm-supported-gfx -e gfx1010,gfx1012,gfx1153)"
+  )
+  cmake "${cmake_args[@]}"
+  cmake --build build
+}
+
+package() {
+  DESTDIR="$pkgdir" cmake --install build
+
+  install -Dm644 "$_dirname/LICENSE.md" "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+}

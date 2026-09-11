@@ -1,0 +1,92 @@
+# Maintainer: Fabian Bornschein <fabiscafe@archlinux.org>
+# Maintainer: Jan Alexander Steffens (heftig) <heftig@archlinux.org>
+
+pkgbase=libpeas-2
+pkgname=(
+  libpeas-2
+  libpeas-2-docs
+)
+pkgver=2.2.1
+pkgrel=1
+pkgdesc="GObject Plugin System"
+url="https://wiki.gnome.org/Projects/Libpeas"
+arch=(x86_64)
+license=(LGPL-2.1-or-later)
+depends=(
+  glib2
+  glibc
+  libgcc
+  libstdc++
+)
+makedepends=(
+  gi-docgen
+  git
+  gjs
+  glade
+  glib2-devel
+  gobject-introspection
+  js140
+  lua51
+  lua51-lgi
+  luajit
+  meson
+  python
+  python-gobject
+  python-setuptools
+  vala
+)
+checkdepends=(xorg-server-xvfb)
+source=("git+https://gitlab.gnome.org/GNOME/libpeas.git#tag=$pkgver")
+b2sums=('2cc6500f6e0ca1105c9032403485d9144e9be9332fecdffa30a4388c2400ffd33ee2500401b2f2669d76ea3283d93a21bb4262431a8ac21a7f4d3246a398343b')
+
+prepare() {
+  cd libpeas
+}
+
+build() {
+  local meson_options=(
+    -D gtk_doc=true
+    -D vapi=true
+  )
+
+  arch-meson libpeas build "${meson_options[@]}"
+  meson compile -C build
+}
+
+check() {
+  xvfb-run -s '-nolisten local' \
+    meson test -C build --print-errorlogs
+}
+
+_pick() {
+  local p="$1" f d; shift
+  for f; do
+    d="$srcdir/$p/${f#$pkgdir/}"
+    mkdir -p "$(dirname "$d")"
+    mv "$f" "$d"
+    rmdir -p --ignore-fail-on-non-empty "$(dirname "$f")"
+  done
+}
+
+package_libpeas-2() {
+  optdepends=(
+    'gjs: GJS loader'
+    'lua51-lgi: Lua loader'
+    'python-gobject: Python loader'
+  )
+  provides=(libpeas-2.so)
+
+  meson install -C build --destdir "$pkgdir"
+
+  cd "$pkgdir"
+
+  _pick docs usr/share/doc
+}
+
+package_libpeas-2-docs() {
+  pkgdesc+=" (documentation)"
+  depends=()
+  mv docs/* "$pkgdir"
+}
+
+# vim:set sw=2 sts=-1 et:

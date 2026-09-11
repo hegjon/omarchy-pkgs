@@ -1,0 +1,73 @@
+# Maintainer: Caleb Maclennan <caleb@alerque.com>
+# Contributor: David Runge <dvzrv@archlinux.org>
+# Contributor: Angel Velasquez <angvp@archlinux.org>
+# Contributor: Felix Yan <felixonmars@archlinux.org>
+# Contributor: Stéphane Gaudreault <stephane@archlinux.org>
+# Contributor: Alexander Fehr <pizzapunk gmail com>
+
+_pyname=pylint
+pkgname=python-$_pyname
+pkgver=4.0.7
+pkgrel=1
+pkgdesc='Analyzes Python code looking for bugs and signs of poor quality'
+arch=(any)
+url=https://pylint.pycqa.org
+_url=https://github.com/PyCQA/pylint
+license=(GPL-2.0-only)
+_pydeps=(astroid
+         colorama
+         dill
+         isort
+         mccabe
+         platformdirs
+         tomlkit)
+depends=(python
+         "${_pydeps[@]/#/python-}")
+makedepends=(python-{build,installer,wheel}
+             python-myst-parser
+             python-setuptools
+             python-sphinx{,-reredirects})
+checkdepends=(mpdecimal
+              python-gitpython
+              python-py
+              python-pytest{,-timeout,-benchmark})
+optdepends=('graphviz: Enable output formats other than dot or vcg')
+_archive="$_pyname-$pkgver"
+source=("$_url/archive/v$pkgver/$_archive.tar.gz")
+sha256sums=('873c24916da67ed1150f93f288fb68e770002bf13be79e86eb9e83bae0008af7')
+
+prepare() {
+	cd "$_archive"
+	# Remove build time dependency pinning that conflicts with Arch packages
+	sed -i -E '/^requires.*setuptools/s/[>~]=[0-9.]+//g' pyproject.toml
+}
+
+build() {
+	cd "$_archive"
+	python -m build -wn
+	export PYTHONPATH="$PWD/build/lib"
+	# Man page builds but throws deprecation warnings that sphinx declares should be fatal
+	make -C doc man ||:
+}
+
+check() {
+	cd "$_archive"
+	export PYTHONPATH="$PWD:$PWD/build/lib"
+	local deselected=(
+		tests/benchmark/test_baseline_benchmarks.py
+		tests/checkers/unittest_imports.py::TestImportsChecker
+		tests/checkers/unittest_variables.py::TestMissingSubmodule
+		tests/lint/unittest_lint.py::test_enable_message_block
+		tests/test_functional.py::test_functional
+		tests/test_regr.py::test_package
+		tests/test_self.py::TestRunTC::test_do_not_import_files_from_local_directory
+		tests/testutils/test_testutils_utils.py::test__test_environ_pythonpath_no_arg
+	)
+	pytest -vv --color=yes ${deselected[@]/#/--deselect }
+}
+
+package() {
+	cd "$_archive"
+	python -m installer -d "$pkgdir" dist/*.whl
+	install -Dm0644 -t "$pkgdir/usr/share/man/man1/" doc/_build/man/*.1
+}

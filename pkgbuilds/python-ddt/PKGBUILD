@@ -1,0 +1,30 @@
+# Maintainer: Felix Yan <felixonmars@archlinux.org>
+
+pkgname=python-ddt
+pkgver=1.7.2
+pkgrel=5
+pkgdesc="Data-Driven/Decorated Tests"
+arch=('any')
+license=('MIT')
+url="https://github.com/txels/ddt"
+depends=('python')
+makedepends=('git' 'python-build' 'python-installer' 'python-setuptools' 'python-wheel')
+checkdepends=('python-pytest' 'python-aiounittest' 'python-six' 'python-yaml')
+source=("git+https://github.com/txels/ddt.git#tag=$pkgver")
+sha512sums=('d4c93fcb3fb44c265a5cf879d5bf90f46049960a6ec7e263e1f2b91f767934b92bd1f7168158e89c3b08fc22376eed3d4e4d2b22f743c8b582b9a0fd0f2647b5')
+
+build() {
+  cd ddt
+  python -m build --wheel --no-isolation
+}
+
+check() {
+  cd ddt
+  pytest
+}
+
+package() {
+  cd ddt
+  python -m installer --destdir="$pkgdir" dist/*.whl
+  install -Dm644 LICENSE.md -t "$pkgdir"/usr/share/licenses/$pkgname/
+}

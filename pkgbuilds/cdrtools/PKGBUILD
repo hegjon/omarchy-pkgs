@@ -1,0 +1,79 @@
+# Maintainer: Carl Smedstad <carsme@archlinux.org>
+# Maintainer: Bert Peters <bertptrs@archlinux.org>
+# Contributor: Lukas Jirkovsky <l.jirkovsky@gmail.com>
+
+pkgname=cdrtools
+pkgver=3.02a09
+_pkgver=3.02
+pkgrel=6
+pkgdesc="Highly portable CD/DVD/BluRay command line recording software"
+arch=(x86_64)
+url="https://sourceforge.net/projects/cdrtools/"
+license=(
+  GPL-2.0-or-later
+  LGPL-2.1-or-later
+  CDDL-1.0
+)
+depends=(
+  acl
+  glibc
+  libcap
+)
+conflicts=(cdrkit)
+provides=(cdrkit)
+replaces=(cdrkit)
+backup=(
+  etc/default/cdrecord
+  etc/default/rscsi
+)
+options=(!makeflags)
+install=cdrtools.install
+source=("https://downloads.sourceforge.net/cdrtools/cdrtools-$pkgver.tar.bz2")
+sha256sums=('aa28438f458ef3f314b79f2029db27679dae1d5ffe1569b6de57742511915e81')
+
+prepare() {
+  cd $pkgname-$_pkgver
+
+  sed -i 's|/opt/schily|/usr|g' DEFAULTS/Defaults.linux
+  sed -i 's|DEFINSGRP=.*|DEFINSGRP=root|' DEFAULTS/Defaults.linux
+  sed -i 's|INSDIR=\s*sbin|INSDIR=bin|' rscsi/Makefile
+}
+
+build() {
+  cd $pkgname-$_pkgver
+
+  export GMAKE_NOWARN=true
+  export CFLAGS="$CFLAGS -std=gnu89 -fno-strict-aliasing"
+  make INS_BASE=/usr INS_RBASE=/ VERSION_OS="_ArchLinux" LDOPTX="$LDFLAGS"
+}
+
+check() {
+  cd $pkgname-$_pkgver
+
+  make tests
+}
+
+package() {
+  cd $pkgname-$_pkgver
+
+  export GMAKE_NOWARN=true
+  make INS_BASE=/usr INS_RBASE=/ DESTDIR="$pkgdir" install
+
+  # Remove static libraries, headers & conflicting man pages
+  rm "$pkgdir/usr/lib/"*.a
+  rm -r "$pkgdir/usr/lib/profiled"
+  rm -r "$pkgdir/usr/include"
+  rm -r "$pkgdir/usr/share/man/man3"
+
+  # Autoload 'sg' module needed by cdrecord
+  echo sg | install -vDm644 /dev/stdin "$pkgdir/usr/lib/modules-load.d/cdrecord.conf"
+
+  # Patch binary permissions, by default it's swx--x--x
+  chmod a+rx "$pkgdir/usr/bin/"*
+
+  # Create symlinks for cdrkit compatibility
+  ln -s /usr/bin/cdrecord "$pkgdir/usr/bin/wodim"
+  ln -s /usr/bin/readcd "$pkgdir/usr/bin/readom"
+  ln -s /usr/bin/mkisofs "$pkgdir/usr/bin/genisoimage"
+  ln -s /usr/bin/cdda2wav "$pkgdir/usr/bin/icedax"
+}

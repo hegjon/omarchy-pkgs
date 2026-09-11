@@ -1,0 +1,84 @@
+# Maintainer: Balló György <ballogyor+arch at gmail dot com>
+
+pkgname=sugar-toolkit-gtk3
+pkgver=0.121
+pkgrel=7
+pkgdesc='Sugar GTK library'
+arch=(x86_64)
+url='https://github.com/sugarlabs/sugar-toolkit-gtk3'
+license=(LGPL-2.1-or-later)
+depends=(
+  alsa-lib
+  at-spi2-core
+  bash
+  gdk-pixbuf2
+  glib2
+  glibc
+  gst-plugins-espeak
+  gst-python
+  gstreamer
+  gtk3
+  libice
+  librsvg
+  libsm
+  libx11
+  libxfixes
+  libxi
+  pango
+  python
+  python-cairo
+  python-dateutil
+  python-dbus
+  python-decorator
+  python-gobject
+  python-six
+  sugar-artwork
+  sugar-datastore
+  telepathy-glib
+  telepathy-mission-control
+  unzip
+)
+makedepends=(
+  git
+  glib2-devel
+  gobject-introspection
+  intltool
+)
+optdepends=('webkit2gtk-4.1: run sugar-activity-web')
+source=("git+https://github.com/sugarlabs/$pkgname.git#tag=v$pkgver")
+b2sums=(e8145d2718ae701f9b3bb00d95a19b865e287d8b1976bdbd35bbd4b0eea5fea59ca8e2f7bcf4f8a851b5791cb122751aaca59b7a0689619905927ed2949d0c91)
+
+prepare() {
+  cd $pkgname
+
+  # https://github.com/sugarlabs/sugar/issues/1004
+  sed -i 's/ssh-dss /ssh-rsa /' src/sugar3/profile.py
+
+  # https://github.com/sugarlabs/sugar-toolkit-gtk3/pull/490
+  sed -i 's/usage: %prog/%(prog)s/' src/sugar3/activity/activityinstance.py
+
+  # https://github.com/sugarlabs/sugar-toolkit-gtk3/pull/491
+  sed -i 's/cp.readfp/cp.read_file/' src/sugar3/{bundle/contentbundle.py,graphics/icon.py}
+
+  autoreconf -fi
+}
+
+build() {
+  cd $pkgname
+
+  # Hardened build is not supported
+  export CFLAGS=${CFLAGS/ -fno-plt}
+  export LDFLAGS=${LDFLAGS/-Wl,-z,now}
+
+  ./configure \
+    --prefix=/usr \
+    --sysconfdir=/etc \
+    --localstatedir=/var
+  make -j1
+}
+
+package() {
+  cd $pkgname
+  make DESTDIR="$pkgdir" install
+  rm "$pkgdir/usr/bin/sugar-activity"
+}

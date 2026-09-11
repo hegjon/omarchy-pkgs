@@ -1,0 +1,57 @@
+# Maintainer: Antonio Rojas <arojas@archlinux.org>
+
+pkgname=opentimelineio
+pkgver=0.18.1
+pkgrel=3
+pkgdesc='Open Source API and interchange format for editorial timeline information'
+url='http://opentimeline.io/'
+license=(Apache-2.0)
+arch=(x86_64)
+depends=(glibc
+         libgcc
+         libstdc++
+         python
+         python-aaf2)
+makedepends=(cmake
+             git
+             imath
+             pybind11
+             python-build
+             python-installer
+             python-setuptools
+             python-wheel)
+source=(git+https://github.com/PixarAnimationStudios/OpenTimelineIO#tag=v$pkgver
+        opentimelineio-rapidjson::git+https://github.com/Tencent/rapidjson)
+sha256sums=('857fb05f43f2ef56f99de6754d19cd379d8d91ff7fb7abfcde4f3a114d6c34df'
+            'SKIP')
+
+prepare() {
+  cd OpenTimelineIO
+  git submodule init src/deps/rapidjson
+  git submodule set-url src/deps/rapidjson "$srcdir"/opentimelineio-rapidjson
+  git -c protocol.file.allow=always submodule update src/deps/rapidjson
+
+  sed -e '/cmake/d' -i pyproject.toml
+}
+
+build() {
+  cmake -B build -S OpenTimelineIO \
+    -DCMAKE_INSTALL_PREFIX=/usr \
+    -DOTIO_FIND_IMATH=ON \
+    -DOTIO_AUTOMATIC_SUBMODULES=OFF \
+    -DOTIO_DEPENDENCIES_INSTALL=OFF
+  cmake --build build
+
+# Workaround messy build system
+  export CXXFLAGS+=" -I/usr/include/Imath"
+  cd OpenTimelineIO
+  python -m build --wheel --no-isolation
+}
+
+package() {
+  DESTDIR="$pkgdir" cmake --install build
+
+  cd OpenTimelineIO
+  python -m installer --destdir="$pkgdir" dist/*.whl
+  rm -fr "$pkgdir"/build
+}

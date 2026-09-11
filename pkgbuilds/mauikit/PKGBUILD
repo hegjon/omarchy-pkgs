@@ -1,0 +1,37 @@
+# Maintainer: Antonio Rojas <arojas@archlinux.org>
+
+pkgname=mauikit
+pkgver=4.0.2
+pkgrel=2
+pkgdesc='Templated convergent controls and multi-platform utilities for Maui applications'
+url='https://mauikit.org/'
+arch=(x86_64)
+license=(LGPL-3.0-only)
+depends=(glibc
+         kcoreaddons
+         ki18n
+         kirigami
+         knotifications
+         kwindowsystem
+         libgcc
+         libstdc++
+         mauiman
+         purpose
+         qt6-base
+         qt6-declarative
+         qt6-multimedia
+         qt6-svg)
+makedepends=(extra-cmake-modules)
+source=(https://download.kde.org/stable/maui/$pkgname/$pkgver/$pkgname-$pkgver.tar.xz{,.sig})
+sha256sums=('054dc0e15242ffa6bb9b8b25515cebfc9a02347b679f3907dcb80673ca93dd40'
+            'SKIP')
+validpgpkeys=(023625C8D02C0D8C15C3BABB86C793550794FEB8) # Camilo Higuita <milo.h@aol.com>                                    
+
+build() {
+  cmake -B build -S $pkgname-$pkgver
+  cmake --build build
+}
+
+package() {
+  DESTDIR="$pkgdir" cmake --install build
+}

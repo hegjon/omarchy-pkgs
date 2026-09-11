@@ -1,0 +1,46 @@
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -166,7 +166,7 @@
+   # releases.
+   set(MAX_LLVM_MAJOR 999)
+ else()
+-  set(MAX_LLVM_MAJOR 21)
++  set(MAX_LLVM_MAJOR 22)
+ endif()
+ 
+ if((${LLVM_VERSION_MAJOR} VERSION_LESS ${MIN_LLVM_MAJOR}) OR (${LLVM_VERSION_MAJOR} VERSION_GREATER ${MAX_LLVM_MAJOR}))
+--- a/src/ast/passes/codegen_llvm.cpp
++++ b/src/ast/passes/codegen_llvm.cpp
+@@ -80,8 +80,13 @@
+ {
+   static auto *target = []() {
+     std::string error_str;
+-    const auto *target = llvm::TargetRegistry::lookupTarget(LLVMTargetTriple,
+-                                                            error_str);
++    const auto *target = llvm::TargetRegistry::lookupTarget(
++#if LLVM_VERSION_MAJOR >= 22
++        Triple(LLVMTargetTriple),
++#else
++        LLVMTargetTriple,
++#endif
++        error_str);
+     if (!target) {
+       throw util::FatalUserException(
+           "Could not find bpf llvm target, does your llvm support it?");
+--- a/src/ast/passes/clang_build.cpp
++++ b/src/ast/passes/clang_build.cpp
+@@ -139,8 +139,14 @@
+   // (works across modern Clang majors, including 21)
+   ci.getInvocation() = *inv;
+   ci.setDiagnostics(diags.release());
++#if LLVM_VERSION_MAJOR >= 22
++  ci.setVirtualFileSystem(vfs);
++  ci.createFileManager();
++  ci.createSourceManager();
++#else
+   ci.setFileManager(new clang::FileManager(clang::FileSystemOptions(), vfs));
+   ci.createSourceManager(ci.getFileManager());
++#endif
+ 
+   // Generate the object file, which should include the required BTF
+   // debug information. This also generates the module as a

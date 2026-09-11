@@ -1,0 +1,75 @@
+# Maintainer: Maxim Baz <archlinux at maximbaz dot com>
+# Maintainer: Daniel M. Capella <polyzen@archlinux.org>
+# Contributor: James Zhu <jameszhu@berkeley.edu>
+
+pkgname=python-black
+pkgver=26.5.1
+pkgrel=1
+pkgdesc='Uncompromising Python code formatter'
+arch=(any)
+url='https://github.com/psf/black'
+license=(MIT)
+depends=(
+  python
+  python-click
+  python-mypy_extensions
+  python-packaging
+  python-pathspec
+  python-platformdirs
+  python-pytokens
+)
+makedepends=(
+  git
+  python-build
+  python-hatch-fancy-pypi-readme
+  python-hatch-vcs
+  python-hatchling
+  python-installer
+)
+checkdepends=(
+  ipython
+  python-aiohttp
+  python-parameterized
+  python-pytest
+  python-tokenize-rt
+)
+optdepends=(
+  'ipython: for Jupyter notebook support'
+  'python-tokenize-rt: for Jupyter notebook support'
+  'python-aiohttp: for the blackd HTTP server'
+  'python-colorama: for colored diffs'
+)
+source=("$pkgname::git+$url#tag=$pkgver")
+sha512sums=('43291f546311fcad411f3efca0e0a8345a5e87fff061feb6e78fae3a7345d11134d8351b7f6c14ce9e3822e4a7ace4884ae3a927751f6667e73b8f81952ebb70')
+b2sums=('e6936dab00ee96c534857d3b34e301ae28f379c861fdfcdc64f7bffe4e68eb14b6a0385a8d8f4b4e2ecbadd7fe87bcaad4998ac3a48c3a9757a8d4bdc40904ca')
+
+build() {
+  cd "$pkgname"
+
+  python -m build --wheel --skip-dependency-check --no-isolation
+}
+
+check() {
+  cd "$pkgname"
+
+  python -m venv --system-site-packages test-env
+  test-env/bin/python -m installer dist/*.whl
+  # https://github.com/psf/black/issues/3251#issuecomment-1236413890
+  ulimit -n 2048
+  PATH="$PWD/test-env/bin:$PATH" test-env/bin/python -m pytest
+}
+
+package() {
+  cd "$pkgname"
+
+  python -m installer --destdir="$pkgdir" dist/*.whl
+
+  # license
+  install -vDm644 -t "$pkgdir/usr/share/licenses/$pkgname" LICENSE
+
+  # vim plugin
+  install -Dm644 -t "$pkgdir/usr/share/vim/vimfiles/plugin" plugin/black.vim
+  install -Dm644 -t "$pkgdir/usr/share/vim/vimfiles/autoload" autoload/black.vim
+}
+
+# vim:set ts=2 sw=2 et:

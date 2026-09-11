@@ -1,0 +1,35 @@
+# Maintainer: Antonio Rojas <arojas@archlinux.org>
+
+pkgname=python-pkgconfig
+pkgver=1.6.0
+pkgrel=1
+pkgdesc='Python module to interface with the pkg-config command line tool'
+arch=(any)
+url='https://github.com/matze/pkgconfig'
+license=(MIT)
+depends=(python)
+makedepends=(git
+             python-build
+             python-installer
+             python-poetry-core)
+checkdepends=(python-pytest
+              python-setuptools)
+source=(git+https://github.com/matze/pkgconfig#tag=v$pkgver)
+sha256sums=('3d7909fdf516b89b18edb54110aaedb2a4180bd0f1b8f2d3d20da5a42bc7d5ae')
+
+build() {
+  cd pkgconfig
+  python -m build --wheel --no-isolation
+}
+
+check() {
+  cd pkgconfig
+  PYTHONPATH="$PWD"/src \
+  pytest -v
+}
+
+package() {
+  cd pkgconfig
+  python -m installer --destdir="$pkgdir" dist/*.whl
+  install -Dm644 LICENSE -t "$pkgdir"/usr/share/licenses/$pkgname
+}

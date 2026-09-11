@@ -1,0 +1,41 @@
+# Maintainer: Carl Smedstad <carsme@archlinux.org>
+# Contributor: Alexander F. Rødseth <xyproto@archlinux.org>
+# Contributor: Jaroslav Lichtblau <dragonlord@aur.archlinux.org>
+# Contributor: Allan McRae <allan@archlinux.org>
+# Contributor: David Moore <davidm@sjsoft.com>
+
+pkgname=python-simplejson
+pkgver=4.1.1
+pkgrel=1
+pkgdesc='Simple, fast and extensible JSON decoder/encoder'
+license=(MIT)
+arch=(x86_64)
+url='https://github.com/simplejson/simplejson'
+depends=(
+  glibc
+  python
+)
+makedepends=(
+  python-build
+  python-installer
+  python-setuptools
+  python-wheel
+)
+source=("$url/archive/v$pkgver/$pkgname-v$pkgver..tar.gz")
+b2sums=('02a5a918b4dd36f3ee4e21f549b6755e97f72ad8bdcc0a40ff7711372e5a7ba858340fd3fb1f0637c797e87e57a9bd6d22e12a039a3608f7c1b7dd7ef4e5bade')
+
+build() {
+  cd ${pkgname#python-}-$pkgver
+  python -m build --wheel --no-isolation
+}
+
+check() {
+  cd ${pkgname#python-}-$pkgver
+  python -m unittest discover -v
+}
+
+package() {
+  cd ${pkgname#python-}-$pkgver
+  python -m installer --destdir="$pkgdir" dist/*.whl
+  install -vDm644 -t "$pkgdir/usr/share/licenses/$pkgname" LICENSE.txt
+}

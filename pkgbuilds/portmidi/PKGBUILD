@@ -1,0 +1,51 @@
+# Maintainer: David Runge <dvzrv@archlinux.org>
+# Contributor: Eric Bélanger <eric@archlinux.org>
+
+pkgname=portmidi
+pkgver=2.0.8
+pkgrel=1
+epoch=1
+pkgdesc="Cross platform library for interfacing with OS MIDI I/O APIs"
+arch=(x86_64)
+url="https://github.com/portmidi/portmidi"
+license=(MIT)
+depends=(
+  glibc
+)
+makedepends=(
+  alsa-lib
+  cmake
+)
+provides=(
+  libportmidi.so
+)
+source=($url/archive/v$pkgver/$pkgname-v$pkgver.tar.gz)
+sha512sums=('d66e9587324da729f3f97037decc8dbd436f86aa346969e4f9189f74a8f60451a92db4c5a5f551064cf794e872c174ebe731bcb2aaf6554f00dacc5b3b8209be')
+b2sums=('41ee64ef204fc30756c63255e00442cd58ee4e6aa6430c13a184ad623959e17da22518e87b1d6303f817d6c04ac08df3c113b1adfe5ec03c6ae8cfc3ed615118')
+
+build() {
+  local cmake_options=(
+    -B build
+    -D CMAKE_INSTALL_PREFIX=/usr
+    -D CMAKE_BUILD_TYPE=None
+    -S $pkgname-$pkgver
+    -W no-dev
+  )
+
+  cmake "${cmake_options[@]}"
+  cmake --build build --verbose
+}
+
+check() {
+  ctest --test-dir build --output-on-failure
+}
+
+package() {
+  depends+=(
+    alsa-lib libasound.so
+  )
+
+  DESTDIR="$pkgdir" cmake --install build
+  install -vDm 644 $pkgname-$pkgver/license.txt -t "$pkgdir/usr/share/licenses/$pkgname/"
+  install -vDm 644 $pkgname-$pkgver/{CHANGELOG,README}.txt -t "$pkgdir/usr/share/doc/$pkgname/"
+}

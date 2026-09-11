@@ -1,0 +1,37 @@
+# Maintainer: Andreas Radke <andyrtr@archlinux.org>
+# Contributor: Jan de Groot <jgc@archlinux.org>
+
+pkgname=xorg-font-util
+pkgver=1.4.2
+pkgrel=1
+pkgdesc='X.Org font utilities'
+url='https://xorg.freedesktop.org/'
+arch=('x86_64')
+license=(MIT BSD-2-Clause MIT-open-group Unicode-3.0)
+makedepends=('xorg-util-macros')
+depends=('glibc')
+source=("${url}"/releases/individual/font/font-util-${pkgver}.tar.xz{,.sig})
+sha512sums=('3def5f08bcb30ec3e0008f648478ebe1f65127d03e821613de550e95247812751b4ff31383739ad120123b2f69c87d819c18d44d1edee2ca51075a3c031e3a6f'
+            'SKIP')
+validpgpkeys=('3AB285232C46AE43D8E192F4DAB0F78EA6E7E2D2') # Alan Coopersmith <alan.coopersmith@oracle.com>
+# validpgpkeys=('3C2C43D9447D5938EF4551EBE23B7E70B467F0BF') # Peter Hutterer (Who-T) <office@who-t.net>
+replaces=('font-util')
+provides=('font-util')
+conflicts=('font-util')
+groups=('xorg-fonts' 'xorg')
+
+build() {
+  cd font-util-${pkgver}
+  ./configure \
+    --prefix=/usr \
+    --mandir=/usr/share/man \
+    --with-mapdir=/usr/share/fonts/util \
+    --with-fontrootdir=/usr/share/fonts
+  make
+}
+
+package() {
+  cd font-util-${pkgver}
+  make DESTDIR="${pkgdir}" install
+  install -Dm644 COPYING "${pkgdir}/usr/share/licenses/${pkgname}/COPYING"
+}

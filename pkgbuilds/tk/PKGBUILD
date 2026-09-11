@@ -1,0 +1,63 @@
+# Maintainer: Caleb Maclennan <caleb@alerque.com>
+# Contributor: Eric Bélanger <eric@archlinux.org>
+
+pkgname=tk
+pkgver=8.6.16
+pkgrel=1
+pkgdesc='A windowing toolkit for use with tcl'
+arch=(x86_64)
+url="http://tcl.sourceforge.net/"
+license=(TCL)
+depends=(tcl
+         libxss
+         libxft)
+options=(staticlibs)
+_archive="$pkgname$pkgver"
+source=("https://downloads.sourceforge.net/sourceforge/tcl/$_archive-src.tar.gz"
+        font-sizes.diff)
+sha256sums=('be9f94d3575d4b3099d84bc3c10de8994df2d7aa405208173c709cc404a7e5fe'
+            '80a64f81a002ca83475ac2e53b8c9836e1a376049989733b61687c88df8c68e5')
+
+prepare() {
+	cd "$_archive"
+	patch -p1 -i ../font-sizes.diff
+}
+
+build() {
+	cd "$_archive/unix"
+	./configure \
+		--prefix=/usr \
+		--mandir=/usr/share/man \
+		--enable-threads \
+		--disable-rpath \
+		--enable-64bit
+	make
+}
+
+check() {
+	cd "$_archive/unix"
+	#  make test
+}
+
+package() {
+	cd "$_archive/unix"
+	make INSTALL_ROOT="$pkgdir" install install-private-headers
+	ln -sf wish${pkgver%.*} "$pkgdir/usr/bin/wish"
+	ln -sf libtk${pkgver%.*}.so "$pkgdir/usr/lib/libtk.so"
+	install -Dm0644 -t "$pkgdir/usr/share/licenses/$pkgname/" license.terms
+
+	# install private headers (FS#14388, FS#47616)
+	cd ..
+	for dir in compat generic generic/ttk unix; do
+		install -dm755 "$pkgdir/usr/include/tk-private/$dir"
+		install -m644 -t "$pkgdir/usr/include/tk-private/$dir" $dir/*.h
+	done
+
+	# remove buildroot traces
+	sed -e "s#$srcdir/$_archive/unix#/usr/lib#" \
+		-e "s#$srcdir/$_archive#/usr/include#" \
+		-i "$pkgdir/usr/lib/tkConfig.sh"
+
+	# remove unrequired execute permissions (FS#75042)
+	chmod -x "$pkgdir/usr/lib/libtkstub8.6.a"
+}

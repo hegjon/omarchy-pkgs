@@ -1,0 +1,41 @@
+# Maintainer: Levente Polyak <anthraxx[at]archlinux[dot]org>
+# Maintainer: Christian Heusel <gromit@archlinux.org>
+# Contributor: Giovanni Scafora <giovanni@archlinux.org>
+# Contributor: Aaron Griffin <aaron@archlinux.org>
+
+pkgname=asio
+pkgver=1.38.2
+pkgrel=1
+pkgdesc='Cross-platform C++ library for ASynchronous network I/O'
+url='https://think-async.com/Asio/'
+arch=('any')
+license=('BSL-1.0')
+makedepends=('boost' 'git')
+source=(git+https://github.com/chriskohlhoff/asio.git#tag=asio-${pkgver//./-})
+sha512sums=('219c0acbedf1b75a82d6dc5475ccf7a22c89cf50be0451c5ece93ce7f540352e7af8907e7ec78a78981acf078139895897dab4eb9ef5395078892989130becb8')
+b2sums=('c931dfa7150a941ba90d94d7b5939a68ce3e96061abcc8f5f8d5e961585814243f65ad316a081280be529abf0b2e52df2a7011a8c0aa99f67e2b53fc3a6e61a4')
+
+prepare() {
+  cd ${pkgname}
+  autoreconf -fiv
+}
+
+build() {
+  cd ${pkgname}
+  ./configure \
+    --prefix=/usr
+  make
+}
+
+check() {
+  cd ${pkgname}
+  make check
+}
+
+package() {
+  cd ${pkgname}
+  make DESTDIR="${pkgdir}" install
+  install -Dm 644 COPYING LICENSE_1_0.txt -t "${pkgdir}/usr/share/licenses/${pkgname}"
+}
+
+# vim: ts=2 sw=2 et:

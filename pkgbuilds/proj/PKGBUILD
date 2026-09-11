@@ -1,0 +1,38 @@
+# Maintainer: Jaroslav Lichtblau <svetlemodry@archlinux.org>
+# Maintainer: Bruno Pagani <archange@archlinux.org>
+# Contributor: Mateusz Herych <heniekk@gmail.com>
+# Contributor: dibblethewrecker <dibblethewrecker.at.jiwe.dot.org>
+# Contributor: William Rea <sillywilly@gmail.com>
+
+pkgname=proj
+pkgver=9.8.1
+pkgrel=1
+pkgdesc="Cartographic Projections and Coordinate Transformations Library"
+arch=(x86_64)
+url="https://proj.org/"
+license=(MIT)
+depends=(curl libtiff sqlite)
+makedepends=(cmake gmock gtest git)
+changelog=$pkgname.changelog
+source=(git+https://github.com/OSGeo/PROJ#tag=$pkgver)
+sha256sums=('3fc7a0ea4d8dfef4f28d71f8bdccd80a22c79da8040eb35dea9aab3fdcd0ce27')
+
+prepare() {
+  git -C PROJ cherry-pick -n 5393c8e80e2a20bad624ef357cbfb53e80008237 # Fix tests with sqlite 3.53
+}
+
+build() {
+  cmake -B build -S PROJ \
+    -DCMAKE_INSTALL_PREFIX=/usr \
+    -DUSE_EXTERNAL_GTEST=ON
+  cmake --build build
+}
+
+check(){
+  ctest --test-dir build
+}
+            
+package() {
+  DESTDIR="$pkgdir" cmake --install build
+  install -Dm644 PROJ/COPYING -t "${pkgdir}"/usr/share/licenses/$pkgname/
+}

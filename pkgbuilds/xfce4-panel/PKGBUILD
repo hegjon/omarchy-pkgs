@@ -1,0 +1,49 @@
+# Maintainer: Evangelos Foutras <foutrelis@archlinux.org>
+# Maintainer: Robin Candau <antiz@archlinux.org>
+# Contributor: tobias <tobias funnychar archlinux.org>
+
+pkgname=xfce4-panel
+pkgver=4.20.8
+pkgrel=1
+pkgdesc="Panel for the Xfce desktop environment"
+arch=('x86_64')
+url="https://docs.xfce.org/xfce/xfce4-panel/start"
+license=('LGPL-2.1-only')
+groups=('xfce4')
+depends=('exo' 'garcon' 'gtk-layer-shell' 'libxfce4ui' 'xfconf' 'libwnck3' 'libdbusmenu-gtk3'
+         'libxfce4windowing' 'hicolor-icon-theme' 'desktop-file-utils')
+makedepends=('git' 'glib2-devel' 'gobject-introspection' 'vala' 'xfce4-dev-tools')
+source=("git+https://gitlab.xfce.org/xfce/xfce4-panel.git#tag=$pkgname-$pkgver")
+sha256sums=('2bcabaf673cc10e4a09bf758b85e30ff28ee4ad723b881ae6b4ab8124f586e62')
+
+prepare() {
+  cd $pkgname
+  NOCONFIGURE=1 ./autogen.sh
+}
+
+build() {
+  cd $pkgname
+  ./configure \
+    --prefix=/usr \
+    --sysconfdir=/etc \
+    --localstatedir=/var \
+    --enable-x11 \
+    --enable-wayland \
+    --enable-gio-unix \
+    --enable-gtk-doc \
+    --disable-debug \
+    --enable-maintainer-mode
+  make
+}
+
+check() {
+  cd $pkgname
+  make check
+}
+
+package() {
+  cd $pkgname
+  make DESTDIR="$pkgdir" install
+}
+
+# vim:set ts=2 sw=2 et:

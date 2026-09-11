@@ -1,0 +1,38 @@
+# Maintainer: Sven-Hendrik Haase <svenstaro@archlinux.org>
+# Maintainer: Carl Smedstad <carsme@archlinux.org>
+# Contributor: éclairevoyant
+# Contributor: endlesseden <eden at rose dot place>
+
+pkgname=fast_float
+pkgver=8.2.10
+pkgrel=1
+pkgdesc='Fast and exact implementation of the C++ from_chars functions for float and double types'
+arch=('any')
+url="https://github.com/fastfloat/fast_float"
+license=('Apache-2.0 OR BSL-1.0 OR MIT')
+makedepends=(
+  'cmake'
+  'doctest'
+  'git'
+)
+source=("git+$url.git#tag=v$pkgver")
+b2sums=('a4caa759c4a838925d3e0d432739b73706a30eeb627834c0caf95c460880db7460f49aa0bd639d084f469db82b0bd296fed6b4b761ea66016a9c9df3b4109938')
+
+build() {
+  cmake -B build -S $pkgname \
+    -DCMAKE_BUILD_TYPE=None \
+    -DCMAKE_INSTALL_PREFIX=/usr \
+    -Wno-dev \
+    -DFASTFLOAT_TEST=ON \
+    -DSYSTEM_DOCTEST=ON
+  cmake --build build
+}
+
+check() {
+  cmake --build build --target test
+}
+
+package() {
+  DESTDIR="$pkgdir" cmake --install build
+  install -vDm644 -t "$pkgdir/usr/share/licenses/$pkgname" $pkgname/LICENSE-MIT
+}

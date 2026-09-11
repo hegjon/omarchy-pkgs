@@ -1,0 +1,63 @@
+# Maintainer: Felix Yan <felixonmars@archlinux.org>
+# Contributor: GONG Chen <chen dot sst at gmail dot com>
+# Contributor: 網軍總司令
+
+pkgname=librime
+pkgver=1.17.0
+_octagramcommit=dfcc15115788c828d9dd7b4bff68067d3ce2ffb8
+_luacommit=ec52e48ea18f11af37717a01c337f853215cf70b
+_charcodecommit=55e7f563e999802d41a13ba02657c1be4b2011b4
+_protocommit=657a923cd4c333e681dc943e6894e6f6d42d25b4
+_predictcommit=920bd41ebf6f9bf6855d14fbe80212e54e749791
+pkgrel=5
+epoch=1
+pkgdesc="Rime input method engine"
+arch=('x86_64')
+url="https://github.com/rime/librime"
+license=('BSD-3-Clause')
+depends=('boost-libs' 'capnproto' 'glibc' 'google-glog' 'leveldb' 'libgcc' 'librime-data' 'libstdc++' 'lua' 'marisa' 'opencc' 'yaml-cpp')
+makedepends=('git' 'cmake' 'boost' 'gtest' 'ninja')
+source=("git+https://github.com/rime/librime.git#tag=$pkgver"
+        "git+https://github.com/lotem/librime-octagram.git#commit=$_octagramcommit"
+        "git+https://github.com/hchunhui/librime-lua.git#commit=$_luacommit"
+        "git+https://github.com/rime/librime-charcode.git#commit=$_charcodecommit"
+        "git+https://github.com/lotem/librime-proto.git#commit=$_protocommit"
+        "git+https://github.com/rime/librime-predict.git#commit=$_predictcommit")
+sha512sums=('411f3555e307910cc71304de796a5b55834226f840fd664ca92fe91ce9012c0cfa1870dc29b5e24afae859f5c2177960ea553774512affd9bef0f46e00b46cc0'
+            '1d4c633d15a810b97171f9d44c8474b59e857253310a961a2ab93042bc8bc5c86e549c60816470959c35b68909fcfad14e0661ca28627289f18c1445eb690485'
+            '15170cf8b976d74837a3183cbae99beda7f43f9267f5d73ffd3cb01daca3934ddd2778adee9662fda6fd0ffaead3c09bfed44be7a89515494a6915cc37387d26'
+            'c21a1384f7eba77afdcda4bd0cffcdfa1bc6989e009f02c685160de443f8fc658bee7def57fe93162b3d5f31d366b48271d7204b4f6e7dd057facb2787703a15'
+            'e9b2aa47a87f96af97fc55686e85d905bd7bb06b633a9a318aeeea2731d87b38e50f9f821c2e68a30d58f4daaeaff97124247c1028a049ced922c6e7b4cc20ab'
+            'cf7062baa8dfe6d97946979545094a1962b73347f233065219b69488f078b6022b46f9bf59d0643de01ef36fe45b2d72375f0578747f85a6d389bdef4acc6967')
+
+prepare() {
+  cd librime
+  # Fix simplifier crashes with OpenCC converters without conversion chains:
+  # https://github.com/rime/librime/pull/1184
+  git cherry-pick -n 96a55478ba6ae3f8e78a3c824809905745440d57
+
+  cd plugins
+  ln -sf "$srcdir"/librime-octagram
+  ln -sf "$srcdir"/librime-lua
+  ln -sf "$srcdir"/librime-charcode
+  ln -sf "$srcdir"/librime-proto
+  ln -sf "$srcdir"/librime-predict
+}
+
+build() {
+  cd librime
+  export CXXFLAGS="$CXXFLAGS -DNDEBUG -DGLOG_USE_GLOG_EXPORT -DGLOG_USE_GFLAGS"
+  cmake . -GNinja -Bbuild -DCMAKE_INSTALL_PREFIX=/usr -DBUILD_MERGED_PLUGINS=Off -DENABLE_EXTERNAL_PLUGINS=On -Wno-dev
+  cmake --build build
+}
+
+check() {
+  cd librime/build
+  ninja test
+}
+
+package() {
+  cd librime/build
+  DESTDIR="$pkgdir" ninja install
+  install -vDm 644 ../LICENSE -t "$pkgdir"/usr/share/licenses/$pkgname/
+}

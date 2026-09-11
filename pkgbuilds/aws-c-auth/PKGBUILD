@@ -1,0 +1,41 @@
+# Maintainer: Anatol Pomozov
+# Maintainer: Carl Smedstad <carsme@archlinux.org>
+
+pkgname=aws-c-auth
+pkgver=0.10.1
+pkgrel=1
+pkgdesc='C99 library implementation of AWS client-side authentication: standard credentials providers and signing'
+arch=(x86_64)
+url='https://github.com/awslabs/aws-c-auth'
+license=(Apache-2.0)
+depends=(
+  aws-c-cal
+  aws-c-common
+  aws-c-http
+  aws-c-io
+  aws-c-sdkutils
+  glibc
+)
+makedepends=(cmake)
+source=("$url/archive/v$pkgver/$pkgname-$pkgver.tar.gz")
+b2sums=('7595b349757e7a7203e4c907cbfffec22b4084afd11c26975a60e8e11bee06cffbe30b5049a162e72e2e23cb3d1d022d19708f83f817a42f6d2d094fb581f751')
+
+build() {
+  cd $pkgname-$pkgver
+  cmake -S . -B build \
+    -DCMAKE_BUILD_TYPE=None \
+    -DCMAKE_INSTALL_PREFIX=/usr \
+    -Wno-dev \
+    -DBUILD_SHARED_LIBS=ON
+  cmake --build build
+}
+
+check() {
+  cd $pkgname-$pkgver
+  cmake --build build --target test
+}
+
+package() {
+  cd $pkgname-$pkgver
+  DESTDIR="$pkgdir" cmake --install build
+}

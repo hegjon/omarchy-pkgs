@@ -1,0 +1,109 @@
+# Maintainer: Carl Smedstad <carsme@archlinux.org>
+# Contributor: Kyle Keen <keenerd@gmail.com>
+# Contributor: Dominik Heidler <dheidler@gmail.com>
+
+pkgbase=libuhd
+pkgname=(
+  libuhd
+  libuhd-docs
+  libuhd-utils
+  python-uhd
+)
+pkgver=4.9.0.1
+pkgrel=8
+pkgdesc="Universal Software Radio Peripheral (USRP) userspace driver"
+arch=(x86_64)
+url="https://github.com/EttusResearch/uhd"
+license=(GPL-3.0-or-later)
+makedepends=(
+  boost
+  boost-libs
+  cmake
+  doxygen
+  dpdk
+  git
+  pybind11
+  python-mako
+  python-numpy
+  python-ruamel-yaml
+  python-setuptools
+)
+checkdepends=(python-requests)
+source=("git+$url.git#tag=v$pkgver")
+sha256sums=('74830b4ceffc05173cf21073bf25a8e32458a91bf083f634d349ad1593d86bf8')
+
+build() {
+  export CMAKE_POLICY_VERSION_MINIMUM=3.5
+  cmake -S uhd/host -B build \
+    -DCMAKE_BUILD_TYPE=None \
+    -DCMAKE_INSTALL_PREFIX=/usr \
+    -Wno-dev \
+    -DUHD_GIT_BRANCH_OVERRIDE=UHD-${pkgver%.*.*}
+  cmake --build build
+}
+
+check() {
+  ctest --test-dir build --output-on-failure
+}
+
+package_libuhd() {
+  depends=(
+    boost-libs
+    dpdk
+    glibc
+    libgcc
+    libstdc++
+    libusb
+    python
+  )
+  provides=(libuhd.so)
+
+  DESTDIR="$pkgdir" cmake --install build --component devel
+  DESTDIR="$pkgdir" cmake --install build --component headers
+  DESTDIR="$pkgdir" cmake --install build --component libraries
+  DESTDIR="$pkgdir" cmake --install build --component manpages
+  DESTDIR="$pkgdir" cmake --install build --component readme
+  install -vDm644 uhd/host/utils/uhd-usrp.rules \
+    "$pkgdir/usr/lib/udev/rules.d/10-uhd-usrp.rules"
+}
+
+package_libuhd-docs() {
+  pkgdesc+=" (documentation)"
+
+  DESTDIR="$pkgdir" cmake --install build --component doxygen
+  DESTDIR="$pkgdir" cmake --install build --component manual
+}
+
+package_libuhd-utils() {
+  pkgdesc+=" (utilities)"
+  depends=(
+    boost-libs
+    glibc
+    libgcc
+    libstdc++
+    libuhd
+    ncurses
+    python
+    python-uhd
+  )
+
+  DESTDIR="$pkgdir" cmake --install build --component utilities
+  rm -v "$pkgdir/usr/share/uhd/rfnoc-newmod/python/setup.py.in"
+}
+
+package_python-uhd() {
+  pkgdesc+=" (Python API)"
+  depends=(
+    glibc
+    libgcc
+    libstdc++
+    libuhd
+    python
+    python-mako
+    python-numpy
+    python-ruamel-yaml
+  )
+  optdepends=('python-jsonschema: for validating configuration files')
+
+  DESTDIR="$pkgdir" cmake --install build --component pythonapi
+}

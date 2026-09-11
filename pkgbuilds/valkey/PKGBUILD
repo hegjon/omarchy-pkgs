@@ -1,0 +1,94 @@
+# Maintainer: Andrew Crerar <crerar@archlinux.org>
+# Maintainer: Frederik Schwan <freswa at archlinux dot org>
+# Contributor: Sergej Pupykin <pupykin.s+arch@gmail.com>
+# Contributor: Bartłomiej Piotrowski <bpiotrowski@archlinux.org>
+# Contributor: Jan-Erik Rediger <badboy at archlinux dot us>
+# Contributor: nofxx <x@<nick>.com>
+
+pkgname=valkey
+pkgver=9.1.2
+pkgrel=1
+pkgdesc='An in-memory database that persists on disk'
+arch=('x86_64')
+url='https://valkey.io/'
+license=(
+  BSD-2-Clause
+  BSD-3-Clause
+)
+depends=(
+  glibc
+  jemalloc
+  openssl
+  systemd-libs
+)
+# pkg-config fails to detect systemd libraries if systemd is not installed
+makedepends=(
+  git
+  systemd
+)
+checkdepends=(
+  procps-ng
+  tcl
+)
+conflicts=(
+  redis
+)
+provides=(
+  redis
+)
+backup=(
+  etc/valkey/valkey.conf
+  etc/valkey/sentinel.conf
+)
+install=valkey.install
+source=(
+  git+https://github.com/valkey-io/valkey.git#tag=${pkgver}
+  valkey.service
+  valkey-sentinel.service
+  valkey.sysusers
+  valkey.tmpfiles
+  valkey.conf-sane-defaults.patch
+  valkey-5.0-use-system-jemalloc.patch
+)
+sha512sums=('1f2163a6380110b6201ab3e08781e230430a86d09ae97bbdea9d289c966a5514fddecf0cf01039642dafa8ac13204866839b0221ca3e68abef753a04a0255c26'
+            '8bfd088935615ee5fc192dea2d9efac970eb4d6b0147182da2ab59bfaca13a6109705db3941cb5c6fc071d093e33728f7a91680c3bc13d5a9242d6ce479f87e7'
+            'e8064a16aa65e313583bc45389d53a546c367e7b74c23ad7754dd7d92e58474d64759f1cbc0d5b6a169bf215346c1eadc71e71c8a4b6e9601f2d01dcde632bb8'
+            'd47185f700293304b5c23caf59999fecda2d1485a28a5eeff3a2922906f0184794d3eeeeeaac2ca415b865d7c4b5d74f88e694d34eeb6d1ee3a6bedbcd6edfdd'
+            '11cf6d6999329af7a9fa4bcbbcf22242b461cec0c16ad949cc6b0383703f19417092782569bf6224f94167a560de0b4ba53ec0d8522683736a14f01bc5986b28'
+            '032b19af22dd96c7898aa3dcae76d63fd8566c1d35ccb069e22fd0b76612d3285cd318f26ad5994b4f761f44a23c091d5322dec975b9a5a8cc65455399576045'
+            'c6972be1a89bb19d8bae4a92b6549dfb16f1779bd9e3d8f018d62fa388f52022adf347665080879745e5a9571db5461fd59d4383857031ecd74937f3d20566d4')
+
+prepare() {
+  # extract licenses
+  sed -n '7,16p' $pkgname/COPYING > BSD-3-Clause.txt
+  sed -n '22,31p' $pkgname/COPYING > BSD-2-Clause.txt
+
+  cd $pkgname
+  # disable defrag test since defrag is currently disabled as long as the bundled jmalloc is not used
+  sed -i '/defragtest.so/d' tests/modules/Makefile
+  rm tests/unit/memefficiency.tcl
+
+  patch -Np1 < ../valkey.conf-sane-defaults.patch
+  patch -Np1 < ../valkey-5.0-use-system-jemalloc.patch
+}
+
+build() {
+  make BUILD_TLS=yes \
+       USE_SYSTEMD=yes \
+       -C $pkgname
+}
+
+package() {
+  cd $pkgname
+  make PREFIX="$pkgdir"/usr install
+
+  install -vDm 644 ../BSD-{2,3}-Clause.txt -t "$pkgdir"/usr/share/licenses/$pkgname/
+  install -Dm644 -t "$pkgdir"/etc/valkey valkey.conf sentinel.conf
+  install -Dm644 "$srcdir"/valkey.sysusers "$pkgdir"/usr/lib/sysusers.d/valkey.conf
+  install -Dm644 "$srcdir"/valkey.tmpfiles "$pkgdir"/usr/lib/tmpfiles.d/valkey.conf
+
+  install -Dm644 -t "$pkgdir"/usr/lib/systemd/system/ ../valkey.service ../valkey-sentinel.service
+  cd "$pkgdir"/usr/lib/systemd/system/
+  ln -s {valkey,redis}.service
+  ln -s {valkey,redis}-sentinel.service
+}

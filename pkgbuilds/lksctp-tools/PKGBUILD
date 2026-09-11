@@ -1,0 +1,34 @@
+# Maintainer: Sébastien Luttringer
+# Contributer: Nicolas Martyanoff <khaelin@gmail.com>
+
+pkgname=lksctp-tools
+pkgver=1.0.21
+pkgrel=1
+pkgdesc='An implementation of the SCTP protocol'
+arch=('x86_64')
+url='https://github.com/sctp/lksctp-tools'
+license=('GPL-2.0-or-later' 'LGPL-2.1-only')
+makedepends=('git')
+depends=('glibc' 'bash')
+source=("git+https://github.com/sctp/lksctp-tools.git#tag=v$pkgver")
+sha256sums=('54aa6fa636190c03f69821c08ff2e72b358e9df790ef1dbe3ee1c45e3cc29a3e')
+
+build() {
+  cd $pkgname
+  ./bootstrap
+  ./configure --prefix=/usr
+  make
+}
+
+check() {
+  cd $pkgname/src/func_tests
+  make v4test
+  make v6test
+}
+
+package() {
+  cd $pkgname
+  make DESTDIR="$pkgdir" install
+}
+
+# vim:set ts=2 sw=2 et:

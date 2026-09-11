@@ -1,0 +1,61 @@
+# Maintainer: Jan Alexander Steffens (heftig) <heftig@archlinux.org>
+# Contributor: Ionut Biru <ibiru@archlinux.org>
+
+pkgname=mm-common
+pkgver=1.0.8
+pkgrel=1
+pkgdesc="Common build files of the C++ bindings"
+url="https://gtkmm.gnome.org/"
+arch=(any)
+license=(GPL-2.0-or-later)
+depends=(
+  bash
+  doxygen
+  graphviz
+  gtk-doc
+  libsigc++-docs
+  perl-xml-parser
+  python
+)
+makedepends=(
+  git
+  libsigc++
+  meson
+)
+_docver=16.1.0
+_docurl=https://gcc.gnu.org/onlinedocs/gcc-$_docver/libstdc++/api/
+source=(
+  "git+https://gitlab.gnome.org/GNOME/mm-common.git#tag=$pkgver"
+  "libstdc++-$_docver.tag::${_docurl}libstdc++.tag"
+)
+b2sums=('62d0ad2228666a9aaf61b599b667b84ec8944f6dee98e6b7d89ca94eace7fb0b0d8f56f969b3915b93154c1607443ff69ab03812e903736c0b356fa58753ba11'
+        '66c7340390c7d71729f5f4d6350baa5ca999a7e5048ed56955f546fbc680b18e3548188b34256a7def0e704ba5957220bbb0287c55fb00c0288146b5e2a8662a')
+
+prepare() {
+  cd $pkgname
+
+  # Use more stable libstdc++ tags
+  cp ../libstdc++-$_docver.tag doctags/libstdc++.tag
+  local f; git grep -lz latest-doxygen | while read -r -d '' f; do
+    sed -ri 's|https?://gcc\.gnu\.org/onlinedocs/libstdc\+\+/latest-doxygen/|'"$_docurl"'|g' "$f"
+  done
+}
+
+build() {
+  local meson_options=(
+    -D use-network=false
+  )
+
+  arch-meson $pkgname build "${meson_options[@]}"
+  meson compile -C build
+}
+
+check() {
+  meson test -C build --print-errorlogs
+}
+
+package() {
+  meson install -C build --destdir "$pkgdir"
+}
+
+# vim:set sw=2 sts=-1 et:

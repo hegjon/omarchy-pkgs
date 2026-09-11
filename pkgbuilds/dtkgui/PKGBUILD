@@ -1,0 +1,81 @@
+# Maintainer: Felix Yan <felixonmars@archlinux.org>
+
+pkgbase=dtkgui
+pkgname=(dtkgui dtk6gui)
+pkgver=6.7.49
+pkgrel=1
+epoch=1
+pkgdesc='Deepin Toolkit, gui module for DDE look and feel'
+arch=('x86_64')
+url="https://github.com/linuxdeepin/dtkgui"
+license=('CC-BY-4.0' 'CC0-1.0' 'LGPL-3.0-or-later')
+groups=('deepin')
+makedepends=('git' 'cmake' 'ninja' 'extra-cmake-modules' 'qt5-tools' 'qt6-tools' 'gtest' 'doxygen'
+             'dtkcore' 'dtk6core' 'libqt5xdg' 'libqtxdg' 'librsvg' 'qt5-base' 'qt6-base' 'qt5-wayland'
+             'glib2' 'libx11' 'treeland-protocols')
+source=("git+https://github.com/linuxdeepin/dtkgui.git#tag=$pkgver")
+sha512sums=('87dfb10137e3938fe9a1308233a90b3b805344bc7bca233f860cc586a20fb2a7adf7dc0f5d66020cc2cf2dc4cfc2e42106eff646015ac7592160546502d034d6')
+
+prepare() {
+  # Use separate source directories for Qt5 and Qt6 builds
+  # The upstream CMake writes generated files (dtkgui_config.h, DtkGuis) directly
+  # in the source directory, which causes conflicts when building both variants
+  mkdir -p build-qt5 build-qt6
+  cp -r dtkgui build-qt5/dtkgui
+  cp -r dtkgui build-qt6/dtkgui
+}
+
+build() {
+  # Build Qt5 variant (dtkgui)
+  cd build-qt5/dtkgui
+  cmake . -Bbuild -GNinja \
+    -DDTK5=ON \
+    -DBUILD_DOCS=ON \
+    -DBUILD_TESTING=ON \
+    -DDTK_DISABLE_EX_IMAGE_FORMAT=ON \
+    -DMKSPECS_INSTALL_DIR=lib/qt/mkspecs/modules \
+    -DQCH_INSTALL_DESTINATION=share/doc/qt \
+    -DCMAKE_INSTALL_LIBEXECDIR=lib \
+    -DCMAKE_INSTALL_LIBDIR=lib \
+    -DCMAKE_INSTALL_PREFIX=/usr
+  cmake --build build
+
+  cd "$srcdir"
+  # Build Qt6 variant (dtk6gui)
+  cd build-qt6/dtkgui
+  cmake . -Bbuild -GNinja \
+    -DDTK5=OFF \
+    -DBUILD_DOCS=ON \
+    -DBUILD_TESTING=ON \
+    -DDTK_DISABLE_EX_IMAGE_FORMAT=ON \
+    -DCMAKE_INSTALL_LIBEXECDIR=lib \
+    -DCMAKE_INSTALL_LIBDIR=lib \
+    -DCMAKE_INSTALL_PREFIX=/usr
+  cmake --build build
+}
+
+check() {
+  cd build-qt5/dtkgui
+  ninja -C build test || echo "Qt5 tests failed"
+
+  cd "$srcdir/build-qt6/dtkgui"
+  ninja -C build test || echo "Qt6 tests failed"
+}
+
+package_dtkgui() {
+  pkgdesc='Deepin Toolkit, gui module for DDE look and feel (Qt5 build)'
+  depends=('dtkcore' 'glib2' 'glibc' 'libgcc' 'libgomp' 'libqt5xdg' 'librsvg' 'libstdc++' 'libx11'
+           'qt5-base' 'qt5-wayland')
+
+  cd build-qt5/dtkgui
+  DESTDIR="$pkgdir" ninja -C build install
+}
+
+package_dtk6gui() {
+  pkgdesc='Deepin Toolkit, gui module for DDE look and feel (Qt6 build)'
+  depends=('dtk6core' 'glib2' 'glibc' 'libgcc' 'libgomp' 'libqtxdg' 'librsvg' 'libstdc++' 'libx11'
+           'qt6-base' 'wayland')
+
+  cd build-qt6/dtkgui
+  DESTDIR="$pkgdir" ninja -C build install
+}

@@ -1,0 +1,46 @@
+# Maintainer: David Runge <dvzrv@archlinux.org>
+
+_name=sphinxygen
+pkgname=python-sphinxygen
+pkgver=1.0.12
+pkgrel=2
+pkgdesc="A script to read Doxygen XML output and emit ReST for Sphinx"
+arch=(any)
+url="https://gitlab.com/drobilla/sphinxygen"
+license=('0BSD OR ISC')
+depends=(python)
+makedepends=(
+  python-build
+  python-installer
+  python-setuptools
+  python-wheel
+)
+checkdepends=(
+  doxygen
+  python-html5lib
+  python-sphinx
+)
+optdepends=(
+  'python-html5lib: for HTML5 support'
+)
+source=($url/-/archive/v$pkgver/$_name-v$pkgver.tar.gz)
+sha512sums=('c953b04a03982bfb08fdbc77b323ea5a43dbb5ad7a7f6802f47711c669bbfd3d8d157f52a242bde2782012f8cce114bc2fe6be5e5394e51cfb2916ac57d9f3e1')
+b2sums=('f524be8f5d5878e540c6d46b73fb2f33ed1474ad608e3003df53767e01435f04c42ecc8387a84fe07908208d193cd47d22e8881c4c500f6e6a5cdbb696076308')
+validpgpkeys=()
+
+build() {
+  cd $_name-v$pkgver
+  python -m build --wheel --no-isolation
+}
+
+check() {
+  cd $_name-v$pkgver
+  python -m unittest discover
+
+}
+
+package() {
+  cd $_name-v$pkgver
+  python -m installer --destdir="$pkgdir" dist/*.whl
+  install -vDm 644 LICENSES/* -t "$pkgdir/usr/share/licenses/$pkgname/"
+}

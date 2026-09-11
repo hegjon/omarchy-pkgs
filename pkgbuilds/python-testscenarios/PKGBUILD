@@ -1,0 +1,29 @@
+# Maintainer: Felix Yan <felixonmars@archlinux.org>
+
+pkgname=python-testscenarios
+pkgver=0.7.0
+pkgrel=1
+pkgdesc="Testscenarios, a pyunit extension for dependency injection"
+arch=('any')
+license=('Apache-2.0' 'BSD-3-Clause')
+url="https://github.com/testing-cabal/testscenarios"
+depends=('python-testtools')
+makedepends=('git' 'python-build' 'python-hatchling' 'python-hatch-vcs' 'python-installer' 'python-wheel')
+source=("git+https://github.com/testing-cabal/testscenarios.git#tag=${pkgver}")
+sha512sums=('c6039defef4c76edd9b2aab0afe5fde1c5bc21f6f88069eecc3e5bc9ff1a76237588d7e58f2a28ac78fd1bc8f9819cf651b4bbd0f43132d942a9d42ba07ed0af')
+
+build() {
+  cd testscenarios
+  python -m build --wheel --no-isolation
+}
+
+check() {
+  cd testscenarios
+  python -m testtools.run testscenarios.test_suite
+}
+
+package() {
+  cd testscenarios
+  python -m installer --destdir="$pkgdir" dist/*.whl
+  install -Dm644 BSD -t "$pkgdir"/usr/share/licenses/$pkgname/
+}

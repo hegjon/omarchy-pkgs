@@ -1,0 +1,20 @@
+# Maintainer: David Runge <dvzrv@archlinux.org>
+
+pkgname=kxstudio-lv2-extensions
+pkgver=2025.06.17
+pkgrel=1
+pkgdesc="Custom LV2 Extensions used in several KXStudio projects"
+arch=(any)
+url="https://github.com/KXStudio/LV2-Extensions"
+license=(ISC)
+makedepends=(git)
+source=($pkgname::git+https://github.com/KXStudio/LV2-Extensions?signed#tag=${pkgver//./-})
+sha512sums=('3b8a49ada4be93d738a24342244d523a404a9d223be1c958edbc2aad8301154d91766632e694471e17241496fd74555a098e6b905e7bca0d37fa3fb5888353e2')
+b2sums=('6d31c4fe62a965dc2b671149f68ba42fbfc8bb202ba5ff276779140e7e9dbc940c5f92b6ab8227e8348362011fadba1d7c5309aca57c4411747c19cf92a69fca')
+validpgpkeys=('62B11043D2F6EB6672D93103CDBAA37ABC74FBA0') # falkTX <falktx@falktx.com>
+
+package() {
+  make DESTDIR="$pkgdir" PREFIX=/usr install -C $pkgname
+  install -vDm 644 $pkgname/LICENSE -t "${pkgdir}/usr/share/licenses/${pkgname}"
+  install -vDm 644 $pkgname/README.md -t "${pkgdir}/usr/share/doc/${pkgname}"
+}
