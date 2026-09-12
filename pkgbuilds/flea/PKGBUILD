@@ -1,7 +1,7 @@
 # Maintainer: GM <gianmarcomorales@icloud.com>
 
 pkgname=flea
-pkgver=0.1.5
+pkgver=0.2.0
 pkgrel=1
 pkgdesc='Fast, keyboard-first file manager for Omarchy'
 arch=('x86_64' 'aarch64')
@@ -46,7 +46,7 @@ options=('!debug')
 source=(
   "$url/releases/download/v$pkgver/$pkgname-v$pkgver.tar.gz"
 )
-sha256sums=('5f9b6591e2a912625055c25d44d20bd5a6ebb94f4cf5d3c03fddd4b114beb480')
+sha256sums=('e4f260bea1c743af27dccbf3e6a486cedd3da10120a0f96e420592cafc973f9d')
 
 build() {
   cd "$pkgname-$pkgver"
