@@ -15,7 +15,7 @@
 pkgbase=archci
 pkgname=(archci archci-master archci-worker archci-signer archci-sourcer archci-remote-logging
          archci-worker-qemu-aarch64 archci-worker-qemu-riscv64)
-pkgver=0.4.16
+pkgver=0.4.17
 pkgrel=1
 pkgdesc='Headless build farm for Arch Linux packages: builds a PKGBUILD repository into a signed pacman repository'
 arch=(any)
@@ -24,7 +24,7 @@ license=(MIT)
 makedepends=(gnupg)
 checkdepends=(ruby jq git rsync openssh gnupg zstd shellcheck attr procps-ng)
 source=("https://github.com/hegjon/archci/archive/refs/tags/v${pkgver}.tar.gz")
-sha256sums=('a76aaeb12564a643f96f41e0191cc58b1b88c3260dac8fcbf702a39a58b68986')
+sha256sums=('817ac9425f142097276a902c68ed1c5ea6f4467a02b7e50c79799067bfe69415')
 _src="archci-$pkgver"
 
 _libdir=/usr/lib/archci
