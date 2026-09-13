@@ -1,0 +1,37 @@
+From c4c8d940dca10e8c81883e0d422be4c01b8f19b1 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Ball=C3=B3=20Gy=C3=B6rgy?= <ballogyor@gmail.com>
+Date: Sat, 8 Feb 2025 14:48:49 +0100
+Subject: [PATCH] clock: Hide weather conditions if no weather info
+
+When the user selects a location that has no weather info, we have to
+remove the weather conditions from the clock button, otherwise the weather
+of the previously selected location remains visible.
+---
+ modules/clock/clock-applet.c | 8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
+
+diff --git a/modules/clock/clock-applet.c b/modules/clock/clock-applet.c
+index 0449ca9f9..28692b4db 100644
+--- a/modules/clock/clock-applet.c
++++ b/modules/clock/clock-applet.c
+@@ -868,11 +868,15 @@ location_weather_updated_cb (ClockLocation  *location,
+         const gchar *icon_name;
+         const gchar *temp;
+ 
+-        if (!info || !gweather_info_is_valid (info))
++        if (!clock_location_is_current (location))
+                 return;
+ 
+-        if (!clock_location_is_current (location))
++        if (!info || !gweather_info_is_valid (info)) {
++                clock_button_set_weather (CLOCK_BUTTON (cd->panel_button),
++                                          NULL,
++                                          NULL);
+                 return;
++        }
+ 
+         icon_name = NULL;
+         if (g_settings_get_boolean (cd->applet_settings, "show-weather")) {
+-- 
+GitLab
+

@@ -1,0 +1,155 @@
+# Maintainer: Jakub Klinkovský <lahwaacz at archlinux dot org>
+# Contributor: Butui Hu <hot123tea123@gmail.com>
+
+pkgbase=itk
+pkgname=(itk python-itk)
+pkgver=5.4.7
+pkgrel=1
+pkgdesc="An open-source toolkit for multidimensional image analysis"
+arch=(x86_64)
+url="https://www.itk.org"
+license=(Apache-2.0)
+makedepends=(
+  castxml
+  clang
+  cmake
+  eigen
+  git   # used for fetching remote modules
+  lld
+  ninja
+  python
+  swig
+  # fftw is needed only for detection by cmake, ITK links to static libs from MKL
+  fftw
+  intel-oneapi-mkl
+  # depends
+  dcmtk
+  double-conversion
+  expat
+  gdcm
+  hdf5
+  libjpeg-turbo
+  libpng
+  libtiff
+  zlib
+)
+source=(
+  ${pkgbase^^}-$pkgver.tar.gz::https://github.com/InsightSoftwareConsortium/ITK/archive/refs/tags/v$pkgver.tar.gz
+)
+b2sums=('4316b3a594ee1502cb64d74b3f260af5040891c8cc4ef61ad1bc4aedfd5f59f5e1e5c24ae56218b90b1b2b671b8ad245d0b8df3b2c4b8054a506a288638dc1b3')
+
+_pick() {
+  local p="$1" f d; shift
+  for f; do
+    d="$srcdir/$p/${f#$pkgdir/}"
+    mkdir -p "$(dirname "$d")"
+    mv "$f" "$d"
+    rmdir -p --ignore-fail-on-non-empty "$(dirname "$f")"
+  done
+}
+
+build() {
+  local cmake_options=(
+    -B build
+    -S ${pkgbase^^}-$pkgver
+    -G Ninja
+    -W no-dev
+    -DBUILD_SHARED_LIBS=ON
+    -DBUILD_TESTING=OFF
+    -DCMAKE_BUILD_TYPE=None
+    -DCMAKE_CXX_COMPILER=clang++
+    -DCMAKE_C_COMPILER=clang
+    -DCMAKE_LINKER_TYPE=LLD
+    -DCMAKE_INSTALL_PREFIX=/usr
+    -DCMAKE_SKIP_INSTALL_RPATH=ON
+    -DCMAKE_SKIP_RPATH=ON
+    -DITK_BUILD_DEFAULT_MODULES=ON
+    -DITK_USE_GPU=OFF
+    -DITK_USE_MKL=ON
+    -DITK_USE_SYSTEM_CASTXML=ON
+    -DITK_USE_SYSTEM_DCMTK=ON
+    -DITK_USE_SYSTEM_DOUBLECONVERSION=ON
+    -DITK_USE_SYSTEM_EIGEN=ON
+    -DITK_USE_SYSTEM_EXPAT=ON
+    -DITK_USE_SYSTEM_FFTW=ON
+    -DITK_USE_SYSTEM_GDCM=ON
+    -DITK_USE_SYSTEM_GOOGLETEST=OFF
+    -DITK_USE_SYSTEM_HDF5=ON
+    -DITK_USE_SYSTEM_JPEG=ON
+    -DITK_USE_SYSTEM_MINC=OFF
+    -DITK_USE_SYSTEM_PNG=ON
+    -DITK_USE_SYSTEM_SWIG=ON
+    -DITK_USE_SYSTEM_TIFF=ON
+    -DITK_USE_SYSTEM_VXL=OFF  # not packaged
+    -DITK_USE_SYSTEM_ZLIB=ON
+    -DITK_WRAP_IMAGE_DIMS="2;3;4"
+    -DITK_WRAP_PYTHON=ON
+    # Swig does not work with Python's limited API
+    -DITK_USE_PYTHON_LIMITED_API=OFF
+    -DITK_WRAP_complex_double=ON
+    -DITK_WRAP_complex_float=ON
+    -DITK_WRAP_covariant_vector_double=ON
+    -DITK_WRAP_covariant_vector_float=ON
+    -DITK_WRAP_double=ON
+    -DITK_WRAP_float=ON
+    -DITK_WRAP_rgb_unsigned_char=ON
+    -DITK_WRAP_rgb_unsigned_short=ON
+    -DITK_WRAP_rgba_unsigned_char=ON
+    -DITK_WRAP_rgba_unsigned_short=ON
+    -DITK_WRAP_signed_char=ON
+    -DITK_WRAP_signed_long_long=ON
+    -DITK_WRAP_signed_short=ON
+    -DITK_WRAP_unsigned_char=ON
+    -DITK_WRAP_unsigned_long_long=ON
+    -DITK_WRAP_unsigned_short=ON
+    -DITK_WRAP_vector_double=ON
+    -DModule_GenericLabelInterpolator=ON
+    -DModule_ITKIODCMTK=ON
+    -DModule_ITKIOMINC=ON
+    -DModule_ITKIOTransformMINC=ON
+    -DModule_ITKReview=ON
+    -DModule_MorphologicalContourInterpolation=ON
+    -DModule_SimpleITKFilters=ON
+  )
+  cmake "${cmake_options[@]}"
+  cmake --build build
+}
+
+package_itk() {
+  depends=(
+    dcmtk
+    double-conversion
+    expat libexpat.so
+    gdcm libgdcmCommon.so libgdcmDICT.so libgdcmDSED.so libgdcmMSFF.so
+    glibc
+    hdf5
+    libgcc
+    libjpeg-turbo libjpeg.so
+    libpng libpng16.so
+    libstdc++
+    libtiff libtiff.so
+    zlib libz.so
+  )
+  provides=(insight-toolkit)
+  replaces=(insight-toolkit)
+
+  DESTDIR="$pkgdir" cmake --install build
+  (
+    cd "$pkgdir"
+    site_packages=$(python -c "import site; print(site.getsitepackages()[0])")
+    _pick python-$pkgbase "${site_packages#/}"
+  )
+}
+
+package_python-itk() {
+  pkgdesc+=" - Python bindings"
+  depends=(
+    itk
+    python
+    python-numpy
+    python-xarray
+  )
+
+  mv -v $pkgname/* "$pkgdir"
+  python -O -m compileall "$pkgdir"/usr/lib
+}

@@ -1,0 +1,57 @@
+# Maintainer: Jan Alexander Steffens (heftig) <heftig@archlinux.org>
+# Maintainer: Laurent Carlier <lordheavym@gmail.com>
+
+pkgname=vulkan-tools
+pkgver=1.4.357.0
+pkgrel=1
+pkgdesc="Vulkan tools and utilities"
+url="https://www.vulkan.org/"
+arch=(x86_64)
+license=(Apache-2.0)
+depends=(
+  glibc
+  libgcc
+  libstdc++
+  libx11
+  libxcb
+  vulkan-icd-loader
+  wayland
+)
+makedepends=(
+  cmake
+  git
+  glslang
+  libxrandr
+  ninja
+  python
+  spirv-tools
+  volk
+  vulkan-headers
+  wayland-protocols
+)
+groups=(vulkan-devel)
+source=("git+https://github.com/KhronosGroup/Vulkan-Tools#tag=vulkan-sdk-$pkgver")
+b2sums=('45aba8b2ab7857090eb729ee069062369dde6d74b329026b2b4d4def7e72a2313dcaa55aaf59c33422cec5a7cfbc6d2b2d48828970cb9e67f6999178cd15f9b3')
+
+build() {
+  local cmake_options=(
+    -D BUILD_ICD=OFF
+    -D CMAKE_BUILD_TYPE=Release
+    -D CMAKE_INSTALL_PREFIX=/usr
+    -D CMAKE_INSTALL_SYSCONFDIR=/etc
+    -D CMAKE_SKIP_INSTALL_RPATH=ON
+  )
+
+  cmake -S Vulkan-Tools -B build -G Ninja "${cmake_options[@]}"
+  cmake --build build
+}
+
+check() {
+  ctest --test-dir build --output-on-failure --stop-on-failure
+}
+
+package() {
+  DESTDIR="$pkgdir" cmake --install build
+}
+
+# vim:set sw=2 sts=-1 et:

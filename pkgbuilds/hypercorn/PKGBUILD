@@ -1,0 +1,60 @@
+# Maintainer: Maxime Gauduin <alucryd@archlinux.org>
+
+pkgname=hypercorn
+pkgver=0.18.0
+pkgrel=2
+pkgdesc='An ASGI Server based on Hyper libraries and inspired by Gunicorn'
+url=https://github.com/pgjones/hypercorn
+arch=(any)
+license=(MIT)
+depends=(
+  python
+  python-h11
+  python-h2
+  python-priority
+  python-wsproto
+)
+makedepends=(
+  git
+  python-build
+  python-installer
+  python-pdm-backend
+)
+checkdepends=(
+  python-distlib
+  python-hypothesis
+  python-httpx
+  python-pytest
+  python-pytest-asyncio
+  python-pytest-sugar
+  python-pytest-trio
+  python-trio
+)
+optdepends=('python-trio: trio support')
+_tag=0e2311f1ad2ae587aaa590f3824f59aa5dc0e770
+source=(git+https://github.com/pgjones/hypercorn.git#tag=${_tag})
+sha256sums=('5a54f5fc031a32c7a22bc80754fb87fa1fccf3d92a30b6ba4411d9a1dd5439bf')
+
+pkgver() {
+  cd hypercorn
+  git describe --tags
+}
+
+build() {
+  cd hypercorn
+  python -m build --wheel --no-isolation
+}
+
+check() {
+  cd hypercorn
+  PYTHONPATH="src:$PYTHONPATH" pytest \
+    --override-ini="addopts=" \
+    --ignore=tests/trio/test_lifespan.py
+}
+
+package() {
+  python -m installer --destdir="${pkgdir}" hypercorn/dist/*.whl
+  install -Dm 644 hypercorn/LICENSE -t "${pkgdir}"/usr/share/licenses/hypercorn/
+}
+
+# vim: ts=2 sw=2 et:

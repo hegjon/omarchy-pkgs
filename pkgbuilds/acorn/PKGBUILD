@@ -1,0 +1,30 @@
+# Maintainer: Felix Yan <felixonmars@archlinux.org>
+
+pkgname=acorn
+pkgver=8.18.0
+epoch=1
+pkgrel=1
+pkgdesc='A tiny, fast JavaScript parser, written completely in JavaScript.'
+arch=('any')
+url='https://github.com/acornjs/acorn'
+license=('MIT')
+depends=('nodejs')
+makedepends=('npm')
+source=(https://registry.npmjs.org/$pkgname/-/$pkgname-$pkgver.tgz)
+noextract=($pkgname-$pkgver.tgz)
+sha512sums=('946abef72af5fc6b8059a558207463befc921b9ff855f288bc2f045b14ad3dd70387f29aec51b7b703fabf8779064adabd48a584802c1b8423f37b74d8b5943d')
+
+package() {
+  npm install -g --prefix "$pkgdir"/usr "$srcdir"/$pkgname-$pkgver.tgz
+
+  # Non-deterministic race in npm gives 777 permissions to random directories.
+  # See https://github.com/npm/npm/issues/9359 for details.
+  chmod -R u=rwX,go=rX "$pkgdir"
+
+  # npm installs package.json owned by build user
+  # https://bugs.archlinux.org/task/63396
+  chown -R root:root "$pkgdir"
+
+  mkdir -p "$pkgdir/usr/share/licenses/$pkgname"
+  ln -s "../../../lib/node_modules/$pkgname/LICENSE" "$pkgdir/usr/share/licenses/$pkgname/"
+}

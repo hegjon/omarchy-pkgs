@@ -1,0 +1,59 @@
+# Maintainer: Bruno Pagani <archange@archlinux.org>
+# Contributor: Eli Schwartz <eschwartz@archlinux.org>
+# Contributor: Alexandre Filgueira (faidoc) <alexfilgueira@antergos.com>
+# Contributor: Jan Alexander Steffens (heftig) <jan.steffens@gmail.com>
+
+pkgname=cinnamon-settings-daemon
+pkgver=6.6.4
+pkgrel=1
+pkgdesc='Settings daemon for Cinnamon'
+arch=(x86_64)
+url='https://github.com/linuxmint/cinnamon-settings-daemon'
+license=('GPL-2.0-or-later AND LGPL-2.0-or-later')
+depends=(
+  cairo
+  cinnamon-desktop
+  dconf
+  fontconfig
+  gdk-pixbuf2
+  glib2
+  glibc
+  gtk3
+  hicolor-icon-theme
+  lcms2
+  libcanberra-pulse
+  libgcc
+  libcolord
+  libcups
+  libgudev
+  libnotify
+  libwacom
+  libx11
+  libxext
+  libxi
+  nspr
+  nss
+  pango
+  polkit
+  pulse-native-provider
+  systemd-libs
+  upower
+)
+optdepends=('cinnamon-translations: i18n')
+makedepends=(
+  git
+  glib2-devel
+  meson
+)
+source=("git+https://github.com/linuxmint/cinnamon-settings-daemon.git#tag=$pkgver")
+b2sums=('e12cf631cb066e888768174556f9bc93ab340d7d78b3af301aaa2db3904ff07d1dcd44a28f79e6f08a1c1e80478ef23e32f1f4a8464f6869bb148de0877ef1fd')
+
+build() {
+  arch-meson $pkgname build \
+    --libexecdir=lib/$pkgname
+  meson compile -C build
+}
+
+package() {
+  meson install -C build --destdir="$pkgdir"
+}

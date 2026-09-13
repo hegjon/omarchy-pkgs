@@ -1,0 +1,52 @@
+# Maintainer: Filipe Laíns (FFY00) <lains@archlinux.org>
+# Maintainer: Maxime Gauduin <alucryd@archlinux.org>
+
+pkgname=python-uvloop
+pkgver=0.22.1
+pkgrel=2
+pkgdesc='Ultra fast asyncio event loop'
+arch=(x86_64)
+url=https://github.com/MagicStack/uvloop
+license=(
+  APACHE
+  MIT
+)
+depends=(
+  glibc
+  python
+  libuv
+)
+makedepends=(
+  cython
+  git
+  python-build
+  python-installer
+  python-setuptools
+  python-wheel
+)
+_tag=74f4c96d3fc5281b1820491d2568de771ea7851b
+source=(git+https://github.com/MagicStack/uvloop.git#tag=${_tag})
+b2sums=('86b3dec5f32ab030433d2f59bc288500d5cfe8b2ace291beeb6b8307c055fe667ca8c1b07378854d43e5f3f29c22723c2469925605c36ddad9a52926264a6ce0')
+
+prepare() {
+  sed 's/self.use_system_libuv = False/self.use_system_libuv = True/' -i uvloop/setup.py
+  sed -e 's|>=0.29.36,<0.30.0|>=0.29.36|g' -i uvloop/pyproject.toml
+}
+
+pkgver() {
+  cd uvloop
+  git describe --tags | sed 's/^v//'
+}
+
+build() {
+  cd uvloop
+  python -m build --wheel --no-isolation
+}
+
+package() {
+  python -m installer --destdir="${pkgdir}" uvloop/dist/*.whl
+  install -Dm 644 uvloop/LICENSE-APACHE "$pkgdir"/usr/share/licenses/$pkgname/LICENSE-APACHE
+  install -Dm 644 uvloop/LICENSE-MIT "$pkgdir"/usr/share/licenses/$pkgname/LICENSE-MIT
+}
+
+# vim:set ts=2 sw=2 et:

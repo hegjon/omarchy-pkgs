@@ -1,0 +1,35 @@
+# Maintainer: David Runge <dvzrv@archlinux.org>
+
+_name=sphinx_lv2_theme
+pkgname=python-sphinx-lv2-theme
+pkgver=1.4.6
+pkgrel=2
+pkgdesc="A minimal static theme for Sphinx"
+arch=(any)
+url="https://gitlab.com/lv2/sphinx_lv2_theme"
+license=(0BSD)
+depends=(
+  python
+  python-sphinx
+)
+makedepends=(
+  python-build
+  python-installer
+  python-setuptools
+  python-wheel
+)
+source=($url/-/archive/v$pkgver/$_name-v$pkgver.tar.gz)
+sha256sums=('34a98fd7c5dbd76232a9e2efeda61e3b6d3c00a76ab084192fa1601e0b7d8bc5')
+b2sums=('7f559b140b64539d15296c5dcc947a9d405b7d305ec1db113ff4cdb599d85ffcb3cb531ba701364ebc351eabf1adfd1f2abfefbda2ec52dec85d23a3593c8444')
+
+build() {
+  cd $_name-v$pkgver
+  python -m build --wheel --no-isolation
+}
+
+package() {
+  cd $_name-v$pkgver
+  python -m installer --destdir="$pkgdir" dist/*.whl
+  install -vDm 644 LICENSE -t "$pkgdir/usr/share/licenses/$pkgname/"
+  install -vDm 644 {NEWS,README.md} -t "$pkgdir/usr/share/doc/$pkgname/"
+}

@@ -1,0 +1,42 @@
+# Maintainer: Jaroslav Lichtblau <svetlemodry@archlinux.org>
+# Maintainer: Carl Smedstad <carsme@archlinux.org>
+# Contributor: Giovanni Scafora <giovanni@archlinux.org>
+# Contributor: Daniel J Griffiths <ghost1227@archlinux.us>
+# Contributor: Felix Yan <felixonmars@archlinux>
+
+pkgname=python-html2text
+pkgver=2025.4.15
+pkgrel=2
+pkgdesc="A HTML to markdown-structured text converter"
+arch=('any')
+url="https://github.com/Alir3z4/html2text"
+license=('GPL-3.0-only')
+depends=('python')
+makedepends=(
+  'python-build'
+  'python-installer'
+  'python-setuptools'
+  'python-setuptools-scm'
+  'python-wheel'
+)
+checkdepends=('python-pytest')
+provides=('html2text')
+replaces=('html2text')
+source=("$url/archive/$pkgver/$pkgname-$pkgver.tar.gz")
+sha256sums=('6c76f207d25fd2fe2d9d7f18f2d3d3a35b19bcc931595221a9c3e4491d5c2802')
+
+build() {
+  cd ${pkgname#python-}-$pkgver
+  export SETUPTOOLS_SCM_PRETEND_VERSION=$pkgver
+  python -m build --wheel --no-isolation
+}
+
+check() {
+  cd ${pkgname#python-}-$pkgver
+  pytest
+}
+
+package() {
+  cd ${pkgname#python-}-$pkgver
+  python -m installer --destdir="$pkgdir" dist/*.whl
+}

@@ -1,0 +1,30 @@
+# Maintainer: Felix Yan <felixonmars@archlinux.org>
+
+pkgname=python-tomli
+pkgver=2.4.1
+pkgrel=1
+pkgdesc="A lil' TOML parser"
+url="https://github.com/hukkin/tomli"
+license=('MIT')
+arch=('any')
+depends=('python')
+makedepends=('python-build' 'python-installer' 'python-flit-core')
+source=("https://github.com/hukkin/tomli/archive/$pkgver/$pkgname-$pkgver.tar.gz")
+sha512sums=('b7f79c349d5a7309452f940ac630504c52a36761bdcd2b3f451d06172641f59b48721ce15faceb70cd04f995150c9854c6725d6596bebbf06087c7ea95a3d3a4')
+
+build() {
+  cd tomli-$pkgver
+  python -m build -wn
+}
+
+check() {
+  cd tomli-$pkgver
+  PYTHONPATH="$PWD"/src python -m unittest
+}
+
+package() {
+  cd tomli-$pkgver
+  python -m installer -d "$pkgdir" dist/*.whl
+
+  install -Dm644 LICENSE -t "$pkgdir"/usr/share/licenses/$pkgname/
+}

@@ -1,0 +1,41 @@
+# Maintainer: Konstantin Gizdov <arch at kge dot pw>
+# Maintainer: Carl Smedstad <carsme@archlinux.org>
+
+pkgname='msgpack-cxx'
+pkgver=8.0.0
+pkgrel=1
+pkgdesc='An efficient object serialization library for C++'
+arch=("any")
+url='https://msgpack.org/'
+license=('BSL-1.0')
+depends=('boost')
+makedepends=(
+  'cmake'
+  'doxygen'
+  'graphviz'
+)
+source=("$pkgname-$pkgver.tar.gz::https://github.com/msgpack/msgpack-c/archive/cpp-$pkgver.tar.gz")
+b2sums=('59061d09da3bd73574883e115c233f7ff92bf112ff07e56b3efc5c5f2f39ae036e2c7f943954254ba70dbc0e0a4aea11cec1e307cbe2d710fa2d660a2a4c4f97')
+
+build() {
+  local cmake_args=(
+    -Wno-dev
+    -S "msgpack-c-cpp-$pkgver"
+    -B build
+    -D CMAKE_INSTALL_PREFIX=/usr
+    -D CMAKE_BUILD_TYPE=None
+    -D MSGPACK_CXX17=ON
+    -D MSGPACK_BUILD_EXAMPLES=OFF
+    -D MSGPACK_BUILD_TESTS=ON
+  )
+  cmake "${cmake_args[@]}"
+  cmake --build build
+}
+
+check() {
+  make -C build test
+}
+
+package() {
+  DESTDIR="$pkgdir" cmake --install build
+}

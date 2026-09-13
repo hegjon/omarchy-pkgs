@@ -1,0 +1,47 @@
+# Maintainer: Antonio Rojas <arojas@archlinux.org>
+# Contributor: tikysal <tikysal@gmail.com>
+# Derived from Daniel Ehlers'
+
+pkgname=coin-or-coinutils
+pkgver=2.11.13
+pkgrel=2
+pkgdesc='COIN-OR collection of utility classes'
+arch=(x86_64)
+url='https://github.com/coin-or/CoinUtils'
+license=(EPL-2.0)
+depends=(blas
+         bzip2
+         coin-or-data-sample
+         glibc
+         glpk
+         lapack
+         libgcc
+         libstdc++
+         zlib)
+makedepends=(doxygen
+             gcc-fortran
+             git)
+groups=(coin-or)
+source=(git+https://github.com/coin-or/CoinUtils#tag=releases/$pkgver)
+sha256sums=('db83271f4f0bc489a75278ff4128a79e450035f0405873ec787d52ca6cbab6b4')
+
+build() {
+  cd CoinUtils
+  ./configure \
+    --prefix=/usr \
+    --with-blas-lib='-lblas' \
+    --with-lapack-lib='-llapack' \
+    --with-glpk-lib='-lglpk' \
+    --enable-dependency-linking
+  make
+}
+
+check() {
+  cd CoinUtils
+  make test
+}
+
+package() {
+  cd CoinUtils
+  make DESTDIR="$pkgdir" install
+}

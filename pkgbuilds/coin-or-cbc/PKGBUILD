@@ -1,0 +1,47 @@
+# Maintainer: Antonio Rojas <arojas@archlinux.org>
+# Contributor: spider-mario <spidermario@free.fr>
+# Contributor: Daniel Ehlers <danielehlers@mindeye.net>
+
+pkgname=coin-or-cbc
+pkgver=2.10.13
+pkgrel=2
+pkgdesc='COIN-OR branch-and-cut mixed integer programming solver'
+arch=(x86_64)
+url='https://github.com/coin-or/Cbc'
+license=(EPL-2.0)
+groups=(coin-or)
+depends=(coin-or-asl
+         coin-or-cgl
+         coin-or-clp
+         coin-or-coinutils
+         coin-or-osi
+         glibc
+         libgcc
+         libstdc++
+         nauty)
+makedepends=(git)
+source=(git+https://github.com/coin-or/Cbc#tag=releases/$pkgver)
+sha256sums=('306ed55406540a69c5c2c1911f96df5c47a44524856b524294f04e9158d2d53a')
+
+build() {
+  cd Cbc
+  CFLAGS+=" -Wno-implicit-function-declaration" \
+  ./configure --prefix=/usr \
+              --enable-cbc-parallel \
+              --with-nauty-lib=-lnauty --with-nauty-incdir=/usr/include/nauty
+  sed -i -e 's/ -shared / -Wl,-O1,--as-needed\0/g' libtool
+  make
+}
+
+check() {
+  cd Cbc
+  make test
+}
+
+package() {
+  cd Cbc
+  make DESTDIR="$pkgdir" install
+
+# Remove nauty from linker flags in pc file, it is statically compiled
+  sed -e 's|/usr/lib/libnauty.a||' -i "$pkgdir"/usr/lib/pkgconfig/cbc.pc
+}

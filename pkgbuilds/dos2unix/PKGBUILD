@@ -1,0 +1,32 @@
+# Maintainer: Jelle van der Waa <jelle@vdwaa.nl>
+# Maintainer: Daurnimator <daurnimator@archlinux.org>
+# Maintainer: T.J. Townsend <blakkheim@archlinux.org>
+# Contributor: Bartłomiej Piotrowski
+# Contributor: Renato Garcia <fgar.renatoATgmailDOTcom>
+# Contributor: Gerson E. Ruotolo <gersonruotolo@globo.com>
+
+pkgname=dos2unix
+pkgver=7.5.7
+pkgrel=1
+pkgdesc='Text file format converter'
+arch=('x86_64')
+url='https://waterlander.net/dos2unix/'
+license=('BSD')
+depends=('glibc')
+makedepends=('git' 'perl' 'perl-pod-parser' 'po4a')
+conflicts=('hd2u')
+source=(git+https://git.code.sf.net/p/dos2unix/dos2unix.git#tag=${pkgname}-${pkgver})
+sha256sums=('eae2c52e5715452a09ee11078e54f1ad46b38c7d57497617c96fb7660d6a252f')
+#validpgpkeys=('F8F1BEA490496A09CCA328CC38C1F572B12725BE')
+
+build() {
+  cd $pkgname/dos2unix
+  make LDFLAGS_USER="${LDFLAGS}"
+}
+
+package() {
+  cd $pkgname/dos2unix
+
+  make DESTDIR="$pkgdir" install
+  install -D -m644 COPYING.txt "$pkgdir"/usr/share/licenses/$pkgname/LICENSE
+}

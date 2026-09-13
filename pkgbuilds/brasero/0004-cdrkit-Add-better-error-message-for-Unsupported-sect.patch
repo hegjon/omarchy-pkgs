@@ -1,0 +1,31 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: sid <sidtosh4@gmail.com>
+Date: Sat, 1 Apr 2023 21:26:56 +0000
+Subject: [PATCH] cdrkit: Add better error message for "Unsupported sector
+ size" errors
+
+Add "Unsupported sector size" error to the list of supported error
+messages, so we display a better error message to the user.
+
+Refer: https://gitlab.gnome.org/GNOME/brasero/-/issues/353
+---
+ plugins/cdrkit/burn-wodim.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/plugins/cdrkit/burn-wodim.c b/plugins/cdrkit/burn-wodim.c
+index be7e5b92ec5e..1cbd16da2ce1 100644
+--- a/plugins/cdrkit/burn-wodim.c
++++ b/plugins/cdrkit/burn-wodim.c
+@@ -150,6 +150,12 @@ brasero_wodim_stderr_read (BraseroProcess *process, const gchar *line)
+ 							     BRASERO_BURN_ERROR_MEDIUM_INVALID,
+ 							     _("The disc is not supported")));
+ 	}
++	else if (strstr (line, "Unsupported sector size")) {
++		brasero_job_error (BRASERO_JOB (process),
++				   g_error_new (BRASERO_BURN_ERROR,
++						BRASERO_BURN_ERROR_GENERAL,
++						_("Unsupported sector size in TOC/CUE file")));
++	}
+ 	/* REMINDER: these should not be necessary as we checked that already */
+ 	/**
+ 	else if (strstr (line, "cannot write medium - incompatible format") != NULL) {

@@ -1,0 +1,179 @@
+# Maintainer: AndyRTR <andyrtr@archlinux.org>
+
+pkgbase=hunspell-en
+pkgname=('hunspell-en_us' 'hunspell-en_au' 'hunspell-en_ca' 'hunspell-en_gb')
+pkgver=2026.02.25
+pkgrel=1
+pkgdesc="English hunspell dictionaries"
+arch=(any)
+url="http://wordlist.aspell.net/dicts/"
+# README_en_GB.txt has specified just LGPL which mean LGPLv2+
+# scowl/speller/aspell/en_affix.dat is BSD
+# scowl/speller/aspell/en_phonet.dat is LGPLv2
+license=('LGPL-2.1-or-later' 'LGPL-2.1-only' 'BSD-3-Clause-Modification')
+makedepends=('qt6-webengine')
+optdepends=('hunspell: the spell checking libraries and apps')
+source=(https://downloads.sourceforge.net/project/wordlist/speller/$pkgver/hunspell-en_US-large-$pkgver.zip
+        https://downloads.sourceforge.net/project/wordlist/speller/$pkgver/hunspell-en_AU-large-$pkgver.zip
+        https://downloads.sourceforge.net/project/wordlist/speller/$pkgver/hunspell-en_CA-large-$pkgver.zip
+        https://downloads.sourceforge.net/project/wordlist/speller/$pkgver/hunspell-en_GB-large-$pkgver.zip)
+sha512sums=('0ac1f37428e33a7c13fc1db6e5e440f50303c4e972d29fe1dda12b87430ff061c16add6cdbe174962d75130c9b7bca9755b288cf4a1b1a47db3a0be6ca8073e0'
+            '2f039ec9cad569e1be56ffeed9d52c6be11b1ec2dc52ba89f94e915367ecbb978aea16aa8727871931ee854986aa051b0dc17d42ecb4bf5eeee594e76f405117'
+            '9e2a16235e0e2262e0d816fdf693251b2d85162be2a838e1041ec8d4e236aa036f82258d9f08fe1bff90c1deb5aec4fbfc654e877ce5412080b45d6953f424c0'
+            'd7b0cfcdfdceefe0a53b797bacf9c18bcb5806f871d635228501494372ade656fa453db11a27ec5b07f6c3bb53a4c090ea320a3e2eb9dc98fb87315115222ebb')
+b2sums=('bf7dc6fa13f1893131cdbcf8d7f3cfbca0114eee0a87a42b57470f5d9fbb5b01bbcf49c43f419e954488d3ca7dd3f5fac83defb5d327b737e8efbd2c9a16eadf'
+        '1113c54270b8e6992d2d35b3342b1999f6f8061f3a2acf270deca3fa441065813146eb8f77c3017acf4a75dc87fb2b46ae7dad4b4c61c94b0e762e6acbfd4943'
+        'f7c2417e4fe15e23d07a4e48e5ecf70867b32dd9d6635e1c1410b3cc3d9ef7368ccd9907e86e25d7192ceba30c4daa766173cf9529103abd3ceeb127a4d3815e'
+        '826f9536327e896e39b3e65d02cab3217c9081ed598e27e98472922640b46a9b5e1c9404b0cfa26ae8ba9032b8b97cf6cd23065f08d78e3db5a2c1e67ad1cb9e')
+
+package_hunspell-en_us() {
+  pkgdesc="US English hunspell dictionaries"
+  # TODO: remove conflicts/provides/replaces 2021-09-23
+  conflicts=('hunspell-en_US')
+  provides=('hunspell-dictionary' 'hunspell-en_US')
+  replaces=('hunspell-en_US<=2020.12.07-1')
+
+  cd "$srcdir"
+  install -vDm 644 en_US*.dic en_US*.aff -t "$pkgdir/usr/share/hunspell"
+
+  pushd "$pkgdir/usr/share/hunspell/"
+    en_US_aliases="en_US"
+    for lang in $en_US_aliases; do
+      ln -s en_US-large.aff $lang.aff
+      ln -s en_US-large.dic $lang.dic
+    done
+  popd
+
+  # Install webengine dictionaries   
+  install -d "$pkgdir"/usr/share/qt{,6}/qtwebengine_dictionaries/
+  for _file in "$pkgdir"/usr/share/hunspell/*.dic; do
+  _filename=$(basename $_file)
+    /usr/lib/qt6/qwebengine_convert_dict $_file "$pkgdir"/usr/share/qt6/qtwebengine_dictionaries/${_filename/\.dic/\.bdic}
+  ln -rs "$pkgdir"/usr/share/qt6/qtwebengine_dictionaries/${_filename/\.dic/\.bdic} "$pkgdir"/usr/share/qt/qtwebengine_dictionaries/
+  done
+
+  # myspell symlinks
+  install -dm755 "${pkgdir}/usr/share/myspell/dicts"
+  pushd "$pkgdir/usr/share/myspell/dicts"
+    for file in "$pkgdir/usr/share/hunspell/"*; do
+      ln -sv /usr/share/hunspell/$(basename $file) .
+    done
+  popd
+
+  # licenses
+  install -D -m644 README_en_US-large.txt "$pkgdir/usr/share/licenses/$pkgname/Copyright_en_US-large"
+}
+
+package_hunspell-en_au() {
+  pkgdesc="AU English hunspell dictionaries"
+  # TODO: remove conflicts/provides/replaces 2021-09-23
+  conflicts=('hunspell-en_AU')
+  provides=('hunspell-dictionary' 'hunspell-en_AU')
+  replaces=('hunspell-en_AU<=2020.12.07-1')
+
+  cd "$srcdir"
+  install -vDm 644 en_AU*.dic en_AU*.aff -t "$pkgdir/usr/share/hunspell"
+
+  pushd "$pkgdir/usr/share/hunspell/"
+    en_AU_aliases="en_AU"
+    for lang in $en_AU_aliases; do
+      ln -s en_AU-large.aff $lang.aff
+      ln -s en_AU-large.dic $lang.dic
+    done
+  popd
+
+  # Install webengine dictionaries   
+  install -d "$pkgdir"/usr/share/qt{,6}/qtwebengine_dictionaries/
+  for _file in "$pkgdir"/usr/share/hunspell/*.dic; do
+  _filename=$(basename $_file)
+    /usr/lib/qt6/qwebengine_convert_dict $_file "$pkgdir"/usr/share/qt6/qtwebengine_dictionaries/${_filename/\.dic/\.bdic}
+  ln -rs "$pkgdir"/usr/share/qt6/qtwebengine_dictionaries/${_filename/\.dic/\.bdic} "$pkgdir"/usr/share/qt/qtwebengine_dictionaries/
+  done
+
+  # myspell symlinks
+  install -dm755 "${pkgdir}/usr/share/myspell/dicts"
+  pushd "$pkgdir/usr/share/myspell/dicts"
+    for file in "$pkgdir/usr/share/hunspell/"*; do
+      ln -sv "/usr/share/hunspell/$(basename "$file")" .
+    done
+  popd
+
+  # licenses
+  install -D -m644 README_en_AU-large.txt "$pkgdir/usr/share/licenses/$pkgname/Copyright_en_AU-large"
+}
+
+package_hunspell-en_ca() {
+  pkgdesc="CA English hunspell dictionaries"
+  # TODO: remove conflicts/provides/replaces 2021-09-23
+  conflicts=('hunspell-en_CA')
+  provides=('hunspell-dictionary' 'hunspell-en_CA')
+  replaces=('hunspell-en_CA<=2020.12.07-1')
+
+  cd "$srcdir"
+  install -vDm 644 en_CA*.dic en_CA*.aff -t "$pkgdir/usr/share/hunspell"
+
+  pushd "$pkgdir/usr/share/hunspell/"
+    en_CA_aliases="en_CA"
+    for lang in $en_CA_aliases; do
+      ln -s en_CA-large.aff $lang.aff
+      ln -s en_CA-large.dic $lang.dic
+    done
+  popd
+
+  # Install webengine dictionaries   
+  install -d "$pkgdir"/usr/share/qt{,6}/qtwebengine_dictionaries/
+  for _file in "$pkgdir"/usr/share/hunspell/*.dic; do
+  _filename=$(basename $_file)
+    /usr/lib/qt6/qwebengine_convert_dict $_file "$pkgdir"/usr/share/qt6/qtwebengine_dictionaries/${_filename/\.dic/\.bdic}
+  ln -rs "$pkgdir"/usr/share/qt6/qtwebengine_dictionaries/${_filename/\.dic/\.bdic} "$pkgdir"/usr/share/qt/qtwebengine_dictionaries/
+  done
+
+  # myspell symlinks
+  install -dm755 "${pkgdir}/usr/share/myspell/dicts"
+  pushd "$pkgdir/usr/share/myspell/dicts"
+    for file in "$pkgdir/usr/share/hunspell/"*; do
+      ln -sv "/usr/share/hunspell/$(basename $file)" .
+    done
+  popd
+
+  # licenses
+  install -D -m644 README_en_CA-large.txt "$pkgdir/usr/share/licenses/$pkgname/Copyright_en_CA-large"
+}
+
+package_hunspell-en_gb() {
+  pkgdesc="GB English hunspell dictionaries"
+  # TODO: remove conflicts/provides/replaces 2021-09-23
+  conflicts=('hunspell-en_GB')
+  provides=('hunspell-dictionary' 'hunspell-en_GB')
+  replaces=('hunspell-en_GB<=2020.12.07-1')
+
+  cd "$srcdir"
+  install -vDm 644 en_GB*.dic en_GB*.aff -t "$pkgdir/usr/share/hunspell"
+
+  pushd "$pkgdir/usr/share/hunspell/"
+    en_GB_aliases="en_AG en_BS en_BW en_BZ en_DK en_GB en_GH en_HK en_IE en_IN en_JM en_NA en_NG en_NZ en_SG en_TT en_ZA en_ZW"
+    for lang in $en_GB_aliases; do
+      ln -s en_GB-large.aff $lang.aff
+      ln -s en_GB-large.dic $lang.dic
+    done
+  popd
+
+  # Install webengine dictionaries   
+  install -d "$pkgdir"/usr/share/qt{,6}/qtwebengine_dictionaries/
+  for _file in "$pkgdir"/usr/share/hunspell/*.dic; do
+  _filename=$(basename $_file)
+    /usr/lib/qt6/qwebengine_convert_dict $_file "$pkgdir"/usr/share/qt6/qtwebengine_dictionaries/${_filename/\.dic/\.bdic}
+  ln -rs "$pkgdir"/usr/share/qt6/qtwebengine_dictionaries/${_filename/\.dic/\.bdic} "$pkgdir"/usr/share/qt/qtwebengine_dictionaries/
+  done
+
+  # myspell symlinks
+  install -dm755 "${pkgdir}/usr/share/myspell/dicts"
+  pushd "$pkgdir/usr/share/myspell/dicts"
+    for file in "$pkgdir/usr/share/hunspell/"*; do
+      ln -sv "/usr/share/hunspell/$(basename "$file")" .
+    done
+  popd
+
+  # licenses
+  install -D -m644 README_en_GB-large.txt "$pkgdir/usr/share/licenses/$pkgname/Copyright_en_GB-large"
+}

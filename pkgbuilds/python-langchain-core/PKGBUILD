@@ -1,0 +1,67 @@
+# Maintainer: Felix Yan <felixonmars@archlinux.org>
+
+pkgname=python-langchain-core
+pkgver=1.6.3
+pkgrel=1
+pkgdesc="Building applications with LLMs through composability"
+arch=('any')
+url="https://github.com/langchain-ai/langchain"
+license=('MIT')
+depends=(
+  'python'
+  'python-httpx'
+  'python-jsonpatch'
+  'python-langchain-protocol'
+  'python-langsmith'
+  'python-packaging'
+  'python-pydantic'
+  'python-tenacity'
+  'python-typing_extensions'
+  'python-uuid-utils'
+  'python-yaml'
+)
+makedepends=(
+  'git'
+  'python-build'
+  'python-hatchling'
+  'python-installer'
+  'python-wheel'
+)
+checkdepends=(
+  'python-blockbuster'
+  'python-freezegun'
+  'python-grandalf'
+  'python-langchain-tests'
+  'python-numpy'
+  'python-pytest'
+  'python-pytest-asyncio'
+  'python-pytest-mock'
+  'python-pytest-xdist'
+  'python-responses'
+  'python-syrupy'
+)
+source=("git+https://github.com/langchain-ai/langchain.git")
+sha512sums=('SKIP')
+
+prepare() {
+  cd langchain
+
+  # makepkg's git fragment parser treats "=" inside tag values as separators.
+  git checkout -q "langchain-core==$pkgver"
+}
+
+build() {
+  cd langchain/libs/core
+  python -m build --wheel --no-isolation
+}
+
+check() {
+  cd langchain/libs/core
+  python -m pytest -n auto tests/unit_tests/
+}
+
+package() {
+  cd langchain/libs/core
+  python -m installer --destdir="$pkgdir" dist/*.whl
+  install -Dm644 LICENSE -t "$pkgdir"/usr/share/licenses/$pkgname/
+}

@@ -1,0 +1,31 @@
+# Maintainer: Felix Yan <felixonmars@archlinux.org>
+# Contributor: justforlxz <justforlxz@gmail.com>
+
+pkgname=deepin-tray-loader
+pkgver=2.0.40
+pkgrel=1
+pkgdesc='A set of tray plugins that integrated into task bar and the tool loader which can load the plugins'
+arch=('x86_64')
+url="https://github.com/linuxdeepin/dde-tray-loader"
+license=('GPL-3.0-or-later' 'LGPL-3.0-or-later' 'LGPL-2.1-or-later' 'CC0-1.0')
+depends=('dconf' 'deepin-api' 'deepin-daemon' 'deepin-qt6platform-plugins' 'dtk6core' 'dtk6gui'
+         'dtk6widget' 'glibc' 'kwindowsystem' 'libgcc' 'libstdc++' 'libx11' 'libxcb' 'libxcursor' 'libxtst'
+         'qt6-base' 'qt6-declarative' 'qt6-svg' 'qt6-wayland' 'wayland' 'xcb-util' 'xcb-util-image'
+         'xcb-util-wm')
+makedepends=('git' 'cmake' 'extra-cmake-modules' 'ninja' 'qt6-tools' 'wayland-protocols')
+source=("git+https://github.com/linuxdeepin/dde-tray-loader.git#tag=$pkgver")
+sha512sums=('7698af4da200d9a065c339b41ddf2c9dc27189295e302bb129385b386d6d909410f2d6c6428ee4688931042106de277e3f1591d91efadf601a73021e1c71acb5')
+
+build() {
+  cd dde-tray-loader
+  cmake -B build -GNinja \
+    -DCMAKE_INSTALL_PREFIX=/usr \
+    -DCMAKE_INSTALL_SYSCONFDIR=/etc \
+    -DCMAKE_INSTALL_LIBEXECDIR=lib
+  cmake --build build
+}
+
+package() {
+  cd dde-tray-loader/build
+  DESTDIR="$pkgdir" ninja install
+}

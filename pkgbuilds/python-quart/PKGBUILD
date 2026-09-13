@@ -1,0 +1,64 @@
+# Maintainer: Maxime Gauduin <alucryd@archlinux.org>
+
+pkgname=python-quart
+pkgver=0.23.1
+pkgrel=1
+pkgdesc='A Python ASGI web microframework with the same API as Flask'
+url=https://github.com/pallets/quart
+arch=(any)
+license=(MIT)
+depends=(
+  hypercorn
+  python
+  python-aiofiles
+  python-blinker
+  python-click
+  python-flask
+  python-importlib-metadata
+  python-itsdangerous
+  python-jinja
+  python-markupsafe
+  python-werkzeug
+)
+makedepends=(
+  git
+  python-build
+  python-flit-core
+  python-installer
+  python-wheel
+)
+checkdepends=(
+  python-dotenv
+  python-hypothesis
+  python-pytest
+  python-pytest-asyncio
+)
+optdepends=('python-dotenv: support for .env files')
+source=(git+https://github.com/pallets/quart.git#tag=${pkgver})
+b2sums=('cef60a1ba34131b5b3795ba22e0d62574787fa3e8d4682f7bf329ca42effd007642d8345b54c57e934472e023d86a1e7f10db875926ad60f3b4124db15cf50c1')
+
+prepare() {
+  cd quart
+  sed 's/name = "Quart"/name = "quart"/' -i pyproject.toml
+  sed 's/flit-core<4/flit-core/' -i pyproject.toml
+}
+
+build() {
+  cd quart
+  python -m build --wheel --no-isolation
+}
+
+check() {
+  cd quart
+  python -m venv --system-site-packages test-env
+  test-env/bin/python -m installer dist/*.whl
+  test-env/bin/python -m pytest --override-ini="addopts="
+}
+
+package() {
+  cd quart
+  python -m installer --destdir="${pkgdir}" dist/*.whl
+  install -Dm 644 LICENSE.txt -t "${pkgdir}"/usr/share/licenses/${pkgname}/
+}
+
+# vim: ts=2 sw=2 et:

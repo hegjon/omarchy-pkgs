@@ -1,0 +1,41 @@
+# Maintainer: Filipe Laíns (FFY00) <lains@archlinux.org>
+# Maintainer: Daniel M. Capella <polyzen@archlinux.org>
+
+_pkgname=linkify-it-py
+pkgname=python-$_pkgname
+pkgver=2.2.0
+pkgrel=1
+pkgdesc='Links recognition library with full unicode support'
+arch=('any')
+url='https://github.com/tsutsu3/linkify-it-py'
+license=('MIT')
+depends=('python')
+makedepends=('python-build' 'python-installer' 'python-setuptools' 'python-wheel')
+checkdepends=('python-pytest')
+source=("$_pkgname-$pkgver.tar.gz::$url/archive/v$pkgver.tar.gz")
+sha512sums=('171e41dcdeab836582a0927f7a9003e4393025207a68194fcd8b81364d436d54b43be0bcc7b5f42b9c33968119d640313b2a4fd4a20263f381d24ecf4cc5b575')
+
+build() {
+  cd $_pkgname-$pkgver
+
+  python -m build --wheel --skip-dependency-check --no-isolation
+}
+
+check() {
+  cd $_pkgname-$pkgver
+
+  python -m pytest
+}
+
+package() {
+  local site_packages=$(python -c "import site; print(site.getsitepackages()[0])")
+  install -d "$pkgdir"/usr/share/licenses/$pkgname
+  ln -s "$site_packages"/"${_pkgname//-/_}"-$pkgver.dist-info/licenses/LICENSE \
+    "$pkgdir"/usr/share/licenses/$pkgname
+
+  cd $_pkgname-$pkgver
+
+  python -m installer -d "$pkgdir" dist/*.whl
+}
+
+# vim:set ts=2 sw=2 et:

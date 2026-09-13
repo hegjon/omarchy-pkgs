@@ -1,0 +1,64 @@
+# Maintainer: George Rawlinson <grawlinson@archlinux.org>
+# Contributor: Felix Yan <felixonmars@archlinux.org>
+
+pkgname=python-pytest-socket
+pkgver=0.8.1
+pkgrel=1
+pkgdesc='Pytest plugin to disable socket calls during tests'
+arch=(any)
+url='https://github.com/miketheman/pytest-socket'
+license=(MIT)
+depends=(
+  python
+  python-pytest
+)
+makedepends=(
+  git
+  python-build
+  python-installer
+  python-uv-build
+)
+checkdepends=(
+  python-httpx
+  python-pytest
+  python-pytest-benchmark
+  python-pytest-httpbin
+  python-requests
+  python-starlette
+)
+source=("$pkgname::git+$url#tag=$pkgver")
+sha512sums=('fcf0c33dcbe28c55730bee99ee4f48b8651f831c26621612dc33d679653da44c338aa50f718ce30643e6b752688c4cc1ae27e0038391c480066df0f3c18a1809')
+b2sums=('a3695021d40352819dc4fdd22e48c3876bea66cceebe3209ee2c224719196600de0deddefc2b8c3963b7d4505182c6350d597b1b9f929eba10a43de83956c97d')
+
+build() {
+  cd "$pkgname"
+
+  python -m build --wheel --no-isolation
+}
+
+check() {
+  cd "$pkgname"
+
+  # temporary install as importlib is used
+  python -m installer --destdir="$(pwd)/tmp" dist/*.whl
+  local site_packages=$(python -c "import site; print(site.getsitepackages()[0])")
+  export PYTHONPATH="$PYTHONPATH:$(pwd)/tmp/$site_packages"
+
+  local pytest_options=(
+    -vv
+    --deselect tests/test_socket.py::test_urllib_succeeds_by_default
+    --deselect tests/test_socket.py::test_enabled_urllib_succeeds
+  )
+
+  pytest "${pytest_options[@]}"
+}
+
+package() {
+  cd "$pkgname"
+
+  python -m installer --destdir="$pkgdir" dist/*.whl
+
+  # license
+  install -vDm644 -t "$pkgdir/usr/share/licenses/$pkgname" LICENSE
+}
+# vim:set ts=2 sw=2 et:

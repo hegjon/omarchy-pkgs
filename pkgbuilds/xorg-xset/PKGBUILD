@@ -1,0 +1,30 @@
+# Maintainer: AndyRTR <andyrtr@archlinux.org>
+# Contributor: Jan de Groot <jgc@archlinux.org>
+
+pkgname=xorg-xset
+pkgver=1.2.6
+pkgrel=1
+pkgdesc="User preference utility for X"
+arch=(x86_64)
+url="https://xorg.freedesktop.org/"
+license=('MIT-open-group')
+depends=('libxmu' 'libx11' 'libxext' 'glibc')
+makedepends=('xorg-util-macros')
+groups=('xorg-apps' 'xorg')
+source=(https://xorg.freedesktop.org/archive/individual/app/xset-${pkgver}.tar.xz{,.sig})
+sha512sums=('5031166960eea0588b9ef643677d5aef44c83c6d6070234a68f247ea947b94818d94c6958d9abe05cfa99ceee98ad3c95443f5f0c54cf0d086407ffe816d19ca'
+            'SKIP')
+validpgpkeys=('3AB285232C46AE43D8E192F4DAB0F78EA6E7E2D2') # "Alan Coopersmith <alan.coopersmith@oracle.com>"
+
+build() {
+  cd xset-${pkgver}
+  ./configure --prefix=/usr --without-fontcache
+  make
+ }
+ 
+package() {
+  cd xset-${pkgver}
+  make DESTDIR="${pkgdir}" install
+  install -m755 -d "${pkgdir}/usr/share/licenses/${pkgname}"
+  install -m644 COPYING "${pkgdir}/usr/share/licenses/${pkgname}/"
+}

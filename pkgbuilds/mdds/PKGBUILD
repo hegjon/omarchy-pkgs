@@ -1,0 +1,32 @@
+# Maintainer: AndyRTR <andyrtr@archlinux.org>
+# Contributor: kusakata <shohei atmark kusakata period com>
+
+pkgname=mdds
+pkgver=3.2.1
+pkgrel=1
+pkgdesc="A collection of multi-dimensional data structures and indexing algorithms"
+arch=('any')
+url="https://gitlab.com/mdds/mdds"
+license=('MIT')
+checkdepends=('boost')
+#source=(https://gitlab.com/mdds/mdds/repository/archive.tar.gz?ref=${pkgver})
+source=(https://gitlab.com/api/v4/projects/mdds%2Fmdds/packages/generic/source/${pkgver}/mdds-${pkgver}.tar.xz)
+# checksums listed there - https://gitlab.com/mdds/mdds/-/releases
+sha256sums=('673f5bb94612dbba581fc92b99b5e5dd1a53e29496a5dbc936432f6b0687c112')
+
+build() {
+  cd ${pkgname}-${pkgver}
+  ./autogen.sh --prefix=/usr
+  # make
+}
+
+check() {
+  cd ${pkgname}-${pkgver}
+  make check
+}
+
+package() {
+  cd ${pkgname}-${pkgver}
+  make DESTDIR="${pkgdir}" install
+  install -Dm644 LICENSE "${pkgdir}/usr/share/licenses/${pkgname}/LICENSE"
+}

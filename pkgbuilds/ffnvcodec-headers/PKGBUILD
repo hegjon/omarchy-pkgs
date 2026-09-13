@@ -1,0 +1,26 @@
+# Maintainer: Maxime Gauduin <alucryd@archlinux.org>
+# Contributor: Daniel Bermond <danielbermond@yahoo.com>
+
+pkgname=ffnvcodec-headers
+pkgver=13.1.15.0
+pkgrel=1
+pkgdesc='FFmpeg version of headers required to interface with Nvidias codec APIs'
+arch=(any)
+url=https://git.videolan.org/?p=ffmpeg/nv-codec-headers.git
+license=(MIT)
+makedepends=(git)
+source=(git+https://github.com/FFmpeg/nv-codec-headers.git#tag=n${pkgver})
+b2sums=('6fe1d96570d2d4a6f7834f8832db8d422603d4e52da5cc348b0524584ee8d8e5ce71bd890e99177c72df41dbffc20707ec5036d576eefa23294bd65057d21ee1')
+
+build() {
+  make PREFIX=/usr -C nv-codec-headers
+  sed -n '4,25p' nv-codec-headers/include/ffnvcodec/nvEncodeAPI.h > LICENSE # Extract license
+  sed -i '1,22s/^.\{,3\}//' LICENSE # Delete C comments
+}
+
+package() {
+  make PREFIX=/usr DESTDIR="${pkgdir}" -C nv-codec-headers install
+  install -Dm 644 LICENSE -t "${pkgdir}"/usr/share/licenses/ffnvcodec-headers/
+}
+
+# vim: ts=2 sw=2 et:

@@ -1,0 +1,32 @@
+# Maintainer: Santiago Torres-Arias <santiago in el archlinux organization>
+# Maintainer: Carl Smedstad <carsme@archlinux.org>
+# Maintainer: Javier Tiá <javier dot tia at gmail dot com>
+
+pkgname=doctest
+pkgver=2.5.3
+pkgrel=1
+pkgdesc='The lightest feature rich C++ single header testing framework'
+arch=('any')
+url='https://github.com/doctest/doctest'
+license=('MIT')
+makedepends=('cmake')
+source=("${url}/archive/v${pkgver}/${pkgname}-${pkgver}.tar.gz")
+b2sums=('4d354ae99ff2517e2575bd10b017ba8789658ff8272b3c65e5a9b73e538b458398b735f3df35851ecc52d7de12c7e98d66e53e3721acf3642acbbcc1a2c757e9')
+
+build() {
+  cmake -S ${pkgname}-${pkgver} -B build \
+    -DCMAKE_BUILD_TYPE=None \
+    -DCMAKE_INSTALL_PREFIX=/usr \
+    -Wno-dev
+  cmake --build build
+}
+
+check() {
+  ctest --test-dir build --output-on-failure
+}
+
+package() {
+  DESTDIR="${pkgdir}" cmake --install build
+  cd ${pkgname}-${pkgver}
+  install -vDm644 -t "${pkgdir}/usr/share/licenses/${pkgname}" LICENSE.txt
+}

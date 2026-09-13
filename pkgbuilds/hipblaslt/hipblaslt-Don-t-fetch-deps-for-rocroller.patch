@@ -1,0 +1,28 @@
+From 14e7e0e3235bdec74434e1bf084934ed9c8d7ba0 Mon Sep 17 00:00:00 2001
+From: Lubosz Sarnecki <lubosz@gmail.com>
+Date: Mon, 17 Nov 2025 16:43:41 +0100
+Subject: [PATCH 1/2] hipblaslt: Don't fetch deps for rocroller.
+
+When building rocroller as a submodule, hipblaslt enforced fetching of
+dependencies. Let's disable this behaviour until we have a rocroller
+pakckage.
+---
+ projects/hipblaslt/CMakeLists.txt | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/projects/hipblaslt/CMakeLists.txt b/projects/hipblaslt/CMakeLists.txt
+index dbccca92c8..7ef7a1b18a 100644
+--- a/projects/hipblaslt/CMakeLists.txt
++++ b/projects/hipblaslt/CMakeLists.txt
+@@ -190,7 +190,7 @@ if(HIPBLASLT_ENABLE_ROCROLLER)
+             find_package(rocroller REQUIRED)
+         else()
+             block(SCOPE_FOR VARIABLES)
+-                set(ROCROLLER_ENABLE_FETCH ON)
++                set(ROCROLLER_ENABLE_FETCH OFF)
+                 set(ROCROLLER_BUILD_TESTING OFF)
+                 set(ROCROLLER_ENABLE_CLIENT OFF)
+                 option(YAML_CPP_INSTALL "" ON)
+-- 
+2.51.2
+

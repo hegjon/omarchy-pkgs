@@ -1,0 +1,58 @@
+# Maintainer: Bruno Pagani <archange@archlinux.org>
+# Maintainer: Carl Smedstad <carsme@archlinux.org>
+
+_pkgname=CGNS
+pkgname=cgns
+pkgver=4.5.2
+pkgrel=1
+pkgdesc="Standard for recording and recovering computer data associated with the numerical solution of fluid dynamics equations"
+arch=(x86_64)
+url="https://cgns.github.io/"
+license=(Zlib)
+depends=(
+  glibc
+  glu
+  hdf5
+  libgcc
+  libgfortran
+  libglvnd
+  libx11
+  libxmu
+  tcl
+  tk
+)
+makedepends=(
+  cmake
+  gcc-fortran
+)
+source=("https://github.com/$_pkgname/$_pkgname/archive/v$pkgver/$pkgname-$pkgver.tar.gz")
+sha512sums=('b9b11324b6f7bbfbf0355f5c2c3d1caa745c1fc51bb061fd715fbf69273032ba507a67396dd41ae0a1f9029b48ca13ec129d158a34606a04cc4a436001ddbeab')
+
+build() {
+  cmake -B build -S ${_pkgname}-${pkgver} \
+    -DCMAKE_BUILD_TYPE=None \
+    -DCMAKE_INSTALL_PREFIX=/usr \
+    -Wno-dev \
+    -DCGNS_BUILD_CGNSTOOLS=ON \
+    -DCGNS_BUILD_SHARED=ON \
+    -DCGNS_ENABLE_64BIT=ON \
+    -DCGNS_ENABLE_FORTRAN=ON \
+    -DCGNS_ENABLE_HDF5=ON \
+    -DCGNS_ENABLE_LEGACY=ON \
+    -DCGNS_ENABLE_SCOPING=OFF \
+    -DCGNS_ENABLE_TESTS=ON \
+    -DCMAKE_SKIP_RPATH=ON
+  cmake --build build
+}
+
+check() {
+  LD_LIBRARY_PATH="$srcdir/build/src" \
+    ctest --test-dir build --output-on-failure
+}
+
+package() {
+  DESTDIR="$pkgdir" cmake --install build
+  install -vDm644 -t "$pkgdir/usr/share/licenses/$pkgname" $_pkgname-$pkgver/license.txt
+  # Remove broken .desktop files
+  rm "$pkgdir/usr/bin/"*.desktop
+}

@@ -1,0 +1,64 @@
+# Maintainer: Felix Yan <felixonmars@archlinux.org>
+# Contributor: Bruce Zhang <zttt183525594@gmail.com>
+
+pkgname=feeluown
+pkgver=5.1.2
+pkgrel=1
+pkgdesc="A robust, user-friendly and hackable music player"
+arch=('any')
+url="https://github.com/feeluown/FeelUOwn"
+license=('GPL-3.0-or-later')
+depends=('python' 'python-qasync' 'python-pyqt6' 'mpv' 'python-janus'
+         'python-requests' 'python-tomlkit' 'python-packaging' 'python-pydantic'
+         'python-mutagen' 'python-fluent.runtime' 'qt6-svg' 'xdg-user-dirs')
+makedepends=('git' 'python-build' 'python-installer' 'python-setuptools' 'python-wheel')
+checkdepends=('python-langchain' 'python-langchain-openai' 'python-langgraph'
+              'python-pytest' 'python-pytest-asyncio' 'python-pytest-benchmark'
+              'python-pytest-cov' 'python-pytest-mock' 'python-pytest-qt'
+              'python-json-rpc' 'python-mcp' 'xorg-server-xvfb' 'yt-dlp')
+optdepends=('yt-dlp: browser cookie extraction support'
+            'dbus-python: mpris2 server support'
+            'python-langchain: AI copilot support'
+            'python-langchain-openai: OpenAI-compatible models for AI copilot support'
+            'python-langgraph: AI copilot support'
+            'python-mcp: MCP server support'
+            'python-langcodes: better locale matching'
+            'python-pyqt6-webengine: web login support'
+            'python-sanic: webserver support'
+            'python-json-rpc: webserver support'
+            'python-websockets: webserver support'
+            'feeluown-netease' 'feeluown-qqmusic' 'feeluown-ytmusic' 'feeluown-bilibili')
+conflicts=('feeluown-local')
+provides=('feeluown-local')
+replaces=('feeluown-local')
+groups=('feeluown-full')
+source=(
+  "$pkgname::git+https://github.com/feeluown/FeelUOwn.git#tag=v$pkgver"
+  "FeelUOwn.desktop"
+)
+sha512sums=('dc810f204006f939227428beabede20c9fc831a491d52d70d7ce2bf28b09e20b62d607fd0ccbc4c727603abc7e46b581d1242105fd7ee65d22eab5cbf93bc053'
+            '48882f7469c22e5db332663bc1aa8b398b0a10a0c929d4d7e3d7b8b91205d7d3070c5fa295cb9a14f8c352bff57978bfaad167343e0ddc51c92417eda07c8087')
+
+prepare() {
+  cd $pkgname
+
+  # TODO: figure out how to use virtual audio output
+  sed -i 's/cannot_play_audio = is_travis_env/cannot_play_audio = os.environ.get("CANNOT_PLAY_AUDIO") == "1"/' tests/helpers.py
+}
+
+build() {
+  cd $pkgname
+  python -m build --wheel --no-isolation
+}
+
+check() {
+  cd $pkgname
+  CANNOT_PLAY_AUDIO=1 xvfb-run pytest --deselect=tests/test_bench.py
+}
+
+package() {
+  cd $pkgname
+  python -m installer --destdir="$pkgdir" dist/*.whl
+  install -Dm644 feeluown/gui/assets/icons/feeluown.png -t "$pkgdir"/usr/share/icons/hicolor/512x512/apps/
+  install -Dm644 "$srcdir"/FeelUOwn.desktop -t "$pkgdir"/usr/share/applications/
+}

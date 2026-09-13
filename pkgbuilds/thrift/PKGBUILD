@@ -1,0 +1,135 @@
+# Maintainer: Anatol Pomozov
+# Maintainer: Carl Smedstad <carsme@archlinux.org>
+# Contributor: Byron Clark <byron@theclarkfamily.name>
+
+pkgbase=thrift
+pkgname=(
+  thrift
+  python-thrift
+)
+pkgver=0.22.0
+pkgrel=6
+pkgdesc="Scalable cross-language services framework for IPC/RPC"
+arch=(x86_64)
+url="https://thrift.apache.org"
+_url="https://github.com/apache/thrift"
+license=(Apache-2.0)
+makedepends=(
+  boost
+  cmake
+  emacs-nox
+  git
+  glib2
+  glibc
+  libevent
+  libgcc
+  libstdc++
+  openssl
+  python
+  python-build
+  python-installer
+  python-setuptools
+  python-wheel
+  qt5-base
+  zlib
+)
+checkdepends=(
+  python-tornado
+  python-twisted
+)
+source=(
+  "git+$_url.git#tag=v$pkgver?signed"
+  "$pkgbase-python-adapt-tests-to-python3.patch"
+  "$pkgbase-python-add-TType-UUID.patch"
+  "$pkgbase-python-disable-failing-tests.patch"
+)
+b2sums=('673c45d70ab06710e7b0c8fa2197f24d7559f30657b6fc396e053ab93fc19618699946ff531057529ad7b20d91cd917d537a58e2f9dd87bfedc53f115fff4f9b'
+        'b705ee35826973efb2d5b4eb18ab0e831218786aa73027fe214dcb8011af7ff499c7b7171cde73c423832cb3e3f9760aac14aeb6aba16644409447724adca1ef'
+        'f4e6530d60647de4c406a8aedf193dbb87644095f492106559766c2a5390584ae1d957f859b0182511e39d5c1b3c2828d043e7f0ca7cc98101f146d87c1dc3d1'
+        '179b27617d2650b18268e4cba8efe31afcab6d34f838b48f459aa8875d26d5ac37791b4b8a06536e1abd5a8b76f683d348522e69185331efd950d01b12abc3a4')
+validpgpkeys=('8CD87F186F06E958EFCA963D76BD340FC4B75865') # Jens Geyer <jensg@apache.org>
+
+prepare() {
+  cd $pkgbase
+  # Python 3.14 compatibility
+  git cherry-pick -n 5abe53feaf598e40ab84eb259399113a79461791
+  # Remove use of collections.Hashable
+  git cherry-pick -n 5c22d91b435341324e23dc505fe26850ddf3485e
+  patch -Np1 < ../$pkgbase-python-adapt-tests-to-python3.patch
+  patch -Np1 < ../$pkgbase-python-add-TType-UUID.patch
+  patch -Np1 < ../$pkgbase-python-disable-failing-tests.patch
+}
+
+build() {
+  cd $pkgbase
+  cmake -S . -B build \
+    -D CMAKE_BUILD_TYPE=None \
+    -D CMAKE_INSTALL_PREFIX=/usr \
+    -W no-dev \
+    -D BUILD_SHARED_LIBS=ON \
+    -D BUILD_JAVA=OFF \
+    -D BUILD_JAVASCRIPT=OFF \
+    -D BUILD_KOTLIN=OFF \
+    -D BUILD_NODEJS=OFF \
+    -D BUILD_PYTHON=ON
+  cmake --build build
+  python -m build --wheel --no-isolation lib/py
+  emacs -Q --batch -f batch-byte-compile contrib/thrift.el
+}
+
+check() {
+  cd $pkgbase
+  local skip_tests=(
+    # See https://issues.apache.org/jira/browse/THRIFT-5680
+    testapplicationexception
+    testfdtransport
+    testthriftfdreadcheck
+  )
+  local skip_tests_pattern="${skip_tests[0]}$(printf '|%s' "${skip_tests[@]:1}")"
+  ctest --test-dir build --output-on-failure -E "$skip_tests_pattern"
+}
+
+package_thrift() {
+  depends=(
+    glib2
+    glibc
+    libevent
+    libgcc
+    libstdc++
+    openssl
+    zlib
+  )
+  optdepends=('qt5-base: TQTcpServer (Qt5) support')
+  provides=(
+    libthrift.so
+    libthrift_c_glib.so
+    libthriftnb.so
+    libthriftqt5.so
+    libthriftz.so
+  )
+
+  cd $pkgbase
+  DESTDIR="$pkgdir" cmake --install build
+  install -vDm644 -t "$pkgdir/usr/share/vim/vimfiles/syntax" contrib/thrift.vim
+  install -vDm644 -t "$pkgdir/usr/share/emacs/site-lisp" \
+    contrib/thrift.el \
+    contrib/thrift.elc
+}
+
+package_python-thrift() {
+  pkgdesc+=" (Python bindings)"
+  depends=(
+    glibc
+    libgcc
+    libstdc++
+    python
+  )
+  optdepends=(
+    'python-tornado: for tornado backend'
+    'python-twisted: for twisted backend'
+    'python-zope-interface: for twisted backend'
+  )
+
+  cd $pkgbase
+  python -m installer --destdir="$pkgdir" lib/py/dist/*.whl
+}

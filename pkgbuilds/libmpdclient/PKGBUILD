@@ -1,0 +1,30 @@
+# Maintainer: David Runge <dvzrv@archlinux.org>
+# Contributor: Gaetan Bisson <bisson@archlinux.org>
+# Contributor: Andrea Scarpino <andrea@archlinux.org>
+
+pkgname=libmpdclient
+pkgver=2.27
+pkgrel=1
+pkgdesc="C library to implement a MPD client"
+arch=(x86_64)
+url="https://www.musicpd.org/libs/libmpdclient/"
+license=(BSD-2-Clause BSD-3-Clause)
+depends=(glibc)
+makedepends=(git meson)
+provides=(libmpdclient.so)
+source=(git+https://github.com/MusicPlayerDaemon/libmpdclient.git?signed#tag=v${pkgver})
+sha512sums=('a02d61a8d8d64b631d8faeabe1e4769e59b5cf1aca09a445fecb0e5197ce1fff8332521d06296ffdd9cf3078961773022783d765286d41281696d205bf263e7c')
+b2sums=('aa27e4357b1a2b097dbe0498edb9bc949c2ba7491876df75aac4b780b9e2af683e5d574e35602015f32e6c7b4bcf51d5ceb428fee80d5bf1e219e6d49d82f2b0')
+validpgpkeys=('0392335A78083894A4301C43236E8A58C6DB4512') # Max Kellermann <max@blarg.de>
+
+build() {
+  arch-meson build $pkgname
+  meson compile -C build
+}
+
+package() {
+  meson install -C build --destdir "$pkgdir"
+  install -vdm 755 "$pkgdir/usr/share/licenses/$pkgname"
+  ln -sv /usr/share/doc/$pkgname/BSD-2-Clause.txt "$pkgdir/usr/share/licenses/$pkgname/"
+  ln -sv /usr/share/doc/$pkgname/BSD-3-Clause.txt "$pkgdir/usr/share/licenses/$pkgname/"
+}

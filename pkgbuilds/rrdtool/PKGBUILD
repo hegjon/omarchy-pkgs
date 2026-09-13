@@ -1,0 +1,54 @@
+# Maintainer: Eric Bélanger <eric@archlinux.org>
+
+pkgname=rrdtool
+pkgver=1.11.0
+pkgrel=1
+pkgdesc="Data logging and graphing application"
+arch=('x86_64')
+url="https://www.rrdtool.org"
+license=('GPL-2.0-or-later')
+depends=('libxml2' 'pango' 'ttf-dejavu')
+makedepends=('git' 'intltool' 'ruby' 'python-setuptools' 'python-wheel' 'python-installer' 'tcl' 'lua51' 'systemd')
+optdepends=('perl: to use corresponding binding'
+            'tcl: to use corresponding binding'
+            'python: to use corresponding binding'
+            'ruby: to use corresponding binding'
+            'lua51: to use corresponding binding')
+options=('!emptydirs' '!makeflags')
+source=("git+https://github.com/oetiker/rrdtool-1.x.git#tag=v$pkgver")
+sha256sums=('54588fd00b28bc6592ad757f03a942db948aeb340dc854f11ea0b8de617ed41c')
+
+prepare() {
+  cd rrdtool-1.x
+
+  # Use Arch's Python install scheme instead of upstream's fixed /usr/lib/python3 target.
+  sed -i \
+    -e 's|$(PYTHON) -m pip install --upgrade --no-index --no-deps|$(PYTHON) -m installer --destdir=$(DESTDIR)|' \
+    -e '/--no-cache-dir --disable-pip-version-check/d' \
+    -e '/--target=$(DESTDIR)$(libdir)\/python3\/site-packages/d' \
+    bindings/Makefile.am
+
+  # fix FS#28521 make ruby install to vendor_ruby instead of site_ruby
+  sed -e 's/$(RUBY) ${abs_srcdir}\/ruby\/extconf.rb/& --vendor/' -i bindings/Makefile.am
+
+  # https://github.com/oetiker/rrdtool-1.x/issues/1135
+  autoreconf -vi
+}
+
+build() {
+  cd rrdtool-1.x
+  LUA=/usr/bin/lua5.1 \
+    LUA_CFLAGS="-I/usr/include/lua5.1 -llua5.1" LUA_INSTALL_CMOD="/usr/lib/lua/5.1" \
+    CFLAGS+=" -Wno-incompatible-pointer-types" \
+    ./configure --prefix=/usr --localstatedir=/var --disable-rpath \
+    --enable-perl --enable-perl-site-install --with-perl-options='INSTALLDIRS=vendor' \
+    --enable-ruby --enable-ruby-site-install --enable-python \
+    --enable-lua --enable-lua-site-install --enable-tcl --disable-libwrap
+  make
+}
+
+package() {
+  cd rrdtool-1.x
+  make DESTDIR="${pkgdir}" includedir=/usr/include install
+  install -D -m644 COPYRIGHT "${pkgdir}/usr/share/licenses/${pkgname}/LICENSE"
+}

@@ -1,0 +1,55 @@
+# Maintainer:  Torsten Keßler <tpkessler@archlinux.org>
+# Maintainer: Carl Smedstad <carsme@archlinux.org>
+# Contributor: Andrzej Giniewicz <gginiu@gmail.com>
+# Contributor: Francois Boulogne <fboulogne at april dot org>
+
+pkgname=python-joblib
+pkgver=1.6.0
+pkgrel=2
+pkgdesc="Set of tools to provide lightweight pipelining in Python"
+arch=('any')
+url="https://joblib.readthedocs.io/"
+license=('BSD-3-Clause')
+depends=('python' 'python-cloudpickle')
+makedepends=(
+  'python-build'
+  'python-installer'
+  'python-setuptools'
+  'python-wheel'
+)
+checkdepends=(
+  'procps-ng'
+  'python-distributed'
+  'python-lz4'
+  'python-numpy'
+  'python-pytest'
+  'python-pytest-asyncio'
+  'python-threadpoolctl'
+)
+optdepends=(
+  'python-distributed: for dask parallel backend'
+  'python-lz4: for compressed serialization'
+  'python-numpy: for array manipulation'
+  'python-psutil: to mitigate memory leaks in worker processes'
+)
+source=("https://github.com/joblib/joblib/archive/${pkgver}/${pkgname}-${pkgver}.tar.gz")
+b2sums=('38ad1d8b871a8cb3ebc834c48f563a1eb872cf0bc7390c0822c7f865abba480d2f66e5ae4e769f35a4d6b005efb90afa8532ebf067a64641e4536926cfdbd978')
+
+build() {
+  cd ${pkgname#python-}-${pkgver}
+  python -m build --wheel --no-isolation
+}
+
+check() {
+  cd ${pkgname#python-}-${pkgver}
+  pytest \
+    --deselect=joblib/test/test_memory.py::test_parallel_call_cached_function_defined_in_jupyter \
+    --deselect=joblib/test/test_numpy_pickle.py::test_joblib_pickle_across_python_versions \
+    --deselect=joblib/test/test_numpy_pickle.py::test_joblib_pickle_across_python_versions_with_mmap
+}
+
+package() {
+  cd ${pkgname#python-}-${pkgver}
+  python -m installer --destdir="$pkgdir" dist/*.whl
+  install -vDm644 -t "$pkgdir/usr/share/licenses/$pkgname" LICENSE.txt
+}

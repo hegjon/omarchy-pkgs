@@ -1,0 +1,97 @@
+# Maintainer: Tim Meusel <tim@bastelfreak.de>
+
+_gemname=semantic_puppet
+pkgname="ruby-$_gemname"
+pkgver=1.1.1
+pkgrel=1
+pkgdesc='Tools used by Puppet to parse, validate, and compare Semantic Versions and Version Ranges and to query and resolve module dependencies.'
+arch=('any')
+url='https://github.com/puppetlabs/semantic_puppet'
+depends=(
+  ruby
+)
+makedepends=(
+  git
+  ruby-rdoc
+)
+checkdepends=(
+  ruby-bundler
+  ruby-rake
+  ruby-rspec
+)
+license=('Apache-2.0')
+options=('!emptydirs')
+source=("git+$url#tag=$pkgver")
+sha512sums=('f7d5df6f1d4441b3990e01ebaa64d20533e79ad906ab4cecc2471d1e861be163d8bd3aab5954a3422d37329adea75cf521ef5807c46dd3b9abdbf808f4a00a6f')
+b2sums=('c490ddf8fc2f6dafe3c765e6549c8a26dadbe9c7209b47d77fe030602317632d1d3681d51cf8b77a0a9dcbc598bf14ff011ee12df35bafbc3f82e5423dede1ef')
+
+prepare() {
+  cd "${_gemname}"
+
+  # update gemspec/Gemfile to allow newer version of the dependencies
+  sed --in-place --regexp-extended \
+    --expression 's|~>|>=|g' \
+    "${_gemname}.gemspec"
+}
+
+build() {
+  cd "${_gemname}"
+
+  local _gemdir="$(gem env gemdir)"
+
+  gem build --verbose "${_gemname}.gemspec"
+
+  gem install \
+    --local \
+    --verbose \
+    --ignore-dependencies \
+    --no-user-install \
+    --install-dir "tmp_install${_gemdir}" \
+    --bindir "tmp_install/usr/bin" \
+    "${_gemname}-${pkgver}.gem"
+
+  # remove unreproducible files
+  rm --force --recursive --verbose \
+    "tmp_install${_gemdir}/cache/" \
+    "tmp_install${_gemdir}/gems/${_gemname}-${pkgver}/vendor/" \
+    "tmp_install${_gemdir}/doc/${_gemname}-${pkgver}/ri/ext/"
+
+  find "tmp_install${_gemdir}/gems/" \
+    -type f \
+    \( \
+      -iname "*.o" -o \
+      -iname "*.c" -o \
+      -iname "*.so" -o \
+      -iname "*.time" -o \
+      -iname "gem.build_complete" -o \
+      -iname "Makefile" \
+    \) \
+    -delete
+
+  find "tmp_install${_gemdir}/extensions/" \
+    -type f \
+    \( \
+      -iname "mkmf.log" -o \
+      -iname "gem_make.out" \
+    \) \
+    -delete
+}
+
+check() {
+  cd "${_gemname}"
+
+  local _gemdir="$(gem env gemdir)"
+
+  GEM_HOME="tmp_install${_gemdir}" rake spec
+}
+
+package() {
+  cd "${_gemname}"
+
+  cp --archive --verbose tmp_install/* "${pkgdir}"
+
+  install --verbose -D --mode=0644 LICENSE* --target-directory "${pkgdir}/usr/share/licenses/${pkgname}"
+  install --verbose -D --mode=0644 *.md --target-directory "${pkgdir}/usr/share/doc/${pkgname}"
+}
+
+# vim: tabstop=2 shiftwidth=2 expandtab:

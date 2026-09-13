@@ -1,0 +1,48 @@
+# Maintainer: George Rawlinson <grawlinson@archlinux.org>
+# Contributor: Filipe Laíns (FFY00) <lains@archlinux.org>
+
+pkgname=python-dill
+pkgver=0.4.1
+pkgrel=1
+pkgdesc='serialize all of Python'
+arch=(any)
+url='https://github.com/uqfoundation/dill'
+license=(MIT)
+depends=(python)
+makedepends=(
+  git
+  python-build
+  python-installer
+  python-setuptools
+  python-wheel
+)
+optdepends=('python-objgraph: graph support')
+source=("$pkgname::git+$url#tag=$pkgver")
+sha512sums=('13b0f7d297b689ada4e72daa47dce05d03972457905357a4572f5937f08b6f5a1cf8d2351896e685067a210f51b3ba992efeef0d978f7f32cc21cd3a466f0349')
+b2sums=('6316a79225f216439e0c616a4146c659ff46e0af54c05c0b8ff023e8bd0473a1085c074216417bf4417a3fe74541317dae022bd52fe0d61c2dbd1fb61c885908')
+
+build() {
+  cd "$pkgname"
+
+  python -m build --wheel --no-isolation
+}
+
+check() {
+  cd "$pkgname"
+
+  # temporarily install wheel
+  python -m installer --destdir="$(pwd)/tmp" dist/*.whl
+  local site_packages=$(python -c "import site; print(site.getsitepackages()[0])")
+  export PYTHONPATH="$(pwd)/tmp/$site_packages"
+
+  python dill/tests/__main__.py
+}
+
+package() {
+  cd "$pkgname"
+
+  python -m installer --destdir="$pkgdir" dist/*.whl
+
+  # license
+  install -vDm644 -t "$pkgdir/usr/share/licenses/$pkgname" LICENSE
+}

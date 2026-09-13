@@ -1,0 +1,78 @@
+# Maintainer: Felix Yan <felixonmars@archlinux.org>
+
+pkgname=ruby-pry-byebug
+pkgver=3.12.0
+pkgrel=1
+pkgdesc="Combine 'pry' with 'byebug'. Adds 'step', 'next', 'finish', 'continue' and 'break' commands to control execution."
+arch=(any)
+url='https://github.com/deivid-rodriguez/pry-byebug'
+license=(MIT)
+depends=(
+  ruby
+  ruby-byebug
+  ruby-pry
+)
+makedepends=(
+  git
+  ruby-rdoc
+)
+checkdepends=(
+  markdownlint
+  ruby-bundler
+  ruby-irb
+  ruby-minitest
+  ruby-rake
+)
+options=(!emptydirs)
+source=(
+  "git+https://github.com/deivid-rodriguez/pry-byebug.git#tag=v$pkgver"
+  "${pkgname}_fix_tests.patch"
+)
+sha256sums=('72e73ec020f73ae5e2258ae46bbde13d764f40e79156b0264ed7bd1cbe525886'
+            '5dabd6fad133ba87e778f5a51a4e9122be83c8ab0959058191f3c964d04669fe')
+
+prepare() {
+  cd pry-byebug
+
+  patch --verbose --strip=1 --input="../${pkgname}_fix_tests.patch"
+
+  sed -e 's|~>|>=|' -e '/chandler/d;/[rR]ubo[cC]op/d;/minitest-bisect/d' -i Gemfile Rakefile
+}
+
+build() {
+  local _gemdir="$(gem env gemdir)"
+  cd pry-byebug
+  gem build pry-byebug.gemspec
+  gem install \
+    --local \
+    --verbose \
+    --ignore-dependencies \
+    --no-user-install \
+    --install-dir "tmp_install/$_gemdir" \
+    --bindir "tmp_install/usr/bin" \
+    pry-byebug-$pkgver.gem
+  find "tmp_install/$_gemdir/gems/" \
+    -type f \
+    \( \
+        -iname "*.o" -o \
+        -iname "*.c" -o \
+        -iname "*.so" -o \
+        -iname "*.time" -o \
+        -iname "gem.build_complete" -o \
+        -iname "Makefile" \
+    \) \
+    -delete
+  rm -r tmp_install/$_gemdir/cache
+}
+
+check() {
+  local _gemdir="$(gem env gemdir)"
+  cd pry-byebug
+  MT_COMPAT="true" GEM_HOME="tmp_install/$_gemdir" rake test
+}
+
+package() {
+  cd pry-byebug
+  cp -a tmp_install/* "$pkgdir"/
+  install -Dm644 LICENSE -t "$pkgdir"/usr/share/licenses/$pkgname/
+}

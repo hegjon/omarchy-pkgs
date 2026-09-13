@@ -1,0 +1,63 @@
+# Maintainer: George Rawlinson <grawlinson@archlinux.org>
+
+pkgname=ruby-benchmark-ips
+_pkgname="${pkgname#ruby-}"
+pkgver=2.15.1
+pkgrel=1
+pkgdesc='Provides iteration per second benchmarking for Ruby'
+arch=(any)
+url='https://github.com/evanphx/benchmark-ips'
+license=(MIT)
+depends=(
+  ruby
+)
+makedepends=(
+  git
+  ruby-rake
+  ruby-rdoc
+)
+checkdepends=(
+  ruby-bundler
+  ruby-minitest
+)
+options=(!emptydirs)
+source=("$pkgname::git+$url#tag=v$pkgver")
+sha512sums=('cf10c474f096eb5d5d1e49f99065c7f3bef3f4038d36ee346554b8a224ae7ecc735971bc689af6d4e2a1fc5a4389f22d5cc96f12bcd56c918785460ceef5108a')
+b2sums=('320ca6e1b93966132b3d05dda60736031780f87c6f48990f0f4b854ffb03596ab120fb9f3fc231e6a05b19557d5384a6b9fd3533300d4c1594d84d34b2a7af21')
+
+prepare() {
+  cd "$pkgname"
+
+  # we do not do version pinning
+  sed --regexp-extended 's/~>/>=/g' --in-place *.gemspec Gemfile Rakefile
+}
+
+build() {
+  cd "$pkgname"
+
+  gem build "$_pkgname.gemspec"
+}
+
+check() {
+  cd "$pkgname"
+
+  rake
+}
+
+package() {
+  cd "$pkgname"
+
+  local _gemdir="$(gem env gemdir)"
+
+  gem install \
+    --local \
+    --verbose \
+    --ignore-dependencies \
+    --no-user-install \
+    --install-dir "$pkgdir/$_gemdir" \
+    --bindir "$pkgdir/usr/bin" \
+    "$_pkgname-$pkgver.gem"
+
+  # license
+  install -vDm644 -t "$pkgdir/usr/share/licenses/$pkgname" LICENSE
+}

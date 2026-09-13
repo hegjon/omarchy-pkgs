@@ -1,0 +1,50 @@
+# Maintainer: Carl Smedstad <carsme@archlinux.org>
+# Contributor: Felix Yan <felixonmars@archlinux.org>
+
+pkgname=python-pytest-enabler
+pkgver=3.4.0
+pkgrel=2
+pkgdesc="Enable installed pytest plugins"
+arch=(any)
+license=(MIT)
+url="https://github.com/jaraco/pytest-enabler"
+depends=(
+  python
+  python-jaraco.context
+  python-jaraco.functools
+  python-pytest
+  python-toml
+)
+makedepends=(
+  git
+  python-build
+  python-installer
+  python-setuptools-scm
+  python-wheel
+)
+# python-pytest-cov is an actual dependency for one of the tests.
+checkdepends=(python-pytest-cov)
+source=("git+$url.git#tag=v$pkgver")
+sha256sums=('cbfb9ec2360276d15365915add07bb656f16266cdc8770e8f15236e76465a5a0')
+
+prepare() {
+  cd ${pkgname#python-}
+  # Revert MIT license deletion
+  git revert -n 9a81db3c77bc106017dcd4b0853a5a94f43ae33c
+}
+
+build() {
+  cd ${pkgname#python-}
+  python -m build --wheel --no-isolation --skip-dependency-check
+}
+
+check() {
+  cd ${pkgname#python-}
+  PYTHONPATH=$PWD pytest
+}
+
+package() {
+  cd ${pkgname#python-}
+  python -m installer --destdir="$pkgdir" dist/*.whl
+  install -vDm644 -t "$pkgdir/usr/share/licenses/$pkgname" LICENSE
+}

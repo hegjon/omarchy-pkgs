@@ -1,0 +1,46 @@
+# Maintainer: Jan Alexander Steffens (heftig) <heftig@archlinux.org>
+
+pkgname=libglib-testing
+pkgver=0.2.0
+pkgrel=1
+pkgdesc="Test harnesses and mock classes for GLib"
+url="https://gitlab.gnome.org/pwithnall/libglib-testing"
+license=(LGPL-2.1-or-later)
+arch=(x86_64)
+depends=(
+  glib2
+  glibc
+  libgcc
+)
+makedepends=(
+  git
+  gtk-doc
+  meson
+)
+source=("git+https://gitlab.gnome.org/pwithnall/libglib-testing.git?signed#tag=$pkgver")
+b2sums=('38fd624bf22dfc405a3f4b588411be28352fd1c92aec46b302a74e5aac3cd33d33074b20fea6ec9c7017df8b2a44501ea614f10e858a2817ebf85168096c5bda')
+validpgpkeys=(
+  923B7025EE03C1C59F42684CF0942E894B2EAFA0 # Philip Withnall <pwithnall@gnome.org>
+)
+
+prepare() {
+  cd $pkgname
+}
+
+build() {
+  arch-meson $pkgname build
+  meson compile -C build
+}
+
+check() {
+  meson test -C build --print-errorlogs
+}
+
+package() {
+  depends+=(libg{lib,object,io}-2.0.so)
+  provides+=(libglib-testing-${pkgver%%.*}.so)
+
+  meson install -C build --destdir "$pkgdir"
+}
+
+# vim:set sw=2 sts=-1 et:

@@ -1,0 +1,83 @@
+# Maintainer: David Runge <dvzrv@archlinux.org>
+# Maintainer: Lukas Fleischer <lfleischer@archlinux.org>
+# Contributor: Jan Alexander Steffens (heftig) <heftig@archlinux.org>
+
+pkgbase=libgit2-glib
+pkgname=(
+  libgit2-glib
+  libgit2-glib-docs
+)
+pkgver=1.2.1
+pkgrel=2
+pkgdesc="GLib wrapper for libgit2"
+url="https://gitlab.gnome.org/GNOME/libgit2-glib"
+license=(LGPL-2.1-or-later)
+arch=(x86_64)
+makedepends=(
+  gi-docgen
+  git
+  glib2-devel
+  gobject-introspection
+  libgit2
+  meson
+  python-gobject
+  vala
+)
+source=(
+  "git+$url.git#tag=v$pkgver"
+  0001-Fix-definition-of-GGIT_VERSION_HEX.patch
+)
+b2sums=('2988b0b89c132779c1070887b8c11e004594667d5ec791834d9ab1fe5025260e7a02a6d77bc9e3e24f004dc0a5f614ed771b3b90b896ceeea41282c097ae551f'
+        '254fb23cdc66670582e6cf453bc8b8c7ee1a53a28a23969c5c08f65d83e1d9cbb34b6f3fef10ef010073e012a94faf2ba0561dab88380199ba0756398127515e')
+
+_pick() {
+  local p="$1" f d; shift
+  for f; do
+    d="$srcdir/$p/${f#$pkgdir/}"
+    mkdir -p "$(dirname "$d")"
+    mv "$f" "$d"
+    rmdir -p --ignore-fail-on-non-empty "$(dirname "$f")"
+  done
+}
+
+prepare() {
+  git -C $pkgname apply -3 ../0001-Fix-definition-of-GGIT_VERSION_HEX.patch
+}
+
+build() {
+  arch-meson $pkgname build -D gtk_doc=true
+  meson compile -C build
+}
+
+check() {
+  meson test -C build --print-errorlogs
+}
+
+package_libgit2-glib() {
+  depends=(
+    glib2 libgio-2.0.so libglib-2.0.so libgobject-2.0.so
+    glibc
+    libgit2 libgit2.so
+  )
+  optdepends=(
+    'libgit2-glib-docs: for developer documentation'
+    'python-gobject: for Python integration'
+  )
+  provides=(libgit2-glib-1.0.so)
+
+  meson install -C build --destdir "$pkgdir"
+  (
+    cd "$pkgdir"
+    _pick libgit2-glib-docs usr/share/gtk-doc
+  )
+
+  install -vDm 644 $pkgname/{AUTHORS,ChangeLog,NEWS,README} -t "$pkgdir/usr/share/doc/$pkgname/"
+}
+
+package_libgit2-glib-docs() {
+  pkgdesc+=" - documentation"
+
+  mv -v $pkgname/* "$pkgdir"
+}
+
+# vim:set sw=2 sts=-1 et:

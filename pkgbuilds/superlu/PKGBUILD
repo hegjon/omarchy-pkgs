@@ -1,0 +1,49 @@
+# Maintainer: Jakub Klinkovský <lahwaacz at archlinux dot org>
+# Contributor: Balló György <ballogyor+arch at gmail dot com>
+# Contributor: Joey Dumont <joey.dumont@gmail.com>
+# Contributor: Giuseppe Borzi <gborzi@ieee.org>
+# Contributor: Stefan Paquay <stefanpaquay@gmail.com>
+
+pkgname=superlu
+pkgver=7.0.1
+pkgrel=2
+pkgdesc='Set of subroutines to solve a sparse linear system'
+arch=(x86_64)
+url='https://github.com/xiaoyeli/superlu/'
+license=(BSD-3-Clause-LBNL)
+depends=(
+  blas
+  glibc
+)
+makedepends=(
+  cmake
+  ninja
+)
+source=("https://github.com/xiaoyeli/$pkgname/archive/v${pkgver}/$pkgname-$pkgver.tar.gz")
+sha256sums=('86dcca1e086f8b8079990d07f00eb707fc9ef412cf3b2ce808b37956f0de2cb8')
+
+build() {
+  local cmake_options=(
+    -B build
+    -S $pkgname-$pkgver
+    -G Ninja
+    -W no-dev
+    -DCMAKE_BUILD_TYPE=None
+    -DCMAKE_INSTALL_PREFIX=/usr
+    -DBUILD_SHARED_LIBS=ON
+    -Denable_internal_blaslib=OFF
+    -DCMAKE_INSTALL_INCLUDEDIR=include/superlu/
+  )
+  cmake "${cmake_options[@]}"
+  cmake --build build
+}
+
+check(){
+  ctest --test-dir build
+}
+
+package() {
+  DESTDIR="$pkgdir" cmake --install build
+  install -vDm 644 $pkgname-$pkgver/DOC/ug.pdf -t "$pkgdir"/usr/share/doc/$pkgname/
+  install -vDm 644 $pkgname-$pkgver/License.txt -t "$pkgdir"/usr/share/licenses/$pkgname/
+}

@@ -1,0 +1,63 @@
+# Maintainer: Jan Alexander Steffens (heftig) <heftig@archlinux.org>
+# Contributor: Ionut Biru <ibiru@archlinux.org>
+
+pkgname=folks
+pkgver=0.15.12
+pkgrel=1
+pkgdesc="Library to aggregates people into metacontacts"
+url="https://wiki.gnome.org/Projects/Folks"
+arch=(x86_64)
+license=(LGPL-2.1-or-later)
+depends=(
+  dconf
+  evolution-data-server
+  glib2
+  glibc
+  libgee
+  libxml2
+  readline
+)
+makedepends=(
+  git
+  gobject-introspection
+  gtk-doc
+  libsysprof-capture
+  meson
+  python-dbusmock
+  vala
+)
+provides=(
+  libfolks.so
+  libfolks-{dummy,eds}.so
+)
+options=(
+  !lto # LTO copies some GType constructors
+)
+source=("git+https://gitlab.gnome.org/GNOME/folks.git#tag=$pkgver")
+b2sums=('a65249f40505cdbcfc79e99b97535ce009216f75efedbe780978183c4519792472d603a68cd14ddf3e8eb11fcf623acab9c461d2d7e26bbeb8582f2e6c7d8b9b')
+
+prepare() {
+  cd folks
+  git cherry-pick -n b1888d6beae08bc67fa50f5b67619fa4e5463951
+}
+
+build() {
+  local meson_options=(
+    -D docs=false
+    -D profiling=true
+    -D telepathy_backend=false
+  )
+
+  arch-meson folks build "${meson_options[@]}"
+  meson compile -C build
+}
+
+check() {
+  meson test -C build --print-errorlogs -t 4 || :
+}
+
+package() {
+  meson install -C build --destdir "$pkgdir"
+}
+
+# vim:set sw=2 sts=-1 et:

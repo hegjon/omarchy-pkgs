@@ -1,0 +1,30 @@
+From dab3ecf9359119be219cfa3f4b5115b72a287efd Mon Sep 17 00:00:00 2001
+From: Tom Rix <Tom.Rix@amd.com>
+Date: Thu, 9 Oct 2025 12:16:48 -0700
+Subject: [PATCH] migraphx check if use_hipblaslt before call
+ gfx_default_rocblas
+
+---
+ src/targets/gpu/lowering.cpp | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
+
+diff --git a/src/targets/gpu/lowering.cpp b/src/targets/gpu/lowering.cpp
+index 17d03f8d99df..2862e90bb672 100644
+--- a/src/targets/gpu/lowering.cpp
++++ b/src/targets/gpu/lowering.cpp
+@@ -264,7 +264,11 @@ struct miopen_apply
+             // if the hardware is defaulted to use rocBLAS (such as gfx90).
+             if(not has_fp8_inputs and
+                ((string_value_of(MIGRAPHX_SET_GEMM_PROVIDER{}) == "rocblas") or
+-                not hipblaslt_supported() or gpu::gfx_default_rocblas()))
++                not hipblaslt_supported()
++#if MIGRAPHX_USE_HIPBLASLT
++		or gpu::gfx_default_rocblas()
++#endif
++		       ))
+             {
+                 return mod->replace_instruction(
+                     ins, rocblas_gemm<Op>{Op{}, 1, 0, compute_fp32}, refs);
+-- 
+2.51.0
+

@@ -1,0 +1,10 @@
+--- a/googletest/src/gtest-death-test.cc
++++ b/googletest/src/gtest-death-test.cc
+@@ -34,6 +34,7 @@
+ 
+ #include <stdlib.h>
+ 
++#include <cstdint>
+ #include <functional>
+ #include <memory>
+ #include <sstream>

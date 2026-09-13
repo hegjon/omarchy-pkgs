@@ -1,0 +1,54 @@
+# Maintainer: Giancarlo Razzolini <grazzolini@archlinux.org>
+# Maintainer: Carl Smedstad <carsme@archlinux.org>
+# Contributor: Nissar Chababy <funilrys at outlook dot com>
+# Contributor: Thrasibule <guillaume dot horel at gmail dot com>
+# Contributor: David Manouchehri <manouchehri@riseup.net>
+# Contributor: Vladimir Tsanev <tsachev@gmail.com>
+# Contributor: Andrew Reed <reed.996@osu.edu>
+# Contributor: "Score_Under" <seejay.11@gmail.com>
+
+pkgname=python-lz4
+pkgver=4.4.5
+pkgrel=2
+pkgdesc="LZ4 bindings for Python"
+arch=('x86_64')
+url="https://github.com/python-lz4/python-lz4"
+license=('BSD-3-Clause')
+depends=(
+  'glibc'
+  'lz4'
+  'python'
+)
+makedepends=(
+  'python-build'
+  'python-installer'
+  'python-pkgconfig'
+  'python-setuptools-scm'
+  'python-wheel'
+)
+checkdepends=(
+  'python-psutil'
+  'python-pytest'
+)
+source=("$url/archive/v$pkgver/$pkgname-$pkgver.tar.gz")
+sha512sums=('bd497c2bee2d5f631b2a2c6c61b8e691cddd4c22a1c3d8030bc88b5fa5efc4cf16eb4fc329b2679806e4030d0e069665e38a4576fc561236890bd3d516f6f636')
+
+build() {
+  cd $pkgname-$pkgver
+  export SETUPTOOLS_SCM_PRETEND_VERSION=$pkgver
+  export PYLZ4_EXPERIMENTAL=1
+  python -m build --wheel --no-isolation
+}
+
+check() {
+  cd $pkgname-$pkgver
+  python -m venv --system-site-packages test-env
+  test-env/bin/python -m installer dist/*.whl
+  test-env/bin/python -Pm pytest -v
+}
+
+package() {
+  cd $pkgname-$pkgver
+  python -m installer --destdir="$pkgdir" dist/*.whl
+  install -vDm644 -t "$pkgdir/usr/share/licenses/$pkgname" LICENSE
+}

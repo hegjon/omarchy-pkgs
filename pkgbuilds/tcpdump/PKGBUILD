@@ -1,0 +1,54 @@
+# Maintainer: David Runge <dvzrv@archlinux.org>
+# Maintainer: Robin Candau <antiz@archlinux.org>
+# Contributor: Gaetan Bisson <bisson@archlinux.org>
+# Contributor: Giovanni Scafora <giovanni@archlinux.org>
+# Contributor: dorphell <dorphell@archlinux.org>
+
+pkgname=tcpdump
+pkgver=4.99.6
+pkgrel=1
+pkgdesc='Powerful command-line packet analyzer'
+url="https://www.tcpdump.org/"
+arch=(x86_64)
+license=(BSD-3-Clause)
+depends=(glibc)
+makedepends=(
+  cmake
+  libpcap
+  libcap-ng
+  openssl
+)
+source=(https://www.tcpdump.org/release/$pkgname-$pkgver.tar.gz{,.sig})
+sha512sums=('1a3c1855de8769ded66c86f0a8a54f5fe0943aa6855ff43bc8262895e749f7afe6a729cec4280d705f3e82942d0cee4b914bc1aa50e6ea686ad8ff798ca8df96'
+            'SKIP')
+b2sums=('cf820f98d271a6cd97d0c2c7b4f6a6a3091b264a2cdb0c80e4cc0d0301ca4a817498b5941e0806d838cc819d20539157fc50b4be5634153eb2eeb6e540bd0196'
+        'SKIP')
+validpgpkeys=('1F166A5742ABB9E0249A8D30E089DEF1D9C15D0D') # The Tcpdump Group (Package signing key) <release@tcpdump.org>
+
+build() {
+  local cmake_options=(
+    -DCMAKE_INSTALL_PREFIX=/usr
+    -DCMAKE_BUILD_TYPE=None
+    -Wno-dev
+    -B build
+    -S $pkgname-$pkgver
+  )
+
+  cmake "${cmake_options[@]}"
+  cmake --build build --verbose
+}
+
+check() {
+  make VERBOSE=1 check -C build
+}
+
+package() {
+  depends+=(
+    libpcap libpcap.so
+    libcap-ng libcap-ng.so
+    openssl libcrypto.so
+  )
+
+  DESTDIR="$pkgdir" cmake --install build
+  install -vDm 644 $pkgname-$pkgver/LICENSE -t "$pkgdir/usr/share/licenses/$pkgname/"
+}

@@ -1,0 +1,61 @@
+# Maintainer: Caleb Maclennan <caleb@alerque.com>
+
+pkgbase=lua-term
+_rockname=${pkgbase#lua-}
+pkgname=("$pkgbase" "lua51-$_rockname" "lua52-$_rockname" "lua53-$_rockname" "lua54-$_rockname")
+pkgver=0.8
+_pkgver=0.08
+_rockrel=1
+pkgrel=2
+pkgdesc='Terminal functions for Lua'
+arch=(x86_64)
+url="https://github.com/hoelzro/$pkgbase"
+license=(MIT)
+makedepends=(lua
+             lua51
+             lua52
+             lua53
+             lua54
+             luarocks)
+_archive="$pkgbase-$_pkgver"
+_rock="$pkgbase-$pkgver-$_rockrel.linux-$CARCH.rock"
+_rockspec="$pkgbase-$pkgver-$_rockrel.rockspec"
+source=("$url/archive/$_pkgver/$_archive.tar.gz")
+sha256sums=('8ff94f390ea9d98c734699373ca3b0ce500d651b2ab1cb8d7d2336fc5b79cded')
+
+build() {
+	cd "$_archive"
+	for LUAVER in 5.{1,2,3,4,5}; do
+		luarocks --lua-version "$LUAVER" \
+			make --pack-binary-rock --deps-mode none -- "$_rockspec"
+		install -Dm0644 -t "lua-$LUAVER/" "$_rock"
+	done
+}
+
+_package() {
+	cd "$_archive"
+	depends=("${pkgname%-*}")
+	luarocks --lua-version="$1" --tree="$pkgdir/usr/" \
+		install --deps-mode none --no-manifest -- "lua-$1/$_rock"
+	install -Dm0644 -t "$pkgdir/usr/share/licenses/$pkgname/" COPYING
+}
+
+package_lua-term() {
+	_package 5.5
+}
+
+package_lua54-term() {
+	_package 5.4
+}
+
+package_lua53-term() {
+	_package 5.3
+}
+
+package_lua52-term() {
+	_package 5.2
+}
+
+package_lua51-term() {
+	_package 5.1
+}

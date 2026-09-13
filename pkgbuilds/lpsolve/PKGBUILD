@@ -1,0 +1,47 @@
+# Maintainer: AndyRTR <andyrtr@archlinux.org>
+
+pkgname=lpsolve
+_origname=lp_solve
+pkgver=5.5.2.14
+_mainver=5.5
+pkgrel=1
+pkgdesc="a Mixed Integer Linear Programming (MILP) solver"
+arch=('x86_64')
+url="https://lp-solve.github.io/"
+license=('LGPL-2.1-or-later'
+         'GPL-2.0-or-later WITH Bison-exception-2.2'
+         'BSD-3-Clause')
+depends=('glibc')
+source=(https://github.com/lp-solve/lp_solve/releases/download/${pkgver}/lp_solve_${pkgver}_source.tar.gz
+        lp_solve-5.5.2.14-Respect-CC-CFLAGS-and-LDFLAGS.patch)
+sha256sums=('a4bbdc881128bdbe920a38e134c9add5db47f9aa814a0a018ba940b0f3c278c3'
+            '57514e6ed2ad137b4300c3bd67a8e4af32d0bbe8284c46fc9f23836dcd51be66')
+
+prepare() {
+  cd ${_origname} #_${_mainver}
+  # Fedora patch to fix CFLAGS and LDFLAGS
+  patch -Np1 -i "$srcdir"/lp_solve-5.5.2.14-Respect-CC-CFLAGS-and-LDFLAGS.patch
+}
+
+build() {
+  cd ${_origname} #_${_mainver}
+
+  # taken from Fedora spec
+  cd lpsolve55
+  sh -x ccc
+  rm bin/ux*/liblpsolve55.a
+
+  cd ../lp_solve
+  sh -x ccc
+}
+
+package() {
+  cd ${_origname} #_${_mainver}
+
+  install -dm755 "${pkgdir}"/usr/{bin,lib,include/lpsolve}
+  install -m755 lp_solve/bin/ux*/lp_solve "${pkgdir}"/usr/bin/
+  install -m755 lpsolve55/bin/ux*/liblpsolve55.so "${pkgdir}"/usr/lib/
+  install -m644 lp*.h "${pkgdir}"/usr/include/lpsolve/
+
+  install -D -m644 README.txt -t "${pkgdir}/usr/share/licenses/${pkgname}/"
+}

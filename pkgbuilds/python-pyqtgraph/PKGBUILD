@@ -1,0 +1,40 @@
+# Maintainer: Filipe Laíns (FFY00) <lains@archlinux.org>
+# Contributor: Windel Bouwman <windel at windel dot nl>
+# Contributor: Jakub Klinkovský <kuba.klinkovsky@gmail.com>
+
+_pkgname=pyqtgraph
+pkgname=python-$_pkgname
+pkgver=0.14.0
+pkgrel=2
+pkgdesc='Scientific Graphics and GUI Library for Python'
+arch=('any')
+url='http://www.pyqtgraph.org'
+license=('MIT')
+makedepends=('python-build' 'python-installer' 'python-setuptools' 'python-wheel')
+depends=('python' 'python-numpy')
+optdepends=('python-opengl: 3d graphics'
+            'qt6-python-bindings: Qt6 backend')
+checkdepends=('python-pyqt6' 'python-pytest' 'python-opengl' 'qt6-svg' 'python-colorama')
+source=("$_pkgname-$pkgver.tar.gz::https://github.com/pyqtgraph/pyqtgraph/archive/pyqtgraph-$pkgver.tar.gz")
+sha512sums=('f9c973d5dbfd79ef34652a5eb8eadbc1b0215aa1c30773e5c58148bae6a6d79d3e21a904b1a6dd8ff6eb7fe15debf6c1d45c8a9cce96cbcc60495bc9814259f7')
+
+build() {
+  cd $_pkgname-$_pkgname-$pkgver
+
+  python -m build -nw
+}
+
+check() {
+  cd $_pkgname-$_pkgname-$pkgver
+
+  export QT_QPA_PLATFORM=offscreen
+  pytest -v -k 'not MouseSelection' # fails on build server
+}
+
+package() {
+  cd $_pkgname-$_pkgname-$pkgver
+
+  python -m installer -d "$pkgdir" dist/*.whl
+
+  install -Dm 644 LICENSE.txt "$pkgdir"/usr/share/licenses/$pkgname/LICENSE
+}

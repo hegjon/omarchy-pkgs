@@ -1,0 +1,33 @@
+# Maintainer: Levente Polyak <anthraxx[at]archlinux[dot]org>
+# Maintainer: T.J. Townsend <blakkheim@archlinux.org>
+# Contributor: Gaetan Bisson <bisson@archlinux.org>
+# Committer: Manolis Tzanidakis <manolis@archlinux.org>
+# Contributor: damir <damir@archlinux.org>
+
+pkgname=xclip
+pkgver=0.13
+pkgrel=6
+pkgdesc='Command line interface to the X11 clipboard'
+url='https://github.com/astrand/xclip'
+arch=('x86_64')
+license=('GPL-2.0-only')
+depends=('libxmu')
+makedepends=('git')
+source=(git+https://github.com/astrand/xclip.git#tag=${pkgver})
+sha256sums=('86b87e6dbbb5e8f7582c2d964abc87d25a4541fd74945aef6b0a902eab485891')
+
+prepare() {
+  cd ${pkgname}
+  autoreconf -fiv
+}
+
+build() {
+  cd ${pkgname}
+  ./configure --prefix=/usr
+  make
+}
+
+package() {
+  cd ${pkgname}
+  make DESTDIR="${pkgdir}" install
+}

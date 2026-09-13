@@ -1,0 +1,24 @@
+# Maintainer: Felix Yan <felixonmars@archlinux.org>
+# Contributor: justforlxz <justforlxz@gmail.com>
+
+pkgname=deepin-service-manager
+pkgver=1.0.23
+pkgrel=1
+pkgdesc='Manage DBus service on Deepin'
+arch=('x86_64')
+url="https://github.com/linuxdeepin/deepin-service-manager"
+license=('LGPL-3.0-or-later')
+depends=('dtk6core' 'glibc' 'libgcc' 'libstdc++' 'qt6-base' 'systemd-libs')
+makedepends=('git' 'cmake' 'ninja')
+source=("git+https://github.com/linuxdeepin/deepin-service-manager.git#tag=$pkgver")
+sha512sums=('ffb80171067c5deb5c7ae80ab6b463cace9cda6f23b2e55a4624c6e4e3cbdc99d74c04e12da157bf741f343a0628f2620d148bdcbd2b2f8f17d8cfd11bf8272d')
+
+build() {
+  cmake -GNinja -B build -S $pkgname -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_INSTALL_SYSCONFDIR=/etc
+  cmake --build build
+}
+
+package() {
+  cd build
+  DESTDIR="$pkgdir" ninja install
+}

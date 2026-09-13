@@ -1,0 +1,54 @@
+# Maintainer: Jakub Klinkovský <lahwaacz at archlinux dot org>
+
+_name=fastrlock
+pkgname=python-fastrlock
+pkgver=0.8.3
+pkgrel=3
+pkgdesc="A fast RLock implementation for CPython"
+arch=(x86_64)
+url="https://github.com/scoder/fastrlock"
+license=(MIT)
+depends=(
+  glibc
+  python
+)
+makedepends=(
+  python-build
+  python-installer
+  python-wheel
+  python-setuptools
+  cython
+)
+checkdepends=(
+  python-pytest
+)
+source=($pkgname-$pkgver.tar.gz::$url/archive/refs/tags/v$pkgver.tar.gz)
+b2sums=('c917fde16b924ed52eb21ff6e821bef7e8369eda769477b92658461ab2075656f0198ef81da15406bd7d0fd824bb3c90ae35075da73f299d2159d1d335104d44')
+
+build() {
+  cd $_name-$pkgver
+  python -m build --wheel --no-isolation
+}
+
+check() {
+  local pytest_options=(
+    -vv
+    -W ignore::DeprecationWarning
+  )
+
+  # If this file exists, pytest inserts $_name-$pkgver into sys.path and then
+  # cannot import the module installed in the venv, because it has lower
+  # priority in sys.path. See the pytest documentation for details:
+  # https://docs.pytest.org/en/stable/explanation/pythonpath.html#test-modules-conftest-py-files-inside-packages
+  rm $_name-$pkgver/fastrlock/tests/__init__.py
+
+  python -m venv --system-site-packages test-env
+  test-env/bin/python -m installer $_name-$pkgver/dist/*.whl
+  test-env/bin/python -m pytest "${pytest_options[@]}" 
+}
+
+package() {
+  cd $_name-$pkgver
+  python -m installer --destdir="$pkgdir" dist/*.whl
+  install -vDm 644 LICENSE -t "$pkgdir"/usr/share/licenses/$pkgname/
+}

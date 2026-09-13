@@ -1,0 +1,28 @@
+# Maintainer: Levente Polyak <anthraxx[at]archlinux[dot]org>
+
+pkgname=python-pytest-aiohttp
+_name="${pkgname#python-}"
+pkgver=1.1.0
+pkgrel=1
+pkgdesc='pytest plugin for aiohttp support'
+url='https://github.com/aio-libs/pytest-aiohttp'
+arch=('any')
+license=('Apache-2.0')
+depends=('python' 'python-pytest' 'python-aiohttp')
+makedepends=('python-build' 'python-installer' 'python-setuptools' 'python-setuptools-scm' 'python-wheel')
+source=(${pkgname}-${pkgver}.tar.gz::$url/archive/v${pkgver}.tar.gz)
+sha256sums=('8ba7aae079b97c015515918dc6e2f3cc8794e844c15574a688a65b37b53b0b20')
+sha512sums=('7f4362c9ef2ef4b63c5f9ef246f59bef78f4962df9878e81bfd4f70f5dccd1eaae1b08cf1389bcdf6d8b9efc2363415b16bcf071aac5e6a640940da12ffb35c3')
+
+build() {
+  cd ${_name}-${pkgver}
+  SETUPTOOLS_SCM_PRETEND_VERSION=$pkgver python -m build --wheel --no-isolation
+}
+
+package() {
+  cd ${_name}-${pkgver}
+  python -m installer --destdir="$pkgdir" dist/*.whl
+  install -Dm 644 README.rst CHANGES.rst -t "${pkgdir}/usr/share/doc/${pkgname}"
+}
+
+# vim: ts=2 sw=2 et:

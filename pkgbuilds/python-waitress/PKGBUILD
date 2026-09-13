@@ -1,0 +1,29 @@
+# Maintainer: Felix Yan <felixonmars@archlinux.org>
+
+pkgname=python-waitress
+pkgver=3.0.2
+pkgrel=2
+pkgdesc="Waitress WSGI server"
+arch=('any')
+license=('ZPL-2.1')
+url="https://github.com/Pylons/waitress"
+depends=('python')
+makedepends=('git' 'python-setuptools' 'python-build' 'python-installer' 'python-wheel')
+checkdepends=('python-pytest')
+source=("git+https://github.com/Pylons/waitress.git#tag=v$pkgver")
+sha512sums=('102c08d52a0866c28d21f6f41b899f3a4eb53c54dc8f09e0e4256a8bbbbea9aa956bc2f046cf9fddae54ba15f6adfaa5ad421be37587315e9735e105e3bb80b7')
+
+build() {
+  cd waitress
+  python -m build --wheel --no-isolation
+}
+
+check() {
+  cd waitress
+  PYTHONPATH="$PWD"/src pytest -o addopts=''
+}
+
+package() {
+  cd waitress
+  python -m installer --destdir="$pkgdir" dist/*.whl
+}

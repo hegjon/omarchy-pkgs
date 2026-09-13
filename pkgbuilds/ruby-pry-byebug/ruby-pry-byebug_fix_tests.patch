@@ -1,0 +1,25 @@
+--- a/test/commands/frames_test.rb
++++ b/test/commands/frames_test.rb
+@@ -56,22 +56,4 @@ class FramesTest < MiniTest::Spec
+       end
+     end
+   end
+-
+-  describe "Backtrace command" do
+-    let(:input) { InputTester.new("backtrace") }
+-
+-    before do
+-      @stdout, @stderr = capture_subprocess_io do
+-        redirect_pry_io(input) { load test_file("frames") }
+-      end
+-    end
+-
+-    it "shows a backtrace" do
+-      frames = @stdout.split("\n")
+-
+-      assert_match(/\A--> #0  FramesExample\.method_b at/, frames[0])
+-      assert_match(/\A    #1  FramesExample\.method_a at/, frames[1])
+-      assert_match(/\A    #2  <top \(required\)> at/, frames[2])
+-    end
+-  end
+ end

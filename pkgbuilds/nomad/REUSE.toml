@@ -1,0 +1,13 @@
+version = 1
+
+[[annotations]]
+path = [
+    "PKGBUILD",
+    ".SRCINFO",
+    ".nvchecker.toml",
+    "systemd.service",
+    "tmpfiles.conf",
+    "defaults.hcl",
+]
+SPDX-FileCopyrightText = "Arch Linux contributors"
+SPDX-License-Identifier = "0BSD"

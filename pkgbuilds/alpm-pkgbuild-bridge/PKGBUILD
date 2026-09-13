@@ -1,0 +1,20 @@
+# Maintainer: David Runge <dvzrv@archlinux.org>
+
+pkgname=alpm-pkgbuild-bridge
+pkgver=0.1.0
+pkgrel=1
+pkgdesc="Export all scoped and unscoped variables from a PKGBUILD in a consistent format"
+arch=(any)
+url="https://gitlab.archlinux.org/archlinux/alpm/alpm-pkgbuild-bridge"
+license=(GPL-2.0-or-later)
+groups=(alpm)
+depends=(bash)
+makedepends=(just)
+source=($url/-/archive/$pkgver/$pkgname-$pkgver.tar.gz)
+sha512sums=('592592c614383afd4371f585b10124d36147d32bebbf676df9677085f68e3a023f98b003e55eeb6a63db5e7f75193fcf35a9525774037c7f2d55e18a078adc4f')
+b2sums=('d950676b8ca2d6bff749bc3c96257964fdca4b142c1570386b40e2c1e01a1389f31e06afdc96ea5deb5096c8ab209144428b8d5b0f4e069c86298820334aebb1')
+
+package() {
+  cd $pkgname-$pkgver
+  DESTDIR="$pkgdir/" BIN=bin SHARE=share just install
+}

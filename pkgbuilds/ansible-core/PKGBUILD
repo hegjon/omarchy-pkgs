@@ -1,0 +1,112 @@
+# Maintainer: David Runge <dvzrv@archlinux.org>
+# Maintainer: Sven-Hendrik Haase <svenstaro@archlinux.org>
+# Maintainer: Robin Candau <antiz@archlinux.org>
+# Contributor: Bartłomiej Piotrowski <bpiotrowski@archlinux.org>
+# Contributor: Daniel Wallace <danielwallace at gtmanfred dot com>
+# Contributor: Chris <seitz.christoph@gmail.com>
+# Contributor: m0ikz <ndelatorre@moikz.com.ar>
+# Contributor: atweiden <archbaum@gmail.com>
+
+pkgname=ansible-core
+_pkgname=ansible
+pkgver=2.21.4
+pkgrel=1
+pkgdesc='Radically simple IT automation platform'
+arch=('any')
+url='https://www.ansible.com'
+license=('GPL-3.0-or-later AND BSD-2-Clause AND PSF-2.0 AND MIT AND Apache-2.0')
+depends=(
+  'python'
+  'python-cryptography'
+  'python-jinja'
+  'python-packaging'
+  'python-pyyaml'
+  'python-resolvelib'
+  # not directly required, but either convenient or indirectly required
+  'python-typing_extensions'
+)
+makedepends=(
+  'python-build'
+  'python-docutils'
+  'python-installer'
+  'python-setuptools'
+  'python-wheel'
+)
+checkdepends=(
+  'git'
+  'openssh'
+  'python-bcrypt'
+  'python-botocore'
+  'python-passlib'
+  'python-pexpect'
+  'python-pytest'
+  'python-pytest-mock'
+  'python-pytest-xdist'
+  'python-pytest-forked'
+  'python-pywinrm'
+  'python-voluptuous'
+)
+optdepends=(
+  'python-argcomplete: shell completions'
+  'python-dnspython: for dig lookup'
+  'python-jmespath: json_query support'
+  'python-netaddr: for the ipaddr filter'
+  'python-passlib: crypt values for vars_prompt'
+  'python-pip: for module to manage Python libarary dependencies'
+  'python-pywinrm: connect to Windows machines'
+  'python-setuptools: for module to manage Python libarary dependencies'
+  'python-systemd: for journald support'
+  'sshpass: for ssh connections with password'
+)
+provides=('python-ansible' 'ansible-base')
+replaces=('ansible-base')
+source=("${pkgname}-${pkgver}.tar.gz::https://github.com/ansible/ansible/archive/refs/tags/v${pkgver}.tar.gz"
+        'relax_strict_dependencies_upper_bound.patch'
+        "fix_checks_with_pytest_9.1.x.patch::https://sources.debian.org/data/main/a/ansible-core/2.21.2-1/debian/patches/fix-pytest91-parametrize-stdin.patch")
+sha512sums=('d4cab79a7b54d8fc0620a8ac9161c982b54d04289670f8e096cef86bc2cc89619acaad83a088e0a4acca32cf5f398e070be9faa48c063fb8fa02b8227cb86e17'
+            '82fd5604af055a40ff485213d812061a4183de8cc35807b995d987362fb31aa0709dad76d6fe92c0e587426e07322a56ccf49308b5c88d7c085f64de7e04fd30'
+            'c948e9986e9e8648f47cb855609d93be51a49e723cf82989288458ee210a2a046dd405218cc9be274cb6bf191f29a43add3725d5fe36aa9743539934fadd9d94')
+b2sums=('5c15d21060a9dc77b7e5b43b3134b33a0d3e901773bee7c2380a7d3193e7a275e776a306a78c1bc2a51d28610593e2331999e3037c410ec16c43401b2c814f55'
+        '0c5195b319f716f218a73867eb0dcdd047cb0e77f361290bf06aef0133c7f224df172d8b3a96c9e4c08ba9827128abe36695fe88d2dcbf2fc88f6786fe5d90e0'
+        'a68b29b52771a0b39b984b699142f73531d2beb0cd598f7bd0db04d43c25b772622a23b66e1aa186715fe30be38ad400578e09e9eb1f3a21ca0e30864a42d21c')
+
+prepare() {
+  cd "${_pkgname}-${pkgver}"
+
+  # Upstream is applying very strict upper bound version requirements for some dependencies (e.g. setuptools, wheel & resolvelib)
+  # We relax those to avoid unexpected / unnecessary build failures
+  patch -Np1 -i "${srcdir}/relax_strict_dependencies_upper_bound.patch"
+
+  # Fix checks with pytest >= 9.1.x
+  # See https://sources.debian.org/data/main/a/ansible-core/2.21.2-1/debian/patches/fix-pytest91-parametrize-stdin.patch
+  patch -Np1 -i "${srcdir}/fix_checks_with_pytest_9.1.x.patch"
+}
+
+build() {
+  cd "${_pkgname}-${pkgver}"
+  python -m build --wheel --no-isolation
+  python packaging/cli-doc/build.py man --output-dir man
+}
+
+check() {
+  local python_version=$(python -c 'import sys; print(".".join(map(str, sys.version_info[:2])))')
+
+  # tests require upstream wrapper to find ansible-core internals: https://github.com/ansible/ansible/issues/80472
+  cd "${_pkgname}-${pkgver}"
+  # we do not have libselinux packaged
+  rm -v test/units/module_utils/basic/test_selinux.py
+  # passlib is not compatible with bcrypt >= 5.0.0
+  # see https://github.com/ansible/ansible/issues/85919
+  rm -v test/units/utils/test_encrypt.py
+  bin/ansible-test units --python "${python_version}" --truncate 0
+}
+
+package() {
+  cd "${_pkgname}-${pkgver}"
+  python -m installer --destdir="${pkgdir}" dist/*.whl
+
+  install -Dm 644 man/ansible*1 -t "${pkgdir}/usr/share/man/man1/"
+  install -Dm 644 COPYING "${pkgdir}/usr/share/licenses/${pkgname}/COPYING"
+  install -Dm 644 licenses/MIT-license.txt "${pkgdir}/usr/share/licenses/${pkgname}/MIT-license.txt"
+  install -Dm 644 licenses/simplified_bsd.txt "${pkgdir}/usr/share/licenses/${pkgname}/simplified_bsd.txt"
+}

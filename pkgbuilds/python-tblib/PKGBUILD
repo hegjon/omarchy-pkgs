@@ -1,0 +1,44 @@
+# Maintainer: Levente Polyak <anthraxx[at]archlinux[dot]org>
+# Maintainer: Carl Smedstad <carsme@archlinux.org>
+
+pkgname=python-tblib
+pkgver=3.2.2
+pkgrel=2
+pkgdesc='Python traceback fiddling library'
+arch=('any')
+url='https://github.com/ionelmc/python-tblib'
+license=('BSD-2-Clause')
+depends=('python')
+makedepends=(
+  'python-build'
+  'python-installer'
+  'python-setuptools'
+  'python-wheel'
+)
+checkdepends=('python-pytest')
+source=("$url/archive/v$pkgver/$pkgname-$pkgver.tar.gz")
+sha512sums=('a6783855592c726ecb9d4134106af7d4dc07f147737809a69ab2af773ac03538f584f3552f7fede72e754a6a3d1b67a46cbab8d2c2128b49ab4fd736fb480586')
+b2sums=('c6f71416be7f44b846718748af0926fd1bdfde2fdf21f992dd37f433413f1b55866a7a84568275aac5a4c2ffff690e1491ff32e0a0e5814495fd5c0cc46b97ce')
+
+build() {
+  cd $pkgname-$pkgver
+  python -m build --wheel --no-isolation
+}
+
+check() {
+  cd $pkgname-$pkgver
+  python -m venv --system-site-packages test-env
+  test-env/bin/python -m installer dist/*.whl
+  export PYTHONNODEBUGRANGES=yes
+  test-env/bin/python -m pytest --override-ini="addopts=" \
+    --deselect tests/test_perf.py
+}
+
+package() {
+  cd $pkgname-$pkgver
+  python -m installer --destdir="$pkgdir" dist/*.whl
+  install -vDm 644 -t "$pkgdir/usr/share/doc/$pkgname" README.rst
+  install -vDm 644 -t "$pkgdir/usr/share/licenses/$pkgname" LICENSE
+}
+
+# vim: ts=2 sw=2 et:

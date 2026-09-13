@@ -1,0 +1,95 @@
+# Maintainer: Jan Alexander Steffens (heftig) <heftig@archlinux.org>
+# Contributor: Jan de Groot <jgc@archlinux.org>
+# Contributor: Arjan Timmerman <arjan@archlinux.org>
+# Contributor: Wael Nasreddine <gandalf@siemens-mobiles.org>
+# Contributor: Tor Krill <tor@krill.nu>
+# Contributor: Will Rea <sillywilly@gmail.com>
+
+pkgbase=network-manager-applet
+pkgname=(
+  network-manager-applet
+  nm-connection-editor
+)
+pkgver=1.36.0
+pkgrel=2
+pkgdesc="Applet for managing network connections"
+url="https://gitlab.gnome.org/GNOME/network-manager-applet"
+arch=(x86_64)
+license=(GPL-2.0-or-later)
+depends=(
+  libappindicator-gtk3
+  libmm-glib
+  libnma
+  libsecret
+  networkmanager
+)
+makedepends=(
+  git
+  gobject-introspection
+  gtk-doc
+  meson
+)
+_commit=8accd508caa0400304a01da718eeab587ee8fb04  # tags/1.36.0^0
+source=("git+https://gitlab.gnome.org/GNOME/network-manager-applet.git#commit=$_commit")
+b2sums=('SKIP')
+
+pkgver() {
+  cd $pkgbase
+  git describe --tags | sed 's/-dev/dev/;s/[^-]*-g/r&/;s/-/+/g'
+}
+
+prepare() {
+  cd $pkgbase
+}
+
+build() {
+  local meson_options=(
+    -D selinux=false
+  )
+
+  arch-meson $pkgbase build "${meson_options[@]}"
+  meson compile -C build
+}
+
+check() {
+  meson test -C build --print-errorlogs
+}
+
+_pick() {
+  local p="$1" f d; shift
+  for f; do
+    d="$srcdir/$p/${f#$pkgdir/}"
+    mkdir -p "$(dirname "$d")"
+    mv "$f" "$d"
+    rmdir -p --ignore-fail-on-non-empty "$(dirname "$f")"
+  done
+}
+
+package_network-manager-applet() {
+  depends+=(nm-connection-editor)
+
+  meson install -C build --destdir "$pkgdir"
+
+  cd "$pkgdir"
+
+  _pick nmce usr/bin/nm-connection-editor
+  _pick nmce usr/share/applications/nm-connection-editor.desktop
+  _pick nmce usr/share/icons/hicolor/*/*/nm-device-wwan{,-symbolic}.*
+  _pick nmce usr/share/locale
+  _pick nmce usr/share/man/man1/nm-connection-editor.1
+  _pick nmce usr/share/metainfo
+}
+
+package_nm-connection-editor() {
+  pkgdesc="NetworkManager GUI connection editor and widgets"
+  depends=(
+    jansson
+    libnma
+  )
+  conflicts=('libnm-gtk<1.8.18-1')
+  replaces=('libnm-gtk<1.8.18-1')
+
+  mv nmce/* "$pkgdir"
+}
+
+# vim:set sw=2 sts=-1 et:

@@ -1,0 +1,89 @@
+From fbe1742d02b74f7bdedf18bb549d5a6993d90c1f Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Ball=C3=B3=20Gy=C3=B6rgy?= <ballogyor@gmail.com>
+Date: Mon, 6 Apr 2026 09:57:41 +0200
+Subject: [PATCH] Update CanShutdown method for GNOME 50
+
+GNOME 50 changed the return type of the CanShutdown D-Bus method from
+BOOLEAN to UINT32. Value 0 is equivalent to FALSE.
+
+Closes: https://gitlab.gnome.org/GNOME/gnome-panel/-/issues/55
+---
+ modules/action-button/gp-shutdown-applet.c         | 4 ++--
+ modules/action-button/org.gnome.SessionManager.xml | 2 +-
+ modules/menu/gp-lock-logout.c                      | 4 ++--
+ modules/menu/org.gnome.SessionManager.xml          | 2 +-
+ 4 files changed, 6 insertions(+), 6 deletions(-)
+
+diff --git a/modules/action-button/gp-shutdown-applet.c b/modules/action-button/gp-shutdown-applet.c
+index 7f8bd13a4..322c501b7 100644
+--- a/modules/action-button/gp-shutdown-applet.c
++++ b/modules/action-button/gp-shutdown-applet.c
+@@ -90,7 +90,7 @@ can_shutdown_cb (GObject      *source,
+                  GAsyncResult *res,
+                  gpointer      user_data)
+ {
+-  gboolean can_shutdown;
++  guint can_shutdown;
+   GError *error;
+   GpShutdownApplet *self;
+ 
+@@ -109,7 +109,7 @@ can_shutdown_cb (GObject      *source,
+     }
+ 
+   self = GP_SHUTDOWN_APPLET (user_data);
+-  self->can_shutdown = can_shutdown;
++  self->can_shutdown = can_shutdown != 0;
+ 
+   if (error)
+     {
+diff --git a/modules/action-button/org.gnome.SessionManager.xml b/modules/action-button/org.gnome.SessionManager.xml
+index c147a42d9..430410617 100644
+--- a/modules/action-button/org.gnome.SessionManager.xml
++++ b/modules/action-button/org.gnome.SessionManager.xml
+@@ -8,7 +8,7 @@
+     <method name="Shutdown" />
+ 
+     <method name="CanShutdown">
+-      <arg name="is_available" direction="out" type="b" />
++      <arg name="availability" direction="out" type="u" />
+     </method>
+ 
+     <method name="Logout">
+diff --git a/modules/menu/gp-lock-logout.c b/modules/menu/gp-lock-logout.c
+index 3837749b7..d519afc4a 100644
+--- a/modules/menu/gp-lock-logout.c
++++ b/modules/menu/gp-lock-logout.c
+@@ -628,7 +628,7 @@ static gboolean
+ get_can_shutdown (GpLockLogout *lock_logout)
+ {
+   GError *error;
+-  gboolean can_shutdown;
++  guint can_shutdown;
+ 
+   if (!lock_logout->session_manager)
+     {
+@@ -650,7 +650,7 @@ get_can_shutdown (GpLockLogout *lock_logout)
+       g_error_free (error);
+     }
+ 
+-  return can_shutdown;
++  return can_shutdown != 0;
+ }
+ 
+ static void
+diff --git a/modules/menu/org.gnome.SessionManager.xml b/modules/menu/org.gnome.SessionManager.xml
+index 91db1daa8..f6bad2b68 100644
+--- a/modules/menu/org.gnome.SessionManager.xml
++++ b/modules/menu/org.gnome.SessionManager.xml
+@@ -10,7 +10,7 @@
+     <method name="Reboot" />
+ 
+     <method name="CanShutdown">
+-      <arg name="is_available" direction="out" type="b" />
++      <arg name="availability" direction="out" type="u" />
+     </method>
+ 
+     <method name="SetRebootToFirmwareSetup">
+-- 
+GitLab
+

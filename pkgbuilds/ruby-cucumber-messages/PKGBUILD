@@ -1,0 +1,64 @@
+# Maintainer: Felix Yan <felixonmars@archlinux.org>
+# Maintainer: Bert Peters <bertptrs@archlinux.org>
+
+pkgname=ruby-cucumber-messages
+pkgver=34.2.1
+pkgrel=1
+pkgdesc="Protocol Buffer messages for Cucumber's inter-process communication"
+arch=(any)
+url='https://github.com/cucumber/messages/tree/main/ruby'
+license=(MIT)
+depends=(
+  ruby
+)
+makedepends=(
+  git
+  ruby-rdoc
+)
+checkdepends=(
+  ruby-bundler
+  ruby-rake
+  ruby-rspec
+)
+options=(!emptydirs)
+source=(git+https://github.com/cucumber/messages.git#tag=v$pkgver)
+sha512sums=('ce31b0a63f16bb2326ad74e7e81d09c5b0ee5234276321df44e914b4db53844c38f33d3c83f1cf0acac4f72a6119014e768d3a3ad00c81252b56aef52b576b31')
+b2sums=('f416525b23f2011172fe8de081f954bd4d8983cc0c394a3a496a6a238520aec730177bccfb2416ee74d3cf5f6d52c1d4aa5d4a83eb1275bf32f84e426beccba6')
+
+build() {
+  local _gemdir="$(gem env gemdir)"
+  cd messages/ruby
+  gem build cucumber-messages.gemspec
+  gem install \
+    --local \
+    --verbose \
+    --ignore-dependencies \
+    --no-user-install \
+    --install-dir "tmp_install/$_gemdir" \
+    --bindir "tmp_install/usr/bin" \
+    cucumber-messages-$pkgver.gem
+  find "tmp_install/$_gemdir/gems/" \
+    -type f \
+    \( \
+        -iname "*.o" -o \
+        -iname "*.c" -o \
+        -iname "*.so" -o \
+        -iname "*.time" -o \
+        -iname "gem.build_complete" -o \
+        -iname "Makefile" \
+    \) \
+    -delete
+  rm -r tmp_install/$_gemdir/cache
+}
+
+check() {
+  local _gemdir="$(gem env gemdir)"
+  cd messages/ruby
+  GEM_HOME="tmp_install/$_gemdir" rake
+}
+
+package() {
+  cd messages/ruby
+  cp -a tmp_install/* "$pkgdir"/
+  install -Dm644 ../LICENSE -t "$pkgdir"/usr/share/licenses/$pkgname/
+}

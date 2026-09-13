@@ -1,0 +1,30 @@
+# Maintainer: AndyRTR <andyrtr@archlinux.org>
+# Contributor: Kewl <xrjy@nygb.rh.bet(rot13)>
+# Contributor: Justin Settle <jus10 at partlycloudy dot org>
+
+pkgname=ttf-carlito
+pkgver=20230509
+_commit=3a810cab78ebd6e2e4eed42af9e8453c4f9b850a
+pkgrel=2
+pkgdesc="Google's Carlito font"
+arch=(any)
+license=('LicenseRef-OFL')
+url='https://fonts.google.com/specimen/Carlito'
+makedepends=('git')
+provides=(google-crosextra-carlito-fonts)
+source=(git+https://github.com/googlefonts/carlito#commit=$_commit
+        62-carlito.conf)
+sha256sums=('SKIP'
+            '31a74cd8044c8c8644f1555c06f406559f2e14334dd671a608145431a4299bd3')
+
+package() {
+  cd carlito
+
+  install -Dm644 fonts/ttf/*.ttf -t "$pkgdir/usr/share/fonts/${pkgname#ttf-}"
+  install -Dm644 "$srcdir"/62-carlito.conf -t "$pkgdir"/usr/share/fontconfig/conf.avail
+
+  install -d "$pkgdir"/usr/share/fontconfig/conf.default
+  ln -sr "$pkgdir"/usr/share/fontconfig/conf.avail/* "$pkgdir"/usr/share/fontconfig/conf.default/
+
+  install -Dm644 OFL.txt -T "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+}

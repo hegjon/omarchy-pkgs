@@ -1,0 +1,107 @@
+# Maintainer: Felix Yan <felixonmars@archlinux.org>
+# Contributor: Josip Ponjavic <josipponjavic at gmail dot com>
+# Contributor: Xu Fasheng <fasheng.xu[AT]gmail.com>
+
+pkgname=deepin-daemon
+pkgver=6.1.106
+pkgrel=1
+pkgdesc='Daemon handling the DDE session settings'
+arch=('x86_64')
+url="https://github.com/linuxdeepin/dde-daemon"
+license=('GPL-3.0-or-later')
+# deepin-session-shell not added for org.deepin.dde.LockFront1, because bring in
+#                      deepin-session for non-DDE users is not desirable
+depends=('deepin-desktop-schemas' 'deepin-api' 'deepin-app-services'
+         # TODO
+         'gtk3' 'libx11' 'gdk-pixbuf-xlib' 'gdk-pixbuf2' 'libxi' 'libpulse' 'glib2' 'libxcursor'
+         'libxcrypt' 'libgudev' 'pam' 'iso-codes'
+         # accounts
+         'accountsservice'
+         # accounts/grub
+         'deepin-polkit-agent' 'deepin-polkit-agent-ext-gnomekeyring'
+         # accounts/keybinding/systeminfo
+         'deepin-desktop-base'
+         # accounts1/user
+         'deepin-desktop-theme'
+         # appearance
+         'fontconfig' 'noto-fonts'
+         # audio/session
+         'pulse-native-provider' 'alsa-lib'
+         # bin/backlight_helper
+         'ddcutil'
+         # clipboard
+         'libxfixes'
+         # dock
+         'bamf'
+         # gesture
+         'deepin-widgets'
+         # accounts/admin
+         'sudo'
+         # accounts1/image_blur and power services
+         'deepin-services'
+         # inputdevices
+         'imwheel' 'libxkbfile' 'procps-ng' 'psmisc'
+         # iw
+         'libnl'
+         # keybinding
+         'gvfs'
+         # keybinding/default-terminal, keybinding/shortcuts/system_shortcut.go
+         'deepin-application-manager'
+         # misc
+         'librsvg'
+         # network
+         'mobile-broadband-provider-info' 'org.freedesktop.secrets' 'xdg-utils'
+         # network/system
+         'systemd' 'systemd-libs'
+         # system
+         'dmidecode' 'libinput' 'lshw'
+         # systeminfo
+         'lsb-release' 'udisks2' 'util-linux')
+makedepends=('sqlite' 'deepin-gettext-tools' 'git' 'mercurial' 'python-gobject' 'networkmanager'
+             'bluez' 'go')
+optdepends=('networkmanager: for network management support'
+            'bluez: for bluetooth support'
+            'iw: for miracast module'
+            'proxychains-ng: for proxy configuration module')
+provides=('startdde')
+conflicts=('startdde')
+replaces=('startdde')
+groups=('deepin')
+install="$pkgname.install"
+source=("git+https://github.com/linuxdeepin/dde-daemon.git#tag=$pkgver")
+sha512sums=('a5567e1621fc8083fb13b0b746bc6bd3f016c9f9952f013a32d28871959882cce9e00ae534712bbc67905b162f09d9f49e2c168384ad24a56e65e28199e16c9f')
+
+prepare() {
+  cd dde-daemon
+
+  # https://github.com/linuxdeepin/developer-center/discussions/3327
+  sed -i 's#/usr/libexec#/usr/lib#' keybinding1/shortcuts/system_shortcut.go
+  sed -i 's#${PREFIX}/libexec/#${PREFIX}/lib/#;s#${DESTDIR}/lib#${DESTDIR}${PREFIX}/lib#' Makefile
+  sed -i 's#/usr/libexec/deepin/#/usr/lib/deepin/#' misc/scripts/*-loader-wrapper
+
+  sed -i 's|/etc/os-version|/etc/uos-version|' keybinding1/shortcuts/shortcut_manager.go
+
+  sed -i 's|/usr/share/backgrounds/|/usr/share/backgrounds/deepin/|' accounts1/user.go
+  sed -i 's|default_background.jpg|desktop.jpg|' accounts1/user.go
+  sed -i 's|icons/default|icons/animal/raccoon.png|' accounts1/user.go
+}
+
+build() {
+  cd dde-daemon
+
+  export CGO_CPPFLAGS="${CPPFLAGS}"
+  export CGO_CFLAGS="${CFLAGS}"
+  export CGO_CXXFLAGS="${CXXFLAGS}"
+  export CGO_LDFLAGS="${LDFLAGS}"
+  export GOFLAGS="-buildmode=pie -trimpath -mod=readonly -modcacherw"
+
+  # make -C network/nm_generator gen-nm-code
+  make
+}
+
+package() {
+  cd dde-daemon
+  make DESTDIR="$pkgdir" PAM_MODULE_DIR=usr/lib/security install
+
+  install -Dm644 debian/dde-daemon.sysusers "$pkgdir/usr/lib/sysusers.d/deepin-daemon.conf"
+}

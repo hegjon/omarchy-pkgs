@@ -1,0 +1,11 @@
+diff --git a/pyproject.toml b/pyproject.toml
+index b30a42f326..8b1040635c 100644
+--- a/pyproject.toml
++++ b/pyproject.toml
+@@ -1,5 +1,5 @@
+ [build-system]
+-requires = ["setuptools >= 77.0.3, <= 84.0.0"]  # lower bound to support license/license-files (PEP 639), upper bound for latest version tested at release
++requires = ["setuptools >= 77.0.3" ]
+ build-backend = "setuptools.build_meta"
+ 
+ [project]

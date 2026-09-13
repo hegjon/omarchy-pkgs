@@ -1,0 +1,42 @@
+# Maintainer: Caleb Maclennan <caleb@alerque.com>
+# Maintainer: George Rawlinson <grawlinson@archlinux.org>
+# Contributor: T.J. Townsend <blakkheim@archlinux.org>
+# Contributor: Dave Reisner <dreisner@archlinux.org>
+# Contributor: Stéphane Gaudreault <stephane@archlinux.us>
+# Contributor: Daniel J Griffiths <ghost1227@archlinux.us>
+# Contributor: damir <damir@archlinux.org>
+
+pkgname=time
+pkgver=1.10
+pkgrel=1
+pkgdesc="Utility for monitoring a program's use of system resources"
+arch=(x86_64)
+url='https://www.gnu.org/software/time/'
+license=(GPL-3.0-only)
+depends=(glibc)
+source=("https://ftp.gnu.org/gnu/time/time-$pkgver.tar.gz"{,.sig})
+sha512sums=('f785d2cd8144276983b7f31c3eff694af898339b6f041a7abfa555d9a16fb1ba970ebf8ee84e91ea3e744f5dfa34ef6b218b200379d88c1e4dd74c0b2c8fbb8c'
+            'SKIP')
+b2sums=('4ae3f7294e715abe90940af3384dfb6519ccf48a9ebcbfb1244ab63e025e88cd7090fda4b53e68c6fdb8b667f51061c980acee8b49edd42211cf5032bb64e868'
+        'SKIP')
+validpgpkeys=('2371185508D1317BD578E5CC8CE6491AE30D7D75') # "Collin Funk <collin.funk1@gmail.com>"
+
+build() {
+  cd "$pkgname-$pkgver"
+
+  ./configure \
+    --prefix=/usr \
+    --infodir=/usr/share/info
+
+  make
+}
+
+check() {
+  make -C "$pkgname-$pkgver" check
+}
+
+package() {
+  cd "$pkgname-$pkgver"
+
+  make exec_prefix="$pkgdir/usr" infodir="$pkgdir/usr/share/info" install
+}

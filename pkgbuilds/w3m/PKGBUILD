@@ -1,0 +1,50 @@
+# Maintainer: Lukas Fleischer <lfleischer@archlinux.org>
+# Maintainer: Carl Smedstad <carsme@archlinux.org>
+# Contributor: Gaetan Bisson <bisson@archlinux.org>
+# Contributor: dorphell <dorphell@archlinux.org>
+
+pkgname=w3m
+pkgver=0.5.6
+pkgrel=1
+pkgdesc='Text-based Web browser as well as pager'
+arch=('x86_64')
+url='https://git.sr.ht/~rkta/w3m'
+license=('LicenseRef-w3m')
+depends=(
+  'gc'
+  'glibc'
+  'gpm'
+  'ncurses'
+  'openssl'
+  'perl'
+  'zlib'
+)
+makedepends=(
+  'git'
+  'imlib2'
+)
+optdepends=(
+  'imlib2: for graphics support'
+  'libx11: for graphics support'
+)
+source=("git+https://git.sr.ht/~rkta/w3m#tag=v${pkgver}")
+b2sums=('e99f86e7deaa2081b11f777d8b91024f74fa97ef4eb5dac93ce150057eb69eff4750bb24aa753d93d60e9554e7c272f19bce85aeae53b768055fccbb8739d1a9')
+
+build() {
+  cd ${pkgname}
+  ./configure \
+    --prefix=/usr \
+    --libexecdir=/usr/lib \
+    --enable-image=x11,fb \
+    --with-imagelib=imlib2 \
+    --with-termlib=ncurses \
+    --disable-w3mmailer
+  make
+}
+
+package() {
+  cd ${pkgname}
+  make DESTDIR="${pkgdir}" install
+  install -vDm644 -t "${pkgdir}/usr/share/doc/${pkgname}" doc/*
+  install -vDm644 -t "${pkgdir}/usr/share/licenses/${pkgname}" COPYING
+}

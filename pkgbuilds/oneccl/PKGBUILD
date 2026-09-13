@@ -1,0 +1,124 @@
+# Maintainer: Torsten Keßler <tpkessler@archlinux.org>
+pkgbase=oneccl
+pkgname=(
+	${pkgbase}
+	${pkgbase}-arc
+	${pkgbase}-bmg
+)
+pkgver=2022.0.0
+pkgrel=1
+_pkgdesc="oneAPI Collective Communications Library"
+arch=("x86_64")
+url="https://uxlfoundation.github.io/oneCCL/index.html"
+license=("Apache-2.0")
+depends=(
+	intel-oneapi-common
+	level-zero-loader
+	intel-oneapi-openmp
+	glibc
+	libgcc
+	libstdc++
+	openmpi
+	libdrm
+)
+makedepends=(
+	git
+	cmake
+	procps-ng
+	level-zero-headers
+	intel-oneapi-dpcpp-cpp
+)
+source=(
+  "${pkgname}::git+https://github.com/uxlfoundation/oneCCL#tag=${pkgver}"
+  "${pkgname}-googletest::git+https://github.com/google/googletest.git"
+  "${pkgname}-ittapi::git+https://github.com/intel/ittapi.git"
+  "${pkgname}-oneCCL::git+https://github.com/uxlfoundation/oneCCL.git"
+  "fix-legacy-sycl-level-zero-interface.patch"
+)
+sha256sums=('01c30ef874745c9daba6ea84a51dd0da83f87ef9f745242075ec29122622311d'
+            'SKIP'
+            'SKIP'
+            'SKIP'
+            '7e98525fa4189b4c246f432dfc027f56fd42a875b020f12e07db8d89b047c9a8')
+options=(!lto)
+
+prepare() {
+  cd "${srcdir}/${pkgname}"
+  git submodule init
+
+  git config submodule."deps/googletest".url "${srcdir}/${pkgname}"-googletest
+  git config submodule."deps/ittapi".url "${srcdir}/${pkgname}"-ittapi
+  git config submodule."deps/libccl".url "${srcdir}/${pkgname}"-oneCCL
+
+  git -c protocol.file.allow=always submodule update --init --recursive
+
+  # -Werror is too aggressive with the 2026.0+ compiler
+  find -name CMakeLists.txt -exec sed -i 's/-Werror//g' {} \;
+
+  # Files not found
+  sed -i '/vars.sh/d' CMakeLists.txt
+  sed -i '/pkgconfig/d' CMakeLists.txt
+
+  cd deps/libccl
+  patch -Np1 -i "${srcdir}"/fix-legacy-sycl-level-zero-interface.patch
+
+}
+
+build() {
+	source /opt/intel/oneapi/setvars.sh
+	local _cmake_args=(
+		-Wno-dev
+		-B build
+		-S $pkgname
+		-D CMAKE_BUILD_TYPE=None
+		-D CMAKE_INSTALL_PREFIX=/usr
+		-D CMAKE_C_COMPILER=icx
+		-D CMAKE_CXX_COMPILER=icpx
+		-D DPCPP_ROOT=/opt/intel/oneapi/compiler/latest
+		-D ONECCL_BUILD_LIBS=ON
+	)
+	echo "Building oneCCL on CPU"
+	cmake "${_cmake_args[@]}" \
+		-B build
+	cmake --build build
+
+	echo "Building oneCCL for Intel ARC GPUs"
+	cmake "${_cmake_args[@]}" \
+		-B build-arc \
+		-D CCL_ENABLE_ARCA=ON
+	cmake --build build-arc
+
+	echo "Building oneCCL for Intel BMG GPUs"
+	cmake "${_cmake_args[@]}" \
+		-B build-bmg \
+		-D CCL_ENABLE_ARCB=ON
+	cmake --build build-bmg
+}
+
+_package() {
+	DESTDIR="$pkgdir" cmake --install build"$1"
+	rm -r "$pkgdir"/usr/opt
+	rm -r "$pkgdir"/usr/env
+}
+
+package_oneccl() {
+	pkgdesc="$_pkgdesc for CPUs"
+
+	_package ""
+}
+
+package_oneccl-arc() {
+	pkgdesc="$_pkgdesc for Intel ARC GPUs"
+	provides=(oneccl=$pkgver)
+	conflicts=(oneccl)
+
+	_package "-arc"
+}
+
+package_oneccl-bmg() {
+	pkgdesc="$_pkgdesc for Intel BMG GPUs"
+	provides=(oneccl=$pkgver)
+	conflicts=(oneccl)
+
+	_package "-bmg"
+}

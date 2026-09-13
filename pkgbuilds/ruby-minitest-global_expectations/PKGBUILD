@@ -1,0 +1,40 @@
+# Maintainer: Levente Polyak <anthraxx[at]archlinux[dot]org>
+
+_gemname=minitest-global_expectations
+pkgname=ruby-${_gemname}
+pkgver=1.0.2
+pkgrel=1
+pkgdesc='Support minitest expectation methods for all objects'
+url='https://github.com/jeremyevans/minitest-global_expectations'
+arch=('any')
+license=('MIT')
+depends=('ruby' 'ruby-minitest')
+makedepends=('ruby-rdoc' 'ruby-rake' 'ruby-bundler')
+options=('!emptydirs')
+source=(${url}/archive/${pkgver}/${pkgname}-${pkgver}.tar.gz)
+sha512sums=('7465abee1e23ce3629e8632d2ac262108ec3990261d8bd5975697a8f4de4ae63ceda75ad0a33ecea85dcb4dfff61044fb6079a866c203812e01945bba58c8055')
+b2sums=('823a2e4f16a5cb7187c42a0e787cb3275c8a8d6746fb7ae72b4e59e76f5fe90c3bf19b21c42035e3cb0a34cfbe73cd52437fcbe662d6651b3805edde4ac1ab7e')
+
+build() {
+  cd ${_gemname}-${pkgver}
+  rake package
+}
+
+check() {
+  cd ${_gemname}-${pkgver}
+  rake test
+}
+
+package() {
+  cd ${_gemname}-${pkgver}
+  local _gemdir="$(gem env gemdir)"
+  gem install --ignore-dependencies --no-user-install -i "${pkgdir}${_gemdir}" \
+    -n "${pkgdir}/usr/bin" ${_gemname}-${pkgver}.gem
+
+  install -Dm 644 README.rdoc CHANGELOG -t "${pkgdir}/usr/share/doc/${pkgname}"
+  install -Dm 644 MIT-LICENSE -t "${pkgdir}/usr/share/licenses/${pkgname}"
+
+  rm -r "${pkgdir}/${_gemdir}/cache"
+}
+
+# vim: ts=2 sw=2 et:

@@ -1,0 +1,120 @@
+# Maintainer: Balló György <ballogyor+arch at gmail dot com>
+# Contributor: Jan de Groot <jgc@archlinux.org>
+
+pkgname=gnome-panel
+pkgver=3.58.1
+pkgrel=4
+pkgdesc='Panel of GNOME Flashback'
+arch=(x86_64)
+url='https://wiki.gnome.org/Projects/GnomePanel'
+license=('GPL-2.0-or-later AND LGPL-2.1-or-later')
+depends=(
+  at-spi2-core
+  cairo
+  dconf
+  evolution-data-server
+  gdk-pixbuf2
+  geocode-glib-2
+  glib2
+  glibc
+  gnome-desktop
+  gnome-menus
+  gsettings-desktop-schemas
+  gtk3
+  hicolor-icon-theme
+  libgdm
+  libgweather-4
+  libical
+  libwnck3
+  libx11
+  libxrandr
+  nautilus
+  pango
+  polkit
+  systemd-libs
+)
+makedepends=(
+  autoconf-archive
+  git
+  glib2-devel
+  yelp-tools
+)
+optdepends=(
+  'alacarte: Main menu editor'
+  'gnome-applets: Extra applets for the panel'
+)
+source=(
+  "git+https://gitlab.gnome.org/GNOME/$pkgname.git?signed#tag=$pkgver"
+  gnome-panel-60.patch
+  gnome-panel-75.patch
+  gnome-panel-78.patch
+  gnome-panel-79.patch
+  gnome-panel-80.patch
+  gnome-panel-can-shutdown.patch
+  gnome-panel-84.patch
+  libical-4.patch
+)
+b2sums=(
+  92ba8de3f8e114bde52782112056a0f1d558b09c8b791fdb63a1fb3060eecabb855b2551c8227332aeb3ac1986f0718736f4014e789453a13eeaded055e00d8f
+  064b7a94ae38c4c8011b494c0a95cb97c0121945df650790085b07868a52b3e4043579c2229c26f4b9a75d2b0f41eb36d22dca4432f408a4ec92c589daf78d3a
+  3a4e857b8c32a717f4c47f3c1f598c32e10e552d5092a7f45304cc0f6a15a6093ec66e237f42ed7815a0ff108224aba9eda37c7d5038a76a21fac385b84a9657
+  63d2a15e149cd8745483de3511bb9ebfa085608505ffee9cfd5144316e3f0b2a9406e42c20e4943d30e96441d9bca95a28eb3674c4c9ecc7aac472968f9d7a12
+  4f1fcb16b8c770637575ae29277e13c6c7b44636b55dd4dc48a90248936b125a8988332141ec9f90eb1c4754ad676c8f473e6751908d45db88d596705f5700cb
+  77a95c896bc541ade2b5118f27c0d2428cd8cd0d70c0b85aec5834035b66ce6f348958f5b928718a3b5b58fd1d8677a76df414141cf7d37116200a40b57e94e4
+  ad46619306ae24b4e20792b54e314b720619fcbd4198e16482e001c0adc8ad39b1e06d7a4e714c5164cd2b52add793465ebf63ad926204cfbb0e2901fb71b0ef
+  fc716ebdd3b4c8efb74ed45de20f0ee57ca814082076b024c463b8c683d54d20673620b9fca6bd28064c0f62bf2f95984d4c5e3d7097f18626b64648013e0ffb
+  e0d48e8eeee6fcb9031a2ad5726979b5a5632804235f91fff93a5bfd34d076e64e6a3ba96998659e19c729f957bbfb4adb3c91a32716a4fde6394a2a4b1ef5dc
+)
+validpgpkeys=(7B44FD78E49334EC10B3B288A3D013EC303E1894) # Alberts Muktupāvels <alberts.muktupavels@gmail.com>
+
+prepare() {
+  cd $pkgname
+
+  # https://gitlab.gnome.org/GNOME/gnome-panel/-/merge_requests/60
+  git apply -3 ../gnome-panel-60.patch
+
+  # https://gitlab.gnome.org/GNOME/gnome-panel/-/merge_requests/75
+  git apply -3 ../gnome-panel-75.patch
+
+  # https://gitlab.gnome.org/GNOME/gnome-panel/-/merge_requests/78
+  git apply -3 ../gnome-panel-78.patch
+
+  # https://gitlab.gnome.org/GNOME/gnome-panel/-/merge_requests/79
+  git apply -3 ../gnome-panel-79.patch
+
+  # https://gitlab.gnome.org/GNOME/gnome-panel/-/merge_requests/80
+  git apply -3 ../gnome-panel-80.patch
+
+  # Update CanShutdown method for GNOME 50
+  # https://gitlab.gnome.org/GNOME/gnome-panel/-/merge_requests/83
+  git apply -3 ../gnome-panel-can-shutdown.patch
+
+  # Validate IconPixmap type before parsing it
+  # https://gitlab.gnome.org/GNOME/gnome-panel/-/merge_requests/84
+  git apply -3 ../gnome-panel-84.patch
+
+  # Fix build with libical 4
+  patch -p1 -i ../libical-4.patch
+
+  # Reduce panel icon spacing
+  sed -i '/"panel-icon-spacing"/{n;n;s/>2</>1</}' data/org.gnome.gnome-panel.gschema.xml
+
+  autoreconf -fiv
+}
+
+build() {
+  cd $pkgname
+  ./configure \
+    --prefix=/usr \
+    --sysconfdir=/etc \
+    --localstatedir=/var \
+    --disable-debug \
+    --enable-compile-warnings
+  sed -i -e 's/ -shared / -Wl,-O1,--as-needed\0/g' libtool
+  make
+}
+
+package() {
+  cd $pkgname
+  make DESTDIR="$pkgdir" install
+}

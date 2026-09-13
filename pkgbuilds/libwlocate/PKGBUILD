@@ -1,0 +1,37 @@
+# Maintainer: Antonio Rojas <arojas@archlinux.org>
+# Contributor: sekret, mail=$(echo c2VrcmV0QHBvc3Rlby5zZQo= | base64 -d)
+# Contributor: Bjoern Franke <bjo@nord-west.org>
+
+pkgname=libwlocate
+pkgver=0.1
+pkgrel=4
+epoch=1
+pkgdesc='A shared library that can be used for location-based services'
+arch=(x86_64)
+url='https://sourceforge.net/projects/libwlocate'
+license=(GPL-3.0-or-later)
+depends=(glibc
+         wireless_tools)
+makedepends=(git)
+source=(git+https://github.com/openwifi-su/lwlocate#tag=v$pkgver)
+sha256sums=('f4022b1dfcaf7c9a4cc54a913c6246a6f08e1646b71416ffa4794d6a56479f2c')
+
+prepare() {
+  cd lwlocate/master
+# Honor system CFLAGS
+  sed -e "s|^DBGFLAGS.*|DBGFLAGS = ${CFLAGS}|" -i Makelib -i Makefile
+  sed -e "s|LDFLAGS  = |LDFLAGS  = ${LDFLAGS} |" -i Makefile
+}
+
+build() {
+  cd lwlocate/master
+  make -f Makelib
+  make
+}
+
+package() {
+  cd lwlocate/master
+  install -Dm644 libwlocate.so "$pkgdir"/usr/lib/libwlocate.so
+  install -Dm644 libwlocate.h "$pkgdir"/usr/include/libwlocate.h
+  install -Dm755 lwtrace "$pkgdir"/usr/bin/lwtrace
+}

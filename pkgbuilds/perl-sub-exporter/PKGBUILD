@@ -1,0 +1,43 @@
+# Maintainer: Jonathan Steel <jsteel@aur.archlinux.org>
+# Contributor: Justin Davis <jrcd83@gmail.com>
+
+pkgname=perl-sub-exporter
+pkgver=0.992
+pkgrel=1
+pkgdesc="A sophisticated exporter for custom-built routines"
+arch=('any')
+license=('Artistic-1.0-Perl' 'GPL-1.0-or-later')
+options=('!emptydirs')
+depends=('perl' 'perl-data-optlist' 'perl-params-someutil' 'perl-sub-install')
+url="https://metacpan.org/release/Sub-Exporter"
+source=(https://cpan.metacpan.org/authors/id/R/RJ/RJBS/Sub-Exporter-$pkgver.tar.gz)
+sha512sums=('1856b27b7190451737d9a260ba36aa3808fdc90a70e6cfa2aca42afd4b8b8a128c4ff0179e1658b16f6feaf1bbee237d7ac6161d2b20a89442c3966521670696')
+
+build() {
+  ( export PERL_MM_USE_DEFAULT=1 PERL5LIB="" \
+      PERL_AUTOINSTALL="--skipdeps"            \
+      PERL_MM_OPT="INSTALLDIRS=vendor"         \
+      PERL_MB_OPT="--installdirs vendor"       \
+      MODULEBUILDRC=/dev/null
+
+    cd "$srcdir"/Sub-Exporter-$pkgver
+
+    /usr/bin/perl Makefile.PL
+    make
+  )
+}
+
+check() {
+  ( export PERL_MM_USE_DEFAULT=1 PERL5LIB=""
+
+    cd "$srcdir"/Sub-Exporter-$pkgver
+
+    make test
+  )
+}
+
+package() {
+  cd "$srcdir"/Sub-Exporter-$pkgver
+
+  make DESTDIR="$pkgdir"/ install
+}

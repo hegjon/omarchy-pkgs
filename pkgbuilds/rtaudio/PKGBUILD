@@ -1,0 +1,85 @@
+# Maintainer: David Runge <dvzrv@archlinux.org>
+# Contributor: Llewelyn Trahaearn <WoefulDerelict at GMail dot com>
+# Contributor: rtfreedman  <rob dot til dot freedman at gmail dot com>
+# Contributor: Limao Luo <luolimao+AUR at gmail dot com>
+# Contributor: SpepS <dreamspepser at yahoo dot it>
+
+pkgbase=rtaudio
+pkgname=(
+  rtaudio
+  rtaudio-docs
+)
+pkgver=6.0.1
+pkgrel=4
+pkgdesc="A set of C++ classes that provide a common API for realtime audio input/output."
+arch=(x86_64)
+url="https://github.com/thestk/rtaudio"
+license=(LicenseRef-RtAudio)
+makedepends=(
+  alsa-lib
+  doxygen
+  glibc
+  jack
+  libgcc
+  libpulse
+  libstdc++
+  meson
+)
+source=($url/archive/$pkgver/$pkgname-$pkgver.tar.gz)
+sha512sums=('085feb2673185460717ba45fc87254961e477823759e11281092c1ba13301303de1cd36aa9efeba0710cbf2c70f2e2f7f9e41173cf372ded528c41612b19acd5')
+b2sums=('17a3893023147b2d68bdb1c827e41b721066cf1759ef1a904d3178ff28b54ba288831e96ad20e23308644800b14d81f9133727efb6012cf9cd01aa80c7ffea02')
+
+_pick() {
+  local p="$1" f d; shift
+  for f; do
+    d="$srcdir/$p/${f#$pkgdir/}"
+    mkdir -p "$(dirname "$d")"
+    mv "$f" "$d"
+    rmdir -p --ignore-fail-on-non-empty "$(dirname "$f")"
+  done
+}
+
+build() {
+  local meson_options=(
+    -D core=disabled
+    -D dsound=disabled
+    -D asio=disabled
+    -D wasapi=disabled
+    -D docs=true
+    -D install_docs=true
+  )
+
+  arch-meson $pkgbase-$pkgver build "${meson_options[@]}"
+  meson compile -C build
+}
+
+check() {
+  meson test -C build --print-errorlogs
+}
+
+package_rtaudio() {
+  depends=(
+    glibc
+    alsa-lib
+    jack
+    libgcc
+    libpulse
+    libstdc++
+  )
+  optdepends=('rtaudio-docs: for documentation')
+  provides=(librtaudio.so)
+
+  meson install -C build --destdir "$pkgdir"
+  install -vDm 644 $pkgbase-$pkgver/LICENSE -t "$pkgdir/usr/share/licenses/$pkgname/"
+
+  _pick $pkgbase-docs "$pkgdir/usr/share/doc"
+}
+
+package_rtaudio-docs() {
+  pkgdesc+=" - documentation"
+
+  mv -v $pkgname/* "$pkgdir"
+
+  install -vDm 644 $pkgbase-$pkgver/{README.md,ChangeLog,doc/release.txt} -t "$pkgdir/usr/share/doc/$pkgbase/"
+  install -vDm 644 $pkgbase-$pkgver/LICENSE -t "$pkgdir/usr/share/licenses/$pkgname"
+}

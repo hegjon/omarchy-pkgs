@@ -1,0 +1,63 @@
+# Maintainer: Felix Yan <felixonmars@archlinux.org>
+
+pkgname=ruby-qed
+pkgver=3.0.0
+pkgrel=1
+pkgdesc='Quality Ensured Documentation'
+arch=(any)
+url='https://github.com/rubyworks/qed'
+license=(BSD-2-Clause)
+depends=(
+  ruby
+  ruby-ansi
+  ruby-brass
+  ruby-kramdown
+)
+makedepends=(
+  git
+  ruby-rdoc
+)
+checkdepends=(
+  ruby-ae
+)
+options=(!emptydirs)
+source=(git+https://github.com/rubyworks/qed.git#tag=v$pkgver)
+sha256sums=('2ed2c4f3e6ec7565c8bba6ca6e83c0fc8ee27801cbc9c49fabb7ad6e457dac8a')
+
+build() {
+  local _gemdir="$(gem env gemdir)"
+  cd qed
+  gem build qed.gemspec
+  gem install \
+    --local \
+    --verbose \
+    --ignore-dependencies \
+    --no-user-install \
+    --install-dir "tmp_install/$_gemdir" \
+    --bindir "tmp_install/usr/bin" \
+    qed-$pkgver.gem
+  find "tmp_install/$_gemdir/gems/" \
+    -type f \
+    \( \
+        -iname "*.o" -o \
+        -iname "*.c" -o \
+        -iname "*.so" -o \
+        -iname "*.time" -o \
+        -iname "gem.build_complete" -o \
+        -iname "Makefile" \
+    \) \
+    -delete
+  rm -r tmp_install/$_gemdir/cache
+}
+
+check() {
+  local _gemdir="$(gem env gemdir)"
+  cd qed
+  PATH="$PWD/tmp_install/usr/bin:$PATH" GEM_HOME="tmp_install/$_gemdir" qed
+}
+
+package() {
+  cd qed
+  cp -a tmp_install/* "$pkgdir"/
+  install -Dm644 LICENSE.txt -t "$pkgdir"/usr/share/licenses/$pkgname/
+}

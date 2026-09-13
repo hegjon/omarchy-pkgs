@@ -1,0 +1,35 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Doctor <thirvondukr@gmail.com>
+Date: Wed, 11 Sep 2024 14:52:07 +0300
+Subject: fix(bcrypt.py): use importlib.metadata to get bcrypt
+ version
+
+(cherry picked from commit 60db9a1e198682718810bf667dec3a4e8c50cd03)
+
+ Conflicts:
+	passlib/handlers/bcrypt.py
+---
+ passlib/handlers/bcrypt.py | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/passlib/handlers/bcrypt.py b/passlib/handlers/bcrypt.py
+index b83b110..242c568 100644
+--- a/passlib/handlers/bcrypt.py
++++ b/passlib/handlers/bcrypt.py
+@@ -17,6 +17,7 @@ from hashlib import sha256
+ import os
+ import re
+ import logging; log = logging.getLogger(__name__)
++from importlib import metadata
+ from warnings import warn
+ # site
+ _bcrypt = None # dynamically imported by _load_backend_bcrypt()
+@@ -617,7 +618,7 @@ class _BcryptBackend(_BcryptCommon):
+         except ImportError: # pragma: no cover
+             return False
+         try:
+-            version = _bcrypt.__about__.__version__
++            version = metadata.version("bcrypt")
+         except:
+             log.warning("(trapped) error reading bcrypt version", exc_info=True)
+             version = '<unknown>'

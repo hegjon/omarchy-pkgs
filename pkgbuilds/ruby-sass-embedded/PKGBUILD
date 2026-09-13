@@ -1,0 +1,105 @@
+# Maintainer: Bert Peters <bertptrs@archlinux.org>
+_name="sass-embedded"
+pkgname="ruby-$_name"
+pkgver=1.103.1
+pkgrel=1
+pkgdesc="Embedded Sass Host for Ruby"
+arch=("any")
+url="https://github.com/sass-contrib/sass-embedded-host-ruby"
+license=('MIT')
+depends=("dart-sass" "ruby" "ruby-google-protobuf" "ruby-rake")
+makedepends=("ruby-rake" "ruby-rdoc" "protobuf")
+checkdepends=("ruby-bundler" "ruby-rspec")
+source=("$pkgname-$pkgver::https://github.com/sass-contrib/sass-embedded-host-ruby/archive/refs/tags/v$pkgver.tar.gz"
+        "no-rubocop-build.patch")
+sha256sums=('786bc24b9355f5c01f61369db311b7d7a3e6e14c552413203a9b5361f78775c8'
+            '400bf05b863d1e29245c48a211b524b12ec72e0f11ee65cca2e5a5fc052ea042')
+
+prepare() {
+  cd "${_name}-host-ruby-${pkgver}"
+
+  # use system provided dart-sass
+  sed --in-place --regexp-extended \
+    --expression "s|exe = 'dart-sass/sass'|exe = '/usr/bin/sass'|" ext/sass/Rakefile
+
+  # remove runtime depedency on rake as it is only used to build and test Gem
+  sed --in-place --regexp-extended "/spec.add_dependency 'rake'/d" \
+    "${_name}.gemspec"
+
+  # update gemspec/Gemfile to allow newer version of the dependencies
+  sed --in-place --regexp-extended 's|~>|>=|g' "${_name}.gemspec"
+
+  # remove check dep on rubocop as it's just a linter
+  patch -p1 < "$srcdir/no-rubocop-build.patch"
+}
+
+build() {
+  cd "${_name}-host-ruby-${pkgver}"
+
+  local _gemdir="$(gem env gemdir)"
+
+  # generate ./ext/sass/embedded_sass_pb.rb
+  protoc --ruby_out=lib/sass/ --proto_path=/usr/share/dart-sass/ /usr/share/dart-sass/embedded_sass.proto
+
+  gem build "${_name}.gemspec"
+
+  gem install \
+    --local \
+    --verbose \
+    --ignore-dependencies \
+    --no-user-install \
+    --install-dir "tmp_install/${_gemdir}" \
+    --bindir "tmp_install/usr/bin" \
+    "${_name}-${pkgver}.gem"
+
+  # remove unrepreducible files
+  rm --force --recursive --verbose \
+    "tmp_install/${_gemdir}/cache/" \
+    "tmp_install/${_gemdir}/gems/${_name}-${pkgver}/vendor/" \
+    "tmp_install/${_gemdir}/doc/${_name}-${pkgver}/ri/ext/"
+
+  find "tmp_install/${_gemdir}/gems/" \
+    -type f \
+    \( \
+      -iname "*.o" -o \
+      -iname "*.c" -o \
+      -iname "*.so" -o \
+      -iname "*.time" -o \
+      -iname "gem.build_complete" -o \
+      -iname "Makefile" \
+    \) \
+    -delete
+
+  find "tmp_install/${_gemdir}/extensions/" \
+    -type f \
+    \( \
+      -iname "mkmf.log" -o \
+      -iname "gem_make.out" \
+    \) \
+    -delete
+
+  # /usr/bin/sass is provided by dart-sass remove wrapper that uses the same path
+  rm --verbose --recursive "tmp_install/usr/bin"
+}
+
+check() {
+  cd "${_name}-host-ruby-${pkgver}"
+
+  local _gemdir="$(gem env gemdir)"
+
+  # If the lib dir is there, rspec gets confused and imports from there, which breaks relative paths
+  # in the gem. Remove all files _except_ for version.rb. That has to stay, because the gemspec
+  # imports it.
+  find "lib" -type f -not -name "version.rb" -delete
+
+  GEM_HOME="tmp_install/${_gemdir}" rake spec
+}
+
+package() {
+  cd "${_name}-host-ruby-${pkgver}"
+
+  cp --archive --verbose tmp_install/* "${pkgdir}"
+
+  install --verbose -D --mode=0644 LICENSE --target-directory "${pkgdir}/usr/share/licenses/${pkgname}"
+  install --verbose -D --mode=0644 *.md --target-directory "${pkgdir}/usr/share/doc/${pkgname}"
+}

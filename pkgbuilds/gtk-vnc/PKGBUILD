@@ -1,0 +1,86 @@
+# Maintainer: Jan Alexander Steffens (heftig) <heftig@archlinux.org>
+# Contributor: Jan de Groot <jgc@archlinux.org>
+# Contributor: Allan McRae <mcrae_allan@hotmail.com>
+# Contributor: lp76 <l.peduto@gmail.com>
+
+pkgbase=gtk-vnc
+pkgname=(
+  gtk-vnc
+  gtk-vnc-docs
+)
+pkgver=1.5.0
+pkgrel=1
+pkgdesc="VNC viewer widget for GTK"
+url="https://gitlab.gnome.org/GNOME/gtk-vnc"
+arch=(x86_64)
+license=(LGPL-2.1-or-later)
+depends=(
+  cairo
+  gdk-pixbuf2
+  glib2
+  glibc
+  gmp
+  gnutls
+  gtk3
+  libpulse
+  libsasl
+  libx11
+  zlib
+)
+makedepends=(
+  gi-docgen
+  git
+  glib2-devel
+  gobject-introspection
+  meson
+  perl-text-csv
+  vala
+)
+source=(
+  "git+$url.git?signed#tag=$pkgver"
+  "git+https://gitlab.com/keycodemap/keycodemapdb.git"
+)
+b2sums=('f83e51ba3be0d16a7ec2516870a135d88583a2614acc9181533fadc408d266b8e9ea6315445d130b7ba2b75fa7737b34a542bf209cb70063f067b7172acbf429'
+        'SKIP')
+validpgpkeys=(
+  DAF3A6FDB26B62912D0E8E3FBE86EBB415104FDF # Daniel P. Berrange <berrange@redhat.com>
+)
+
+prepare() {
+  cd gtk-vnc
+
+  git submodule init
+  git submodule set-url subprojects/keycodemapdb "$srcdir/keycodemapdb"
+  git -c protocol.file.allow=always -c protocol.allow=never submodule update
+}
+
+build() {
+  arch-meson gtk-vnc build
+  meson compile -C build
+}
+
+check() {
+  meson test -C build --print-errorlogs
+}
+
+package_gtk-vnc() {
+  provides=(
+    libgtk-vnc-2.0.so
+    libgvnc{,pulse}-1.0.so
+  )
+
+  meson install -C build --destdir "$pkgdir"
+  install -Dt "$pkgdir/usr/bin" build/examples/gvncviewer
+
+  mkdir -p doc/usr/share
+  mv {"$pkgdir",doc}/usr/share/doc
+}
+
+package_gtk-vnc-docs() {
+  pkgdesc+=" (documentation)"
+  depends=()
+
+  mv doc/* "$pkgdir"
+}
+
+# vim:set sw=2 sts=-1 et:

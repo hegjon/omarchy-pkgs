@@ -1,0 +1,46 @@
+# Maintainer: Carl Smedstad <carsme@archlinux.org>
+# Contributor: Kyle Keen <keenerd@gmail.com>
+
+pkgname=airspy
+pkgver=1.0.10
+pkgrel=5
+pkgdesc="AirSpy Software Defined Radio (SDR) usermode driver and associated tools"
+arch=(x86_64)
+url="https://www.airspy.com"
+license=('GPL-2.0-or-later')
+depends=(
+  glibc
+  libusb
+)
+makedepends=(cmake)
+provides=(libairspy.so)
+source=(
+  "$pkgname-$pkgver.tar.gz::https://github.com/airspy/airspyone_host/archive/v$pkgver.tar.gz"
+  "airspy.conf"
+)
+sha256sums=('fcca23911c9a9da71cebeffeba708c59d1d6401eec6eb2dd73cae35b8ea3c613'
+            'b210dd0698c3bb8ad59f0393c12a74e1ed8fe1b16a2faabc38467f68ebed0120')
+
+prepare() {
+  cd airspyone_host-$pkgver
+  # FS#47169
+  sed -i 's|MODE.*$|TAG+="uaccess"|' airspy-tools/52-airspy.rules
+}
+
+build() {
+  cd airspyone_host-$pkgver
+  export CMAKE_POLICY_VERSION_MINIMUM=3.5
+  cmake -S . -B build \
+    -DCMAKE_BUILD_TYPE=None \
+    -DCMAKE_INSTALL_PREFIX=/usr \
+    -Wno-dev \
+    -DCMAKE_C_STANDARD=17
+  cmake --build build
+}
+
+package() {
+  cd airspyone_host-$pkgver
+  DESTDIR="$pkgdir" cmake --install build
+  install -vDm644 -t "$pkgdir/usr/lib/udev/rules.d" airspy-tools/52-airspy.rules
+  install -vDm644 -t "$pkgdir/usr/lib/modprobe.d" "$srcdir/airspy.conf"
+}

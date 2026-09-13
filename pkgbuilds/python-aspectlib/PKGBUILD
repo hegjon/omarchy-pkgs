@@ -1,0 +1,37 @@
+# Maintainer: Felix Yan <felixonmars@archlinux.org>
+
+pkgname=python-aspectlib
+pkgver=2.0.0
+pkgrel=4
+pkgdesc="Development library for quickly writing configurable applications and daemons"
+arch=('any')
+license=('BSD-2-Clause')
+url="https://github.com/ionelmc/python-aspectlib"
+depends=('python' 'python-fields')
+makedepends=('python-build' 'python-installer' 'python-setuptools' 'python-wheel')
+checkdepends=('python-tornado' 'python-process-tests'
+              'python-profilestats' 'python-pytest') # 'mysql-python')
+source=("$pkgname-$pkgver.tar.gz::https://github.com/ionelmc/python-aspectlib/archive/v$pkgver.tar.gz")
+sha512sums=('455ae7bb7808158abc79814632cd108397bfffc4d6c5e0f8a041ca03ed0f0fc2022d0929ad3a29e9015d8b3e3b02afa071c9b28fc62845eac4f6ef8c3fa2d9b2')
+
+prepare() {
+  cd python-aspectlib-$pkgver
+}
+
+build() {
+  cd python-aspectlib-$pkgver
+  python -m build --wheel --no-isolation
+}
+
+check() {
+  cd python-aspectlib-$pkgver
+  # https://github.com/ionelmc/python-aspectlib/issues/15
+  # python-pluggy is not compatible with pytest9, breaking the tests
+  PYTHONPATH=src pytest --deselect tests/test_integrations_py3.py::test_decorate_tornado_coroutine -W ignore::DeprecationWarning
+}
+
+package() {
+  cd python-aspectlib-$pkgver
+  python -m installer --destdir="$pkgdir" dist/*.whl
+  install -D -m644 LICENSE "$pkgdir"/usr/share/licenses/$pkgname/LICENSE
+}

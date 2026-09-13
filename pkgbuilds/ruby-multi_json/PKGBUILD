@@ -1,0 +1,84 @@
+# Maintainer: Tim Meusel <tim@bastelfreak.de>
+# Contributor: Felix Yan <felixonmars@archlinux.org>
+
+_gemname=multi_json
+pkgname="ruby-${_gemname}"
+pkgver=1.19.1
+pkgrel=1
+pkgdesc='A common interface to multiple JSON libraries.'
+arch=('any')
+url="https://github.com/sferik/${_gemname}"
+license=('MIT')
+depends=(
+  ruby
+)
+makedepends=(
+  ruby-rdoc
+)
+options=('!emptydirs')
+source=("${url}/archive/v${pkgver}/${pkgname}-${pkgver}.tar.gz")
+sha512sums=('e647b1e99bdabdf1b1b934aade333ed038e88d239a7f9b9dff62c4f7b950cc6d5f3c171b9e9ebc1fd3b970d1522daec695d6bb146d83d95f01dc2b24a3887fec')
+b2sums=('f87eeb1ef8104edc8e77466253392d68f6314b8aebeb5b88d01b0864f4083a3637257d72e0e1564a0811f2d760fd8f5d14b6d1cd2535d940bacaa42bac99ad33')
+
+prepare() {
+  cd "${_gemname}-${pkgver}"
+
+  # update gemspec/Gemfile to allow newer version of the dependencies
+  sed --in-place --regexp-extended \
+    --expression 's|~>|>=|g' \
+    "${_gemname}.gemspec"
+}
+
+build() {
+  cd "${_gemname}-${pkgver}"
+
+  local _gemdir="$(gem env gemdir)"
+
+  gem build --verbose "${_gemname}.gemspec"
+
+  gem install \
+    --local \
+    --verbose \
+    --ignore-dependencies \
+    --no-user-install \
+    --install-dir "tmp_install${_gemdir}" \
+    --bindir "tmp_install/usr/bin" \
+    "${_gemname}-${pkgver}.gem"
+
+  # remove unreproducible files
+  rm --force --recursive --verbose \
+    "tmp_install${_gemdir}/cache/" \
+    "tmp_install${_gemdir}/gems/${_gemname}-${pkgver}/vendor/" \
+    "tmp_install${_gemdir}/doc/${_gemname}-${pkgver}/ri/ext/"
+
+  find "tmp_install${_gemdir}/gems/" \
+    -type f \
+    \( \
+      -iname "*.o" -o \
+      -iname "*.c" -o \
+      -iname "*.so" -o \
+      -iname "*.time" -o \
+      -iname "gem.build_complete" -o \
+      -iname "Makefile" \
+    \) \
+    -delete
+
+  find "tmp_install${_gemdir}/extensions/" \
+    -type f \
+    \( \
+      -iname "mkmf.log" -o \
+      -iname "gem_make.out" \
+    \) \
+    -delete
+}
+
+package() {
+  cd "${_gemname}-${pkgver}"
+
+  cp --archive --verbose tmp_install/* "${pkgdir}"
+
+  install --verbose -D --mode=0644 LICENSE* --target-directory "${pkgdir}/usr/share/licenses/${pkgname}"
+  install --verbose -D --mode=0644 *.md --target-directory "${pkgdir}/usr/share/doc/${pkgname}"
+}
+
+# vim: tabstop=2 shiftwidth=2 expandtab:

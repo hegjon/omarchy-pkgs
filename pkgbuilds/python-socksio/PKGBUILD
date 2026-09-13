@@ -1,0 +1,49 @@
+# Maintainer: George Rawlinson <grawlinson@archlinux.org>
+
+pkgname=python-socksio
+pkgver=1.0.0
+pkgrel=8
+pkgdesc='Sans-I/O implementation of SOCKS4, SOCKS4A, and SOCKS5'
+arch=(any)
+url='https://github.com/sethmlarson/socksio'
+license=(MIT)
+depends=(python)
+makedepends=(
+  git
+  python-build
+  python-installer
+  python-flit-core
+  python-wheel
+)
+checkdepends=(python-pytest)
+source=("$pkgname::git+$url#tag=$pkgver")
+sha512sums=('7e2f72b8a7602cd993b9351e9abcc20507299156eadabc536089e5cb2c26b8b376cbd31d58bf98b7f37e4e0598f91eac6ab14c09e0ead75fcbc86dbe8a3d21b8')
+b2sums=('4850f47add23c5c5f51ea42d3336d0838f6a9b1c5b51a5cb2bb55fd8101cc340efa777f664067f7dd26879362c9b6db25c51f05bc29ca042b79456ca35e6dd51')
+
+prepare() {
+  cd "$pkgname"
+
+  # Apply upstream patch to unpin python-flit-core dependency
+  git cherry-pick --no-commit b326406915fd98a8185c1c160165c5b8963b30c1
+}
+
+build() {
+  cd "$pkgname"
+
+  python -m build --wheel --no-isolation
+}
+
+check() {
+  cd "$pkgname"
+
+  PYTHONPATH="$PWD" pytest -o addopts=''
+}
+
+package() {
+  cd "$pkgname"
+
+  python -m installer --destdir="$pkgdir" dist/*.whl
+
+  # license
+  install -vDm644 -t "$pkgdir/usr/share/licenses/$pkgname" LICENSE
+}

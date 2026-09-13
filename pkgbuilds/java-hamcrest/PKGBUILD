@@ -1,0 +1,33 @@
+# Maintainer: Alexander F. Rødseth <xyproto@archlinux.org>
+# Contributor: Guillaume ALAUX <guillaume@archlinux.org>
+
+pkgname=java-hamcrest
+pkgver=3.0
+pkgrel=3
+pkgdesc='Java matcher objects library'
+arch=(any)
+url='https://github.com/hamcrest/JavaHamcrest'
+license=(BSD-3-Clause)
+makedepends=(git gradle java-environment)
+depends=(java-runtime-headless)
+source=("git+$url#tag=v$pkgver")
+b2sums=('758e2c85426a6b31aef52da1656deca219383c07e0beb612279c23d33bcf0b0ffa1d76c37a1230854dbfd827e1ae8449af77db16221595993ed83ea8898b848a')
+
+build() {
+  cd JavaHamcrest
+
+  gradle clean build javadoc jar
+}
+
+package() {
+  cd JavaHamcrest
+
+  install -Dm644 hamcrest/build/libs/hamcrest-$pkgver.jar \
+    "$pkgdir/usr/share/java/hamcrest-$pkgver.jar"
+
+  ln -s hamcrest-$pkgver.jar "$pkgdir/usr/share/java/hamcrest.jar"
+  ln -s hamcrest-$pkgver.jar "$pkgdir/usr/share/java/hamcrest-core.jar"
+  ln -s hamcrest-$pkgver.jar "$pkgdir/usr/share/java/hamcrest-library.jar"
+
+  install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+}

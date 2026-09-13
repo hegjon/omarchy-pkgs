@@ -1,0 +1,50 @@
+# Maintainer: kpcyrd <kpcyrd[at]archlinux[dot]org>
+
+pkgname=clblast
+_name=CLBlast
+pkgver=1.7.0
+pkgrel=1
+pkgdesc='Tuned OpenCL BLAS library'
+url='https://github.com/CNugteren/CLBlast'
+arch=('x86_64')
+license=('Apache-2.0')
+depends=(
+  glibc
+  libgcc
+  libstdc++
+  ocl-icd
+)
+makedepends=(
+  cmake
+  opencl-headers
+)
+provides=('libclblast.so')
+source=(https://github.com/CNugteren/${pkgname}/archive/${pkgver}/${pkgname}-${pkgver}.tar.gz
+        clblast-660.patch)
+sha256sums=('cac83330a6110214f2b7efc8e46062536f40ba96122f3b2a074a51497d8ca9e7'
+            '986c755943dfc93b9a96c0f64518d2336feed997e57e0b07d29e30f49ca6e92d')
+
+prepare() {
+  cd "$_name-$pkgver"
+  patch -Np1 -i ../clblast-660.patch
+}
+
+build() {
+  local cmake_options=(
+    -B build
+    -D CMAKE_BUILD_TYPE=None
+    -D CMAKE_INSTALL_PREFIX=/usr
+    -D CMAKE_POLICY_VERSION_MINIMUM=3.5
+    -S $_name-$pkgver
+    -W no-dev
+  )
+
+  cmake "${cmake_options[@]}"
+  cmake --build build
+}
+
+package() {
+  DESTDIR="$pkgdir" cmake --install build
+}
+
+# vim: ts=2 sw=2 et:

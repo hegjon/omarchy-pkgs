@@ -1,0 +1,60 @@
+# Maintainer: Felix Yan <felixonmars@archlinux.org>
+
+pkgbase=deepin-qt5integration
+pkgname=(deepin-qt5integration deepin-qt6integration)
+pkgver=6.7.49
+pkgrel=1
+pkgdesc='Qt platform theme integration plugins for DDE'
+arch=('x86_64')
+url="https://github.com/linuxdeepin/qt5integration"
+license=('LGPL-3.0-or-later')
+groups=('deepin')
+makedepends=('git' 'cmake' 'ninja' 'qt5-tools' 'qt6-tools' 'xcb-util-renderutil' 'gtest'
+             'dtkcore' 'dtk6core' 'dtkgui' 'dtk6gui' 'dtkwidget' 'dtk6widget'
+             'libqt5xdg' 'libqtxdg' 'qt5-base' 'qt5-x11extras' 'qt6-base')
+source=("git+https://github.com/linuxdeepin/qt5integration.git#tag=$pkgver")
+sha512sums=('593ff214f29e0a6ac6de5649252c4356734396723a664dd00c22aca4319c6afa7f58662ba367791eb6031887a00f1dcde870fb22960bd0d8e3f4495841bf209e')
+
+prepare() {
+  # Use separate source directories for Qt5 and Qt6 builds
+  mkdir -p build-qt5 build-qt6
+  cp -r qt5integration build-qt5/qt5integration
+  cp -r qt5integration build-qt6/qt5integration
+}
+
+build() {
+  # Build Qt5 variant
+  cd build-qt5/qt5integration
+  cmake . -GNinja \
+    -DDTK5=ON \
+    -DCMAKE_INSTALL_LIBDIR=lib \
+    -DCMAKE_INSTALL_PREFIX=/usr \
+    -DPLUGIN_INSTALL_BASE_DIR=lib/qt/plugins
+  ninja
+
+  cd "$srcdir"
+  # Build Qt6 variant
+  cd build-qt6/qt5integration
+  cmake . -GNinja \
+    -DDTK5=OFF \
+    -DCMAKE_INSTALL_LIBDIR=lib \
+    -DCMAKE_INSTALL_PREFIX=/usr
+  ninja
+}
+
+package_deepin-qt5integration() {
+  pkgdesc='Qt 5 platform theme integration plugins for DDE'
+  depends=('dtkcore' 'dtkgui' 'dtkwidget' 'libqt5xdg' 'qt5-x11extras' 'qt5-base' 'libx11' 'glibc'
+           'libgcc' 'libstdc++')
+
+  cd build-qt5/qt5integration
+  DESTDIR="$pkgdir" ninja install
+}
+
+package_deepin-qt6integration() {
+  pkgdesc='Qt 6 platform theme integration plugins for DDE'
+  depends=('dtk6core' 'dtk6gui' 'dtk6widget' 'qt6-base' 'glibc' 'libgcc' 'libstdc++' 'libx11' 'libqtxdg')
+
+  cd build-qt6/qt5integration
+  DESTDIR="$pkgdir" ninja install
+}

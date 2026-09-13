@@ -1,0 +1,47 @@
+# Maintainer: Felix Yan <felixonmars@archlinux.org>
+# Contributor: Richard Murri <admin@richardmurri.com>
+# Contributor: Farhad Shahbazi <farhad@enthusiasm.cc>
+# Contributor: Felix Kaiser <felix.kaiser@fxkr.net>
+
+pkgname=python-bottle
+pkgver=0.13.4
+pkgrel=1
+pkgdesc="A fast and simple micro-framework for small web-applications"
+arch=(any)
+url="https://bottlepy.org"
+license=('MIT')
+options=(!emptydirs)
+depends=('python')
+makedepends=('git' 'python-build' 'python-installer' 'python-setuptools'
+             'python-wheel')
+checkdepends=('python-mako' 'python-jinja' 'python-cherrypy' 'python-twisted'
+              'python-tornado' 'python-paste' 'python-gevent' 'python-eventlet'
+              'gunicorn')
+optdepends=('python-waitress: Waitress WSGI server'
+            'python-cherrypy: Cherrypy WSGI server'
+            'python-eventlet: Eventlet server support')
+source=("git+https://github.com/defnull/bottle.git#tag=$pkgver")
+sha512sums=('e46cf632b8d3ccdcc5ca7001165584d01bfd774e9ef1c3a933dcffda6b2c16c53f7cf99518226ecfab8eac27ca232ace6fb1139aa028f060769f09ece12c68d6')
+
+build() {
+  cd bottle
+  python -m build --wheel --skip-dependency-check --no-isolation
+}
+
+check() {
+  cd bottle
+  python -m unittest discover
+}
+
+package() {
+  cd bottle
+  python -m installer --destdir="$pkgdir" dist/*.whl
+
+  # Symlink license file
+  local site_packages=$(python -c "import site; print(site.getsitepackages()[0])")
+  install -d "$pkgdir"/usr/share/licenses/$pkgname
+  ln -s "$site_packages"/bottle-$pkgver.dist-info/LICENSE \
+    "$pkgdir"/usr/share/licenses/$pkgname/LICENSE
+}
+
+# vim: ts=2 sw=2 et:

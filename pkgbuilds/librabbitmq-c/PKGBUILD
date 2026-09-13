@@ -1,0 +1,53 @@
+# Maintainer: Levente Polyak <anthraxx[at]archlinux[dot]org>
+# Contributor: travisghansen <travisghansen@yahoo.com>
+# Contributor: aleiphoenix <aleiphoenix@gmail.com>
+
+pkgname=librabbitmq-c
+pkgver=0.16.0
+pkgrel=1
+pkgdesc='RabbitMQ(amqp) library written in C-language'
+url='https://github.com/alanxz/rabbitmq-c'
+arch=(x86_64)
+license=(MIT)
+depends=(
+  glibc
+  openssl
+  popt
+)
+makedepends=(
+  cmake
+  docbook-xsl
+  doxygen
+  ninja
+  xmlto
+)
+source=(
+  "${url}/archive/v${pkgver}/${pkgname}-${pkgver}.tar.gz"
+)
+sha512sums=('7769d96f9fdc8cb8b12851b1b28a389654760906fa3251530bf2351f6af1306fa78c1dcb3850efdf67d4952e46bc910e34b894927e450b8eae8a90954285b527')
+b2sums=('8058170e512d88cc29fce7f5db158b1fa6513ee71e7aaa842192c536bbd7d94a8b3c106ab187dbda92e0b612f2579c293ac342af896d3e96d4a5369c584177ab')
+
+build() {
+  cd ${pkgname:3}-$pkgver
+  cmake \
+    -B build \
+    -G Ninja \
+    -DCMAKE_INSTALL_PREFIX=/usr \
+    -DCMAKE_INSTALL_LIBDIR=lib \
+    -DBUILD_EXAMPLES=OFF \
+    -DBUILD_TOOLS=ON \
+    -DBUILD_TOOLS_DOCS=ON \
+    -DBUILD_TESTS=OFF \
+    -DENABLE_SSL_SUPPORT=ON \
+    -DBUILD_API_DOCS=ON \
+    -Wno-dev
+  ninja -C build -v
+}
+
+package() {
+  cd ${pkgname:3}-$pkgver
+  DESTDIR="${pkgdir}" ninja -C build install
+  install -Dm 644 LICENSE -t "${pkgdir}"/usr/share/licenses/${pkgname}
+}
+
+# vim: ts=2 sw=2 et:

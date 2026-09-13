@@ -1,0 +1,13 @@
+diff --git a/src/ph_pacman.ml b/src/ph_pacman.ml
+index 25ef4fc..4118a42 100644
+--- a/src/ph_pacman.ml
++++ b/src/ph_pacman.ml
+@@ -183,7 +183,7 @@ let pacman_download_all_packages pkgs dir =
+     umask 0000
+     cd %s
+     mkdir -p var/lib/pacman
+-    pacman-conf | grep -v CacheDir > tmp.conf
++    pacman-conf | grep -v CacheDir | sed '/^\\[options\\]$/a DisableSandbox'> tmp.conf
+     %s %s%s -Syw --noconfirm --cachedir=$(pwd) --root=$(pwd) %s
+   "
+     (quote tdir)

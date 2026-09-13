@@ -1,0 +1,62 @@
+# Maintainer: Caleb Maclennan <caleb@alerque.com>
+# Contributor: Kilian Guillaume "cafehaine" <kilian dot guillaume at gmail dot com>
+
+_rockname=std-_debug
+pkgbase=lua-std-debug
+pkgname=("$pkgbase" "lua51-${pkgbase#lua-}" "lua52-${pkgbase#lua-}" "lua53-${pkgbase#lua-}" "lua54-${pkgbase#lua-}")
+pkgver=1.1.0
+_rockrel=1
+pkgrel=1
+pkgdesc='Lua-stdlib project’s debug hints library'
+arch=(any)
+url="https://github.com/lua-stdlib/${_rockname#std-}"
+license=(MIT)
+makedepends=(lua
+             lua51
+             lua52
+             lua53
+             lua54
+             luarocks)
+# checkdepends=(specl)
+_archive="${_rockname#std-}-$pkgver"
+source=("$url/archive/v$pkgver/$_archive.tar.gz")
+sha256sums=('4ccb6a6f193698b9d37a62e7c1628d7ec1ec0998177595e235b399cb58dd15d7')
+
+
+_package() {
+	cd "$_archive"
+	depends=(${pkgname%%-*})
+	luarocks --lua-version="$1" --tree="$pkgdir/usr/" \
+		make --deps-mode=none --no-manifest "${_rockname/-/.}-$pkgver-$_rockrel.rockspec"
+	install -Dm0644 -t "$pkgdir/usr/share/licenses/$pkgname/" LICENSE.md
+}
+
+package_lua-std-debug() {
+	provides=(lua-std-_debug)
+	replaces=(lua-std-_debug)
+	_package 5.5
+}
+
+package_lua51-std-debug() {
+	provides=(lua51-std-_debug)
+	replaces=(lua51-std-_debug)
+	_package 5.1
+}
+
+package_lua52-std-debug() {
+	provides=(lua52-std-_debug)
+	replaces=(lua52-std-_debug)
+	_package 5.2
+}
+
+package_lua53-std-debug() {
+	provides=(lua53-std-_debug)
+	replaces=(lua53-std-_debug)
+	_package 5.3
+}
+
+package_lua54-std-debug() {
+	provides=(lua-std-_debug)
+	replaces=(lua-std-_debug)
+	_package 5.4
+}

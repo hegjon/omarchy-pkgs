@@ -1,0 +1,43 @@
+# Maintainer: George Rawlinson <grawlinson@archlinux.org>
+
+pkgname=cppzmq
+pkgver=4.11.0
+pkgrel=1
+pkgdesc='Header-only C++ binding for libzmq'
+arch=(any)
+url='https://github.com/zeromq/cppzmq'
+license=(MIT)
+depends=(zeromq)
+makedepends=(
+  git
+  cmake
+)
+#checkdepends=(catch2-v2)
+optdepends=('cmake: to build with CMake')
+source=("$pkgname::git+$url#tag=v$pkgver")
+sha512sums=('021b6168b5947a695ecd775e3f82082fcbba6be961f7671159eff6a74d3747c6b63d9ce08c52e3e48a7b06e5ced96b31e3dc97aedc450b7799e9a43b935bb2a4')
+b2sums=('b08deed1aad18f7969d308b1265b850c790eedbdf759cea7d57e7c133d7dd3ce6c80318eb4aac2a939f3905116e210309cb351d59383715036cee2eafb128b68')
+
+build() {
+  cmake \
+    -B build \
+    -S "$pkgname" \
+    -D CMAKE_BUILD_TYPE='None' \
+    -D CMAKE_INSTALL_PREFIX='/usr' \
+    -D CPPZMQ_BUILD_TESTS=OFF \
+    -W no-dev
+
+  cmake --build build
+}
+
+# https://archlinux.org/todo/catch2-v3-update/
+#check() {
+#  ctest --test-dir build --output-on-failure
+#}
+
+package() {
+  DESTDIR="$pkgdir" cmake --install build 
+
+  # license
+  install -vDm644 -t "$pkgdir/usr/share/licenses/$pkgname" "$pkgname/LICENSE"
+}

@@ -1,0 +1,60 @@
+# Maintainer: Carl Smedstad <carsme@archlinux.org>
+# Contributor: László Várady <laszlo.varady93@gmail.com>
+# Contributor: Snaipe
+
+pkgname=criterion
+_pkgname=Criterion
+pkgver=2.4.3
+pkgrel=1
+pkgdesc="A cross-platform C and C++ unit testing framework for the 21st century"
+arch=(x86_64)
+url="https://github.com/Snaipe/Criterion"
+license=(MIT)
+depends=(
+  glibc
+  libffi
+  libgit2
+  nanomsg
+)
+makedepends=(
+  cmake
+  git
+  meson
+)
+checkdepends=(python-cram)
+options=(!lto)
+source=("$pkgname-$pkgver.tar.gz::$url/archive/v$pkgver.tar.gz")
+sha256sums=('6d924ee5eeaaaed7762ab968f560b9ff543fc3473aa949bf53ac56a2a1a9416c')
+
+prepare() {
+  cd $_pkgname-$pkgver
+  # Use system packages for these instead.
+  rm -v \
+    subprojects/libffi.wrap \
+    subprojects/libgit2-cmake.wrap \
+    subprojects/nanomsg-cmake.wrap
+  # Download of nanopb produces an error as it does not contain a meson.build
+  # file. A meson.build file is not necessary, so ignore the error.
+  meson subprojects download || :
+
+  # Fix FTBS
+  sed -i '/#ifdef __cplusplus/a # include <cstdint>' include/criterion/alloc.h
+}
+
+build() {
+  cd $_pkgname-$pkgver
+  arch-meson build
+  meson compile -C build
+}
+
+check() {
+  cd $_pkgname-$pkgver
+  meson test -C build --print-errorlogs
+}
+
+package() {
+  cd $_pkgname-$pkgver
+  depends+=(libgit2.so)
+  meson install -C build --destdir "$pkgdir"
+  install -vDm644 -t "$pkgdir/usr/share/licenses/$pkgname" LICENSE
+}

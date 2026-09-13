@@ -1,0 +1,52 @@
+# Maintainer: Bruno Pagani <archange@archlinux.org>
+# Maintainer: Carl Smedstad <carsme@archlinux.org>
+# Contributor: David Runge <dvzrv@archlinux.org>
+
+pkgname=python-toolz
+pkgver=1.1.0
+pkgrel=2
+pkgdesc="A functional standard library for Python"
+arch=(any)
+url="https://github.com/pytoolz/toolz"
+license=(BSD-3-Clause)
+depends=(python)
+makedepends=(
+  git
+  python-build
+  python-installer
+  python-setuptools
+  python-setuptools-git-versioning
+  python-wheel
+)
+checkdepends=(python-pytest)
+source=(
+  "git+$url.git#tag=$pkgver"
+  "$pkgname-$pkgver-shakespeare.txt::http://www.gutenberg.org/files/100/100-0.txt"
+)
+sha512sums=('abf9abc9c294bf4c9e893eae2b6a426ef4a8d537d7e02d830a0adb8ddb50552788c04a44b17657f8b4a61069d4ef6cafeb9a60d4bb48a0ef4c02b6657b8d8231'
+            '405b316309156bbd516340285e17c3186e82d0db0d936222a811f1aac010ea342416dff3acb4d14ca929269b91c177456455a6804be11ea12444626301d1a3ed')
+b2sums=('900c36749eaa136b658c32ffffe08923a274b6bfc01837dc3b14fc57c4728101b1afaaccba2f4397003fd9d339b7bfb5ab6b018a29223902f5a79493521f9887'
+        'db4fc0ea2f373642c415d58eefd5c556476651c2b1d795ee111747753e450e02be55fb30cf67ca6ce9aedd9d5b375f13fefc9a191d2fe6fb1f963eff07f74329')
+
+prepare() {
+  cp -v "$pkgname-$pkgver-shakespeare.txt" "${pkgname#python-}/bench/shakespeare.txt"
+}
+
+build() {
+  cd ${pkgname#python-}
+  python -m build --wheel --no-isolation
+}
+
+check() {
+  cd ${pkgname#python-}
+  python -m venv --system-site-packages test-env
+  test-env/bin/python -m installer dist/*.whl
+  test-env/bin/python -m pytest
+}
+
+package() {
+  cd ${pkgname#python-}
+  python -m installer --destdir="$pkgdir" dist/*.whl
+  install -vDm644 -t "$pkgdir/usr/share/doc/$pkgname" README.rst
+  install -vDm644 -t "$pkgdir/usr/share/licenses/$pkgname" LICENSE.txt
+}

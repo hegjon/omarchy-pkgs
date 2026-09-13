@@ -1,0 +1,61 @@
+# Maintainer: George Rawlinson <grawlinson@archlinux.org>
+# Contributor: SZanko, szanko at protonmail dot com
+
+pkgname=python-shtab
+pkgver=1.12.1
+pkgrel=1
+pkgdesc='Automagic shell tab completion for Python CLI applications'
+arch=(any)
+url='https://github.com/iterative/shtab'
+license=(Apache-2.0)
+depends=(python)
+makedepends=(
+  git
+  python-build
+  python-installer
+  python-wheel
+  python-setuptools-scm
+)
+checkdepends=(
+  python-click
+  python-pytest
+  python-pytest-timeout
+)
+source=("$pkgname::git+$url#tag=v$pkgver")
+sha512sums=('750e676e48b6ab66da9bb6bc85b206b68af8b7265b61b33eda1761ffb08b5dfa07ec023b74d2471515a251b65f779c1ecd6abcbef9fc1bac7f1d4278837a0860')
+b2sums=('412348315eb743a948fb5d73d5fd38da7861453fa7cffe075ffb2f7713bd1353fbff3eee48820d926aea1315a2c4a9f4011768b94247bd0070c46207a0178178')
+
+build() {
+  cd "$pkgname"
+
+  SETUPTOOLS_SCM_PRETEND_VERSION=$pkgver python -m build --wheel --no-isolation
+
+  # temporary install
+  python -m installer --destdir="$(pwd)/tmp" dist/*.whl
+  local site_packages=$(python -c "import site; print(site.getsitepackages()[0])")
+  export PYTHONPATH="$(pwd)/tmp/$site_packages"
+
+  # generate shell completions
+  for shell in bash zsh; do
+    python -m shtab --print-own-completion "$shell" > "$shell.completion"
+  done
+}
+
+check() {
+  cd "$pkgname"
+
+  pytest -v --override-ini="addopts="
+}
+
+package() {
+  cd "$pkgname"
+
+  python -m installer --destdir="$pkgdir" dist/*.whl
+
+  # shell completions
+  install -vDm644 bash.completion "$pkgdir/usr/share/bash-completion/completions/shtab"
+  install -vDm644 zsh.completion "$pkgdir/usr/share/zsh/site-functions/_shtab"
+
+  # license
+  install -vDm644 -t "$pkgdir/usr/share/licenses/$pkgname" LICENCE
+}

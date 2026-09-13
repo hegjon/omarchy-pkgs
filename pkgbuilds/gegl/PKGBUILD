@@ -1,0 +1,69 @@
+# Maintainer: Christian Hesse <mail@eworm.de>
+# Maintainer: Christian Heusel <gromit@archlinux.org>
+# Contributor: Daniel Isenmann <daniel@archlinux.org>
+
+pkgname=gegl
+pkgver=0.4.72
+pkgrel=2
+pkgdesc='Graph based image processing framework'
+arch=('x86_64')
+url='https://www.gegl.org/'
+license=('GPL-3.0-or-later OR LGPL-3.0-or-later')
+depends=('babl' 'libbabl-0.1.so'
+         'cairo' 'libcairo.so'
+         'gdk-pixbuf2' 'libgdk_pixbuf-2.0.so'
+         'glib2' 'libgio-2.0.so' 'libglib-2.0.so' 'libgmodule-2.0.so' 'libgobject-2.0.so'
+         'glibc'
+         'jasper' 'libjasper.so'
+         'json-glib' 'libjson-glib-1.0.so'
+         'lcms2' 'liblcms2.so'
+         'lensfun' #'liblensfun.so'
+         'libgcc' 'libgcc_s.so'
+         'libgomp.so' 'libgomp.so'
+         'libjpeg-turbo' 'libjpeg.so'
+         'libpng' 'libpng16.so'
+         'libraw' #'libraw.so'
+         'librsvg' 'librsvg-2.so'
+         'libspiro' #'libspiro.so'
+         'libstdc++' 'libstdc++.so'
+         'libtiff' 'libtiff.so'
+         'libwebp' 'libwebp.so'
+         'luajit' #'libluajit-5.1.so'
+         'openexr' #'libOpenEXR-3_4.so'
+         'pango' 'libpango-1.0.so' 'libpangocairo-1.0.so'
+         'poppler-glib' 'libpoppler-glib.so'
+         'suitesparse' #'libumfpack.so'
+)
+makedepends=('git' 'gobject-introspection' 'libgexiv2' 'meson' 'python-gobject' 'sdl3'
+             'v4l-utils' 'vala' 'gi-docgen')
+optdepends=('graphviz: for gegl-introspect'
+            'sdl3: SDL3 Display plugin')
+provides=('libgegl-0.4.so' 'libgegl-npd-0.4.so' 'libgegl-sc-0.4.so')
+source=("git+https://gitlab.gnome.org/GNOME/gegl.git#tag=GEGL_${pkgver//./_}")
+sha256sums=('b3af4073606a33df19bd08cfb4fb736c00a0e7f036e7b186d8aa0892392ec2ed')
+
+pkgver() {
+  cd "${pkgname}"
+  git describe --tags | sed 's/^GEGL_//;s/_$//;s/_/./g;s/-/+/g'
+}
+
+build() {
+  mkdir -p build
+  cd build
+  arch-meson ../"${pkgname}" \
+    -Dworkshop=true \
+    -Dmrg=disabled \
+    -Dmaxflow=disabled \
+    -Dsdl2=disabled
+  ninja
+}
+
+check() {
+  cd build
+  ninja test || :
+}
+
+package() {
+  cd build
+  DESTDIR="${pkgdir}" ninja install
+}

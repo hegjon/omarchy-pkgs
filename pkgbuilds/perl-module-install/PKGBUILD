@@ -1,0 +1,31 @@
+# Maintainer: Felix Yan <felixonmars@archlinux.org>
+# Contributor: dracorp aka Piotr Rogoza <piotr.r.public at gmail.com>
+
+pkgname=perl-module-install
+pkgver=1.21
+pkgrel=6
+pkgdesc="Module::Install - Standalone, extensible Perl module installer"
+arch=('any')
+url='https://search.cpan.org/dist/Module-Install'
+license=('PerlArtistic' 'GPL')
+options=('!emptydirs')
+depends=('perl-file-remove' 'perl-json' 'perl-module-build' 'perl-module-scandeps' 'perl-par-dist'
+         'perl-yaml-tiny')
+source=("https://search.cpan.org/CPAN/authors/id/E/ET/ETHER/Module-Install-$pkgver.tar.gz")
+sha512sums=('f3dd1dfcae81704f1aa9ac409abd22c9e0d5d66c048adac13da19ab88559d717427b5471b7a065db8312d4d44e829afea52567cd0993e4016df0e10c760ada85')
+
+build() {
+  cd Module-Install-$pkgver
+  perl Makefile.PL INSTALLDIRS=vendor
+  make
+}
+
+check() {
+  cd Module-Install-$pkgver
+  make test
+}
+
+package() {
+  cd Module-Install-$pkgver
+  make install DESTDIR="$pkgdir"
+}

@@ -1,0 +1,39 @@
+# Maintainer: Antonio Rojas <arojas@archlinux.org>
+# Contributor: Brad Conte <brad AT bradconte.com>
+
+pkgname=ntl
+pkgver=11.6.0
+pkgrel=2
+pkgdesc='A Library for doing Number Theory'
+arch=(x86_64)
+url='https://www.shoup.net/ntl/'
+license=(LGPL-2.1-or-later)
+depends=(gf2x
+         glibc
+         gmp
+         libgcc
+         libstdc++)
+source=(https://www.shoup.net/$pkgname/$pkgname-$pkgver.tar.gz)
+sha256sums=('bc0ef9aceb075a6a0673ac8d8f47d5f8458c72fe806e4468fbd5d3daff056182')
+
+prepare() {
+  cd $pkgname-$pkgver/src
+  rm -r libtool-origin
+}
+
+build() {
+  cd $pkgname-$pkgver/src
+  ./configure DEF_PREFIX=/usr SHARED=on NTL_GF2X_LIB=on NATIVE=off TUNE=x86 \
+    LIBTOOL=libtool CXXFLAGS="${CXXFLAGS}" LDFLAGS="${LDFLAGS}"
+  make
+}
+
+check() {
+  cd $pkgname-$pkgver/src
+  make -k check
+}
+
+package() {
+  cd $pkgname-$pkgver/src
+  make PREFIX="$pkgdir/usr" install
+}

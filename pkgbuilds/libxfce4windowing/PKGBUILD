@@ -1,0 +1,43 @@
+# Maintainer: Evangelos Foutras <foutrelis@archlinux.org>
+# Maintainer: Robin Candau <antiz@archlinux.org>
+
+pkgname=libxfce4windowing
+pkgver=4.20.7
+pkgrel=1
+pkgdesc="Windowing concept abstraction library for X11 and Wayland"
+arch=('x86_64')
+url="https://docs.xfce.org/xfce/libxfce4windowing/start"
+license=('LGPL-2.1-only')
+depends=('gdk-pixbuf2' 'glib2' 'gtk3' 'libwnck3' 'libdisplay-info' 'libx11' 'wayland')
+makedepends=('git' 'glib2-devel' 'gobject-introspection' 'gtk-doc' 'meson' 'vala' 'wayland-protocols' 'xfce4-dev-tools')
+source=("git+https://gitlab.xfce.org/xfce/libxfce4windowing.git#tag=$pkgname-$pkgver"
+        git+https://gitlab.freedesktop.org/wlroots/wlr-protocols.git)
+sha256sums=('cd25a006a03d3e81d1ba0f48524af8404ee165480762a5f15db3934e02aaf84d'
+            'SKIP')
+
+prepare() {
+  cd $pkgname
+
+  git submodule init
+  git config submodule.mate-submodules.url "$srcdir/protocols/wlr-protocols"
+  git -c protocol.file.allow=always submodule update
+
+  # Don't depend on wayland-scanner and wayland-protocols
+  # https://gitlab.xfce.org/xfce/libxfce4windowing/-/merge_requests/96
+  git cherry-pick -n 9b1e7e18343f927f9946960977804230f3fbc16d
+}
+
+build() {
+  arch-meson $pkgname build \
+  	-Dgtk-doc=true \
+  	-Dvala=enabled \
+  	-Dwayland=enabled \
+  	-Dx11=enabled
+  meson compile -C build
+}
+
+package() {
+  meson install -C build --destdir "$pkgdir"
+}
+
+# vim:set ts=2 sw=2 et:

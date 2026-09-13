@@ -1,0 +1,75 @@
+# Maintainer: Felix Yan <felixonmars@archlinux.org>
+
+pkgbase=opencc
+pkgname=(opencc opencc-doc)
+pkgver=1.3.2
+pkgrel=1
+pkgdesc="Library for Open Chinese Convert"
+url="https://github.com/BYVoid/OpenCC"
+arch=('x86_64')
+license=('Apache-2.0')
+makedepends=('git' 'chrpath' 'cmake' 'cppjieba' 'darts' 'doxygen' 'marisa' 'pybind11' 'python-setuptools'
+             'python-build' 'python-installer' 'python-wheel' 'rapidjson' 'tclap' 'gtest')
+source=("git+https://github.com/BYVoid/OpenCC.git#tag=ver.$pkgver")
+sha512sums=('674fd09fc4adc02fa13af8737e67a06836c9676a9c25f8c9ed57e97f832b88a71be39800fc4041ff8de207930acc6766ab50cd94286abfdecf0778109406223a')
+
+prepare() {
+  cd OpenCC
+  rm -r deps
+
+  # Package jieba plugin dictionaries from system cppjieba.
+  sed -i 's|${CMAKE_CURRENT_SOURCE_DIR}/deps/cppjieba/dict/|/usr/share/cppjieba/dict/|g' plugins/jieba/CMakeLists.txt
+
+  # Reuse prebuilt python extension in wheel flow, avoid a second CMake build.
+  sed -i 's|import os|import glob\nimport os|' setup.py
+  sed -i 's|^            build_libopencc(output_path)$|            os.makedirs(output_path, exist_ok=True)\n            shutil.copy2(glob.glob(os.path.join(_this_dir, "opencc_clib.*.so"))[0], output_path)|' setup.py
+
+  # Keep the native CLI installed by CMake instead of the Python wrapper.
+  sed -i '/^    entry_points={$/,/^    },$/d' setup.py
+}
+
+build() {
+  cd OpenCC
+  cmake -DCMAKE_INSTALL_PREFIX=/usr -DBUILD_DOCUMENTATION:BOOL=ON -DBUILD_PYTHON:BOOL=ON \
+        -DBUILD_OPENCC_JIEBA_PLUGIN:BOOL=ON \
+        -DUSE_SYSTEM_MARISA:BOOL=ON -DUSE_SYSTEM_PYBIND11:BOOL=ON -DUSE_SYSTEM_RAPIDJSON:BOOL=ON \
+        -DUSE_SYSTEM_TCLAP:BOOL=ON -DUSE_SYSTEM_DARTS:BOOL=ON -DENABLE_GTEST:BOOL=ON \
+        -DUSE_SYSTEM_GTEST:BOOL=ON
+  make
+
+  VERSION="$pkgver" python -m build --wheel --no-isolation
+}
+
+check() {
+  cd OpenCC
+  # This integration test asserts upstream's bundled cppjieba dictionary output.
+  ctest --output-on-failure -E '^JiebaPluginIntegrationTest$'
+}
+
+package_opencc() {
+  pkgdesc="Library for Open Chinese Convert"
+  depends=('marisa')
+  provides=('libopencc.so')
+
+  cd OpenCC
+  make DESTDIR="$pkgdir" install
+  python -m installer --destdir="$pkgdir" dist/*.whl
+
+  # Hack to make opencc's python binding to use system opencc's configs
+  local python_version=$(python -c 'import sys; print(".".join(map(str, sys.version_info[:2])))')
+  mkdir "$pkgdir"/usr/lib/"python$python_version"/site-packages/opencc/clib/share
+  ln -s ../../../../../../share/opencc "$pkgdir"/usr/lib/"python$python_version"/site-packages/opencc/clib/share/
+
+  # Remove insecure RPath
+  chrpath --delete "$pkgdir"/usr/lib/"python$python_version"/site-packages/opencc/clib/*.so
+
+  # Remove docs - install in split package
+  rm -r "$pkgdir/usr/share/opencc/doc"
+}
+
+package_opencc-doc() {
+  pkgdesc="Documentation for Library for Open Chinese Convert"
+
+  cd OpenCC/doc
+  make DESTDIR="$pkgdir" install
+}

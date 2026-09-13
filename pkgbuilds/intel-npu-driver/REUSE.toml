@@ -1,0 +1,36 @@
+version = 1
+
+[[annotations]]
+path = [
+    "PKGBUILD",
+    "README.md",
+    "keys/**",
+    ".SRCINFO",
+    ".gitignore",
+    ".nvchecker.toml",
+    "*.install",
+    "*.sysusers",
+    "*sysusers.conf",
+    "*.tmpfiles",
+    "*tmpfiles.conf",
+    "*.logrotate",
+    "*.pam",
+    "*.service",
+    "*.socket",
+    "*.timer",
+    "*.desktop",
+    "*.hook",
+    "*.rules",
+]
+SPDX-FileCopyrightText = "Arch Linux contributors"
+SPDX-License-Identifier = "0BSD"
+
+[[annotations]]
+path = [
+    "010-intel-npu-driver-rename-installed-binaries.patch",
+    "020-intel-npu-driver-disable-werror.patch",
+    "030-intel-npu-driver-fix-firmware-install-path.patch",
+    "040-intel-npu-driver-use-system-level-zero.patch",
+]
+SPDX-FileCopyrightText = "intel-npu-driver contributors"
+SPDX-License-Identifier = "BSD-3-Clause AND MIT"

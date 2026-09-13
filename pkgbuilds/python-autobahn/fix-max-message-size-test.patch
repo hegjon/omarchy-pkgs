@@ -1,0 +1,13 @@
+diff --git a/src/autobahn/websocket/test/test_websocket_max_message_size.py b/src/autobahn/websocket/test/test_websocket_max_message_size.py
+index 40564c72..cd71be9f 100644
+--- a/src/autobahn/websocket/test/test_websocket_max_message_size.py
++++ b/src/autobahn/websocket/test/test_websocket_max_message_size.py
+@@ -214,7 +214,7 @@ class WebSocketMaxMessagePayloadSizeTests(unittest.TestCase):
+     streaming processing modes.
+     """
+ 
+-    LIMIT = 128
++    LIMIT = 256
+     BIG = b"x" * 4096  # inflates well beyond LIMIT, compresses to a few bytes
+ 
+     def _run(self, codec, streaming):

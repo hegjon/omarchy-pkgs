@@ -1,0 +1,56 @@
+# Maintainer: Pierre Schmitz <pierre@archlinux.de>
+
+pkgname=composer
+pkgver=2.10.3
+pkgrel=1
+pkgdesc="Dependency Manager for PHP"
+arch=('any')
+license=('MIT')
+url='https://getcomposer.org/'
+depends=('php' 'unzip')
+makedepends=('git')
+source=("${pkgname}::git+https://github.com/composer/composer.git#tag=${pkgver}"
+        "${pkgname}-${pkgver}.phar::https://getcomposer.org/download/${pkgver}/composer.phar")
+sha256sums=('6b59e6e66b352ede4d92120b66f971e74d9198d41deeeeb4c0a1d22c915b47e8'
+            '7a2d379d5b8ffdaa028580ef26494c36d2feef4b178d3dd1473a4dbc5e17c8d6')
+
+prepare() {
+	cd "${srcdir}/${pkgname}"
+
+	php "${srcdir}/${pkgname}-${pkgver}.phar" update --no-interaction --no-dev --no-progress --prefer-dist
+}
+
+build() {
+	cd "${srcdir}/${pkgname}"
+
+	php -d phar.readonly=Off bin/compile
+	# Rename to generate correct completion
+	mv composer.phar composer
+	chmod +x composer
+	./composer completion bash > completion.bash
+}
+
+check() {
+	cd "${srcdir}"
+
+	mkdir integration-test
+	cd integration-test
+
+	"${srcdir}/${pkgname}/composer" init \
+		--no-interaction \
+		--type=project \
+		--name='archlinux/test' \
+		--description='Composer Test Project' \
+		--license='GPL-3.0-or-later' \
+		--require='symfony/console:*'
+	"${srcdir}/${pkgname}/composer" update --no-interaction --no-progress --prefer-dist
+	"${srcdir}/${pkgname}/composer" validate --no-interaction
+}
+
+package() {
+	cd "${srcdir}/${pkgname}"
+
+	install -Dm644 LICENSE "${pkgdir}/usr/share/licenses/${pkgname}/LICENSE"
+	install -Dm755 composer "${pkgdir}/usr/bin/composer"
+	install -Dm644 completion.bash "${pkgdir}/usr/share/bash-completion/completions/composer"
+}

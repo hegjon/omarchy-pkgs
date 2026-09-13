@@ -1,0 +1,29 @@
+# Maintainer: Bruno Pagani <archange@archlinux.org>
+# Maintainer: Laurent Carlier <lordheavym@gmail.com>
+# Contributor: Giovanni Scafora <giovanni@archlinux.org>
+# Contributor: Alessio 'mOlOk' Bolognino <themolok@gmail.com>
+
+pkgname=acpica
+pkgver=20251212
+pkgrel=1
+pkgdesc="ACPI tools, including Intel ACPI Source Language compiler"
+arch=(x86_64)
+url="https://acpica.org"
+license=(GPL-2.0-only)
+depends=(glibc)
+makedepends=(flex bison)
+provides=(iasl)
+conflicts=(iasl)
+replaces=(iasl)
+options=(!makeflags)
+source=(https://github.com/acpica/acpica/releases/download/$pkgver/acpica-unix-$pkgver.tar.gz)
+sha512sums=('fcb2de18917d463ae0229bcaf37528366084cbf669e02acf7862ff4488a40ddcf24499410549a209b13e944249512e32454a3dbf039193bac6d8b012971ad69d')
+b2sums=('a4c3a7f067cde651ea363d3a71e3ba6da034cfa0fe2cecbb7356eff8e6bd572a5aa343d26d2c3f89f42131e464ccefcd0fe429a8a36a862e9bcd47d08a3a2c08')
+
+build() {
+  NOWERROR=TRUE make -C $pkgname-unix-$pkgver
+}
+
+package() {
+  make DESTDIR="$pkgdir" install -C $pkgname-unix-$pkgver
+}

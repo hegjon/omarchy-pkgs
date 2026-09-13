@@ -1,0 +1,70 @@
+# Maintainer: Carl Smedstad <carsme@archlinux.org>
+# Contributor: Felix Yan <felixonmars@archlinux.org>
+
+pkgname=python-elasticsearch
+_pkgname=elasticsearch-py
+pkgver=9.3.0
+pkgrel=1
+pkgdesc="Official Python client for Elasticsearch"
+arch=(any)
+url="https://github.com/elastic/elasticsearch-py"
+license=(Apache-2.0)
+depends=(
+  python
+  python-dateutil
+  python-elastic-transport
+  python-typing_extensions
+)
+makedepends=(
+  python-build
+  python-hatchling
+  python-installer
+  python-wheel
+)
+checkdepends=(
+  nltk-data
+  python-aiohttp
+  python-nltk
+  python-numpy
+  python-orjson
+  python-pandas
+  python-pyarrow
+  python-pydantic
+  python-pytest
+  python-pytest-asyncio
+  python-requests
+  # Not available in Arch repos (yet)
+  # python-simsimd
+  python-trio
+  python-yaml
+)
+optdepends=(
+  'python-aiohttp: support for asynchronous requests'
+  'python-numpy: support for Maximal Marginal Relevance (MMR) for search results'
+  'python-orjson: support for faster JSON serialization'
+  'python-pyarrow: support for Arrow deserialization'
+  'python-requests: support for synchronous requests'
+  # 'python-simsimd: support for Maximal Marginal Relevance (MMR) for search results'
+)
+source=("$url/archive/v$pkgver/$pkgname-$pkgver.tar.gz")
+b2sums=('c0ff3ea253156aa8eeb264bca5f9a088a7c20fb93267b0c49e113b5865a3c5745203c4f7285a4f10da02e29db469cbac8d8e7de5b478a022e019d34080ec28bf')
+
+build() {
+  cd $_pkgname-$pkgver
+  python -m build --wheel --no-isolation
+}
+
+check() {
+  cd $_pkgname-$pkgver
+  python -m venv --system-site-packages test-env
+  test-env/bin/python -m installer dist/*.whl
+  # Ignored tests requires unpackaged sentence_transformers
+  test-env/bin/python -m pytest --override-ini="addopts=" \
+    --ignore=test_elasticsearch/test_dsl/test_integration/test_examples/_async/test_vectors.py \
+    --ignore=test_elasticsearch/test_dsl/test_integration/test_examples/_sync/test_vectors.py
+}
+
+package() {
+  cd $_pkgname-$pkgver
+  python -m installer --destdir="$pkgdir" dist/*.whl
+}

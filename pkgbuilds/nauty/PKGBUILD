@@ -1,0 +1,33 @@
+# Maintainer: Antonio Rojas <arojas@archlinux.org>
+
+pkgname=nauty
+epoch=1
+pkgver=2.9.3
+pkgrel=1
+pkgdesc='A program for computing automorphism groups of graphs and digraphs'
+arch=(x86_64)
+url='http://pallini.di.uniroma1.it/'
+license=(Apache-2.0)
+depends=(glibc)
+source=(http://pallini.di.uniroma1.it/nauty${pkgver//./_}.tar.gz)
+sha256sums=('9fc4edae04f88a0f5883985be3b39cf7f898fd6cc96e96b9ee25452743cc1b5b')
+ 
+build() {
+  cd nauty${pkgver//./_}
+
+# Workaround build system discarding LDFLAGS
+  CFLAGS="$CFLAGS $LDFLAGS" \
+  ./configure \
+    --prefix=/usr \
+    --includedir=/usr/include/nauty \
+    --enable-generic
+  make
+}
+
+package() {
+  cd nauty${pkgver//./_}
+
+  make DESTDIR="$pkgdir" install
+  mkdir -p "$pkgdir"/usr/share/licenses/nauty
+  install COPYRIGHT "$pkgdir"/usr/share/licenses/nauty/LICENSE
+}

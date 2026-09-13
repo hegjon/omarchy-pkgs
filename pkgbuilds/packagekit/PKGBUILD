@@ -1,0 +1,66 @@
+# Maintainer: Christian Hesse <mail@eworm.de>
+# Contributor: Jonathan Conder <jonno.conder@gmail.com>
+
+pkgbase='packagekit'
+pkgname=('packagekit' 'libpackagekit-glib')
+pkgver=1.4.0
+pkgrel=1
+pkgdesc='A system designed to make installation and updates of packages easier'
+arch=('x86_64')
+url='https://www.freedesktop.org/software/PackageKit/'
+license=('GPL-2.0-or-later')
+makedepends=('git'
+             'bash-completion'
+             'glib2-devel'
+             'gobject-introspection'
+             'intltool'
+             'meson'
+             'polkit'
+             'python-setuptools'
+             'sqlite'
+             'vala')
+options=('!emptydirs')
+validpgpkeys=('163EB50119225DB3DF8F49EA17ACBA8DFA970E17'  # Richard Hughes <richard@hughsie.com>
+              'EC60AABDF42AAE8FB062640480858FA38F62AF74'  # Kalev Lember <klember@redhat.com>
+              'D33A3F0CA16B0ACC51A60738494C8A5FBF4DECEB') # Matthias Klumpp <matthias@tenstral.net>
+source=("git+https://github.com/PackageKit/PackageKit.git?signed#tag=v${pkgver}")
+sha256sums=('526b51bb50141f6f9b77e787d12662fb1aa602d07256e644bfd7b234b6dd54c0')
+
+build() {
+        local _meson_options=(
+                -Dcron=false
+                -Dgstreamer_plugin=false
+                -Dgtk_doc=false
+                -Dgtk_module=false
+                -Dpackaging_backend=alpm
+                -Dsystemd=true
+        )
+
+        arch-meson 'PackageKit' build "${_meson_options[@]}"
+
+        meson compile -C build
+}
+
+package_packagekit() {
+        depends=('libpackagekit-glib' 'pacman' 'libalpm.so' 'polkit' 'sqlite')
+        optdepends=('bash-completion: command completion in bash')
+        backup=('var/lib/PackageKit/transactions.db'
+                'etc/PackageKit/alpm.d/pacman.conf'
+                'etc/PackageKit/alpm.d/repos.list')
+
+        meson install -C build --destdir "$pkgdir"
+
+        # move away for libpackagekit-glib
+        mkdir -p libpackagekit/usr/{lib,share}
+        mv "$pkgdir"/usr/include/ libpackagekit/usr/
+        mv "$pkgdir"/usr/lib/{girepository-1.0,libpackagekit-glib2.so*,pkgconfig} libpackagekit/usr/lib/
+        mv "$pkgdir"/usr/share/{gir-1.0,vala}/ libpackagekit/usr/share/
+}
+
+package_libpackagekit-glib() {
+        pkgdesc='GLib library for accessing PackageKit'
+        depends=('glib2')
+        provides=('libpackagekit-glib2.so')
+
+        mv libpackagekit/usr/ "$pkgdir"/
+}

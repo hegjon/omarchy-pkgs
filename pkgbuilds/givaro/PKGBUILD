@@ -1,0 +1,42 @@
+# Maintainer: Antonio Rojas <arojas@archlinux.org>
+# Contributor: Rémy Oudompheng <oudomphe@phare.normalesup.org>
+
+pkgname=givaro
+pkgver=4.2.2
+pkgrel=1
+pkgdesc='C++ library for arithmetic and algebraic computations'
+arch=(x86_64)
+url='https://casys.gricad-pages.univ-grenoble-alpes.fr/givaro/'
+license=(CECILL-B)
+depends=(glibc
+         gmp
+         libgcc
+         libstdc++
+         sh)
+makedepends=(git)
+source=(git+https://github.com/linbox-team/givaro#tag=v$pkgver)
+sha256sums=('58e2c41787558564ac447633b6da29a786c37325da369f2a6af50b4c216f9293')
+
+prepare() {
+  cd $pkgname
+  git cherry-pick -n c7744bb133496cd7ac04688f345646d505e1bf52 # Fix build with GCC 13
+  git cherry-pick -n b0cf33e1d4437530c7e4b3db90b6c80057a7f2f3 # Fix build with GCC 14
+  ./autogen.sh
+}
+
+build() {
+  cd $pkgname
+  ./configure --prefix=/usr --enable-shared
+  make
+}
+
+check() {
+  cd $pkgname
+  make check
+}
+
+package() {
+  cd $pkgname
+  make DESTDIR="$pkgdir" install
+  install -Dm644 Licence_CeCILL-B_V1-en.txt -t "$pkgdir"/usr/share/licenses/$pkgname
+}

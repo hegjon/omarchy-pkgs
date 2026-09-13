@@ -1,0 +1,32 @@
+# Maintainer: Andreas Radke <andyrtr@archlinux.org>
+# Contributor: Jan de Groot <jgc@archlinux.org>
+
+pkgname=xorg-xdpyinfo
+pkgver=1.4.0
+pkgrel=1
+pkgdesc="Display information utility for X"
+arch=(x86_64)
+url="https://xorg.freedesktop.org/"
+license=('MIT')
+depends=('libx11' 'libxext' 'libxtst' 'libxxf86vm' 'libxrender' 'libxcomposite' 'libxinerama'
+         'libxi' 'libxcb' 'glibc')
+makedepends=('xorg-util-macros' 'xorgproto')
+groups=('xorg-apps' 'xorg')
+source=(https://xorg.freedesktop.org/archive/individual/app/xdpyinfo-${pkgver}.tar.xz{,.sig})
+sha512sums=('478dd3de58950eeca213a51820445e62a5a63b2fa9ff3505f22802a7980f855fc11f1465e57ff4c34cdf8df0a0ff3c576804ef44f11f3b52c1c9da4ecc5a62d3'
+            'SKIP')
+# validpgpkeys=('4A193C06D35E7C670FA4EF0BA2FB9E081F2D130E') # Alan Coopersmith <alan.coopersmith@oracle.com>
+validpgpkeys=('3AB285232C46AE43D8E192F4DAB0F78EA6E7E2D2') # Alan Coopersmith <alan.coopersmith@oracle.com>
+
+build() {
+  cd xdpyinfo-${pkgver}
+  ./configure --prefix=/usr
+  make
+}
+
+package() {
+  cd xdpyinfo-${pkgver}
+  make DESTDIR="${pkgdir}" install
+  install -m755 -d "${pkgdir}/usr/share/licenses/${pkgname}"
+  install -m644 COPYING "${pkgdir}/usr/share/licenses/${pkgname}/"
+}

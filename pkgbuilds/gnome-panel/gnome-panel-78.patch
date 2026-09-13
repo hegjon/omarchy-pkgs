@@ -1,0 +1,82 @@
+From 993c6f3947724e8f18f07d2515c4978567920253 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Ball=C3=B3=20Gy=C3=B6rgy?= <ballogyor@gmail.com>
+Date: Sat, 8 Feb 2025 14:40:40 +0100
+Subject: [PATCH] clock: Fix calendar popup positioning
+
+This fixes the problem that the calendar popup jumps into wrong position in
+some specific cases on update:
+
+- When the position is right or bottom, use the window size rather than the
+preferred size to calculate the distance from the panel.
+
+- When the position is right or left, always use north gravity.
+---
+ modules/clock/clock-applet.c | 29 ++++++++++-------------------
+ 1 file changed, 10 insertions(+), 19 deletions(-)
+
+diff --git a/modules/clock/clock-applet.c b/modules/clock/clock-applet.c
+index 0449ca9f9..22319f534 100644
+--- a/modules/clock/clock-applet.c
++++ b/modules/clock/clock-applet.c
+@@ -307,9 +307,6 @@ position_calendar_popup (ClockApplet *cd)
+ 
+         gtk_window_get_size (GTK_WINDOW (cd->calendar_popup), &w, &h);
+         gtk_widget_get_preferred_size (cd->calendar_popup, &req, NULL);
+-        w = req.width;
+-        h = req.height;
+-
+         gtk_widget_get_allocation (cd->panel_button, &allocation);
+         button_w = allocation.width;
+         button_h = allocation.height;
+@@ -324,38 +321,32 @@ position_calendar_popup (ClockApplet *cd)
+         switch (gp_applet_get_position (GP_APPLET (cd))) {
+         case GTK_POS_LEFT:
+                 x += button_w;
+-                if ((y + h) > monitor.y + monitor.height)
+-                        y -= (y + h) - (monitor.y + monitor.height);
++                if ((y + req.height) > monitor.y + monitor.height)
++                        y -= (y + req.height) - (monitor.y + monitor.height);
+ 
+-                if ((y + h) > (monitor.height / 2))
+-                        gravity = GDK_GRAVITY_SOUTH_WEST;
+-                else
+-                        gravity = GDK_GRAVITY_NORTH_WEST;
++                gravity = GDK_GRAVITY_NORTH_WEST;
+ 
+                 break;
+         case GTK_POS_RIGHT:
+                 x -= w;
+-                if ((y + h) > monitor.y + monitor.height)
+-                        y -= (y + h) - (monitor.y + monitor.height);
++                if ((y + req.height) > monitor.y + monitor.height)
++                        y -= (y + req.height) - (monitor.y + monitor.height);
+ 
+-                if ((y + h) > (monitor.height / 2))
+-                        gravity = GDK_GRAVITY_SOUTH_EAST;
+-                else
+-                        gravity = GDK_GRAVITY_NORTH_EAST;
++                gravity = GDK_GRAVITY_NORTH_EAST;
+ 
+                 break;
+         case GTK_POS_TOP:
+                 y += button_h;
+-                if ((x + w) > monitor.x + monitor.width)
+-                        x -= (x + w) - (monitor.x + monitor.width);
++                if ((x + req.width) > monitor.x + monitor.width)
++                        x -= (x + req.width) - (monitor.x + monitor.width);
+ 
+                 gravity = GDK_GRAVITY_NORTH_WEST;
+ 
+                 break;
+         case GTK_POS_BOTTOM:
+                 y -= h;
+-                if ((x + w) > monitor.x + monitor.width)
+-                        x -= (x + w) - (monitor.x + monitor.width);
++                if ((x + req.width) > monitor.x + monitor.width)
++                        x -= (x + req.width) - (monitor.x + monitor.width);
+ 
+                 gravity = GDK_GRAVITY_SOUTH_WEST;
+ 
+-- 
+GitLab
+

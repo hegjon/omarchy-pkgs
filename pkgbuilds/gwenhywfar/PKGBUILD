@@ -1,0 +1,121 @@
+# Maintainer: Jaroslav Lichtblau <svetlemodry@archlinux.org>
+# Maintainer: Carl Smedstad <carsme@archlinux.org>
+# Contributor: Balló György <ballogyor+arch at gmail dot com>
+# Contributor: Sergej Pupykin <pupykin.s+arch@gmail.com>
+# Contributor: William Rea <sillywilly@gmail.com>
+
+pkgbase=gwenhywfar
+pkgname=(
+  gwenhywfar
+  gwenhywfar-gtk
+  gwenhywfar-qt
+)
+pkgver=5.14.1
+pkgrel=3
+pkgdesc="OS abstraction functions for various projects"
+arch=('x86_64')
+url="https://www.aquamaniac.de/rdm"
+license=('LGPL-2.1-or-later')
+makedepends=(
+  'glibc'
+  'gnutls'
+  'gtk3'
+  'libgcc'
+  'libgcrypt'
+  'libgpg-error'
+  'libstdc++'
+  'openssl'
+  'qt6-base'
+)
+source=(
+  "$url/attachments/download/630/$pkgbase-$pkgver.tar.gz"
+  "$url/attachments/download/629/$pkgbase-$pkgver.tar.gz.asc"
+)
+b2sums=('9bea5f80099f0a3ad964e81a48f5d56ea535dbefdb57355965337251c539466704d0f0b7af1f57a691142ba79e72e6301dbdde4242d30803b4af72323d7207c8'
+        'SKIP')
+validpgpkeys=(42400AF5EB2A17F0A69BB551E9899D784A977416) # AqBanking Package Key <packages@aqbanking.de>
+
+build() {
+  cd $pkgbase-$pkgver
+  GPGRT_CONFIG="/usr/bin/gpgrt-config" PATH="/usr/lib/qt6/bin:$PATH" \
+    ./configure --prefix=/usr \
+    --sysconfdir=/etc \
+    --enable-system-certs \
+    --disable-network-checks \
+    --with-guis="gtk3 qt5"
+  sed -i -e 's/ -shared / -Wl,-O1,--as-needed\0/g' libtool
+  make
+}
+
+check() {
+  cd $pkgbase-$pkgver
+  make check
+}
+
+_pick() {
+  local dest="$1"
+  shift
+  for obj in "$@"; do
+    mkdir -p "$dest/$(dirname "$obj")/"
+    mv -v -t "$dest/$(dirname "$obj")/" "$obj"
+  done
+}
+
+package_gwenhywfar() {
+  depends=(
+    'glibc'
+    'gnutls'
+    'libgcrypt'
+    'libgpg-error'
+    'openssl'
+  )
+  provides=('libgwenhywfar.so')
+
+  cd $pkgbase-$pkgver
+  make DESTDIR="$pkgdir" install
+
+  cd "$pkgdir"
+  _pick "$srcdir/gwenhywfar-gtk" \
+    usr/include/gwenhywfar5/gwen-gui-gtk3 \
+    usr/lib/libgwengui-gtk3.so* \
+    usr/lib/pkgconfig/gwengui-gtk3.pc
+
+  _pick "$srcdir/gwenhywfar-qt" \
+    usr/include/gwenhywfar5/gwen-gui-cpp \
+    usr/include/gwenhywfar5/gwen-gui-qt5 \
+    usr/lib/cmake/gwengui-cpp-* \
+    usr/lib/cmake/gwengui-qt6-* \
+    usr/lib/libgwengui-cpp.so* \
+    usr/lib/libgwengui-qt6.so* \
+    usr/lib/pkgconfig/gwengui-qt6.pc
+}
+
+package_gwenhywfar-gtk() {
+  pkgdesc+=" (GTK3 GUI library)"
+  depends=(
+    'glib2'
+    'glibc'
+    'gtk3'
+    'gwenhywfar'
+  )
+  provides=('libgwengui-gtk3.so')
+
+  cp -va -t "$pkgdir" "$pkgname/"*
+}
+
+package_gwenhywfar-qt() {
+  pkgdesc+=" (Qt6 GUI library)"
+  depends=(
+    'glibc'
+    'gwenhywfar'
+    'libgcc'
+    'libstdc++'
+    'qt6-base'
+  )
+  provides=(
+    'libgwengui-cpp.so'
+    'libgwengui-qt6.so'
+  )
+
+  cp -va -t "$pkgdir" "$pkgname/"*
+}

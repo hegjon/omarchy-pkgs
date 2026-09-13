@@ -1,0 +1,57 @@
+# Maintainer:
+# Contributor: Jonas Witschel <diabonas@archlinux.org>
+
+pkgbase='libolm'
+pkgname=('libolm' 'python-olm')
+pkgver=3.2.16
+_tag=c2ccf54de20b2563331e273f113b2b51c59be619 # git rev-parse "$pkgver"
+pkgrel=6
+pkgdesc='Implementation of the Olm and Megolm cryptographic ratchets'
+arch=('x86_64')
+url='https://gitlab.matrix.org/matrix-org/olm'
+license=('APACHE')
+makedepends=('cmake' 'python' 'python-build' 'python-cffi'
+             'python-installer' 'python-setuptools' 'python-wheel')
+checkdepends=('python-aspectlib' 'python-pytest' 'python-pytest-benchmark')
+source=(https://gitlab.matrix.org/matrix-org/olm/-/archive/$pkgver/$pkgname-$pkgver.tar.gz)
+sha512sums=('02740295bf6ca7afae9c46ad0424693336e7081bf81cba4d4cc5c05ae181c4cf11e1479c9cac828408c9d096c17b8afe1637e51f6ad71a643ec3052df0c6d314')
+# PGP key can be obtained from https://packages.matrix.org/npm/olm/signing_key.asc
+validpgpkeys=('56CF24AEE5F4513280CC594BF75FDC22C1DE8453') # Matrix.org olm <olm@matrix.org>
+
+prepare() {
+  mv olm-$pkgver-* olm-$pkgver
+}
+
+build() {
+  cmake -B build -S olm-$pkgver \
+    -DCMAKE_INSTALL_PREFIX=/usr \
+    -DCMAKE_POLICY_VERSION_MINIMUM=3.5
+  cmake --build build
+
+  ln -sr build olm-$pkgver
+  cd olm-$pkgver/python
+  python -m build --wheel --no-isolation
+}
+
+check() {
+  cd build/tests
+  ctest
+
+  cd ../../olm-$pkgver/python
+  PYTHONPATH="$(find build -name 'lib.*' -type d -print)" LD_LIBRARY_PATH="$srcdir"/build pytest
+}
+
+package_libolm() {
+  depends=('gcc-libs')
+  provides=('libolm.so')
+
+  DESTDIR="$pkgdir" cmake --install build
+}
+
+package_python-olm() {
+  pkgdesc='Python bindings for Olm'
+  depends=('libolm' 'python' 'python-cffi' 'libolm.so')
+
+  cd olm-$pkgver/python
+  python -m installer --destdir="$pkgdir" dist/*.whl
+}

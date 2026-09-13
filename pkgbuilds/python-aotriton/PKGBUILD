@@ -1,0 +1,69 @@
+# Maintainer: Torsten Keßler <tpkessler at archlinux dot org>
+# Maintainer: Christian Heusel <gromit@archlinux.org>
+# Contributor: Lubosz Sarnecki <lubosz@gmail.com>
+
+_pkgname=aotriton
+pkgname=python-${_pkgname}
+pkgver=0.13b
+pkgrel=2
+pkgdesc="Ahead of Time Triton Math Library"
+url="https://github.com/ROCm/aotriton"
+license=(MIT)
+arch=(x86_64)
+depends=(
+	libgcc
+	libstdc++
+	glibc
+	hip-runtime-amd
+	hipsparselt
+	python
+	python-triton
+	rocm-core
+)
+makedepends=(
+	cmake
+	git
+	ninja
+	pybind11
+	python-filelock
+	python-iniconfig
+	python-msgpack
+	python-numpy
+	python-packaging
+	python-pandas
+	python-pluggy
+	python-setuptools
+	python-wheel
+	python-yaml
+	rocm-toolchain
+	rocm-llvm
+)
+source=("git+https://github.com/ROCm/aotriton#tag=$pkgver")
+sha256sums=('1da23d4dc7d7bf43cb00ba8a74bdb988fd0bac1c5384209a32bb27fe060287b8')
+
+build() {
+	# define NDEBUG to silence developer logging (as seen in miopen-hip)
+	local cmake_args=(
+		-G Ninja
+		-Wno-dev
+		-S "${_pkgname}"
+		-B build
+		-D CMAKE_C_COMPILER=amdclang
+		-D CMAKE_CXX_COMPILER=amdclang++
+		-D CMAKE_CXX_FLAGS="${CXXFLAGS} -DNDEBUG"
+		-D CMAKE_BUILD_TYPE=None
+		-D CMAKE_INSTALL_PREFIX=/usr
+		-D AOTRITON_GPU_BUILD_TIMEOUT=0
+		# Don't depend on torch, torch depends on us
+		-D AOTRITON_USE_TORCH=OFF
+		# List taken from release notes
+		-D AOTRITON_TARGET_ARCH="gfx950;gfx1100;gfx1101;gfx1102;gfx1103;gfx1150;gfx1151;gfx1152;gfx1153;gfx1200;gfx1201"
+    -D AOTRITON_INHERIT_SYSTEM_SITE_TRITON=ON
+	)
+	cmake "${cmake_args[@]}"
+	cmake --build build
+}
+
+package() {
+	DESTDIR="${pkgdir}" cmake --install build
+}

@@ -1,0 +1,76 @@
+# Maintainer: Anatol Pomozov
+# Maintainer: Carl Smedstad <carsme@archlinux.org>
+# Contributor: László Várady <laszlo.varady93@gmail.com>
+
+pkgname=rocksdb
+pkgver=11.1.1
+pkgrel=1
+pkgdesc='Embedded key-value store for fast storage'
+arch=(x86_64)
+url="https://rocksdb.org/"
+license=('GPL-2.0-only OR Apache-2.0')
+depends=(
+  bzip2
+  gflags
+  glibc
+  libgcc
+  libstdc++
+  liburing
+  lz4
+  snappy
+  zlib
+  zstd
+)
+makedepends=(
+  cmake
+  git
+  python
+)
+source=(
+  "git+https://github.com/facebook/rocksdb.git#tag=v$pkgver"
+  "$pkgname-system-liburing.patch::https://src.fedoraproject.org/rpms/rocksdb/raw/rawhide/f/shared-liburing.patch"
+  "$pkgname-enable-tests.patch"
+  "$pkgname-build-static-option.patch"
+)
+b2sums=('67c30a1c035d6bed9aafca7df6d6d559f1df5ca2e7da3837d7460dc73d3bee3303e648dad05e5114df5912e96de5382d2e6ab190959eeca3589f49ae8cc048b3'
+        '1c625b0df6c6d363d80bec1ad12d5ad6e0f08593f9e996a516334a6b91b5cb22e72213418d0c4592e9ef4aeb2689576d31675ab0b4ec4d657624b51303faa52e'
+        '40944ff982fcbdeee50f0cfce96a7bb0859e963510aa8f60e77987af2288337586397ccb0272462ec892793bdfa77bdf78defc6c70abeb785ead9859da49feda'
+        '7f78e0094cfd0fe0a9f2ce172f1993085d66b7616b4ffbd17c328ba7543cb594806a080e4ee8be72e0eaa32bae7dfedfd1a08b9311700ffddec4d707846dc3a5')
+
+prepare() {
+  patch -d $pkgname -Np1 < $pkgname-system-liburing.patch
+  patch -d $pkgname -Np1 < $pkgname-enable-tests.patch
+  patch -d $pkgname -Np1 < $pkgname-build-static-option.patch
+}
+
+build() {
+  local cmake_args=(
+    -DCMAKE_BUILD_TYPE=None
+    -DCMAKE_INSTALL_PREFIX=/usr
+    -Wno-dev
+    -DROCKSDB_BUILD_SHARED=ON
+    -DROCKSDB_BUILD_STATIC=OFF
+    -DWITH_CORE_TOOLS=ON
+    -DWITH_BZ2=ON
+    -DWITH_SNAPPY=ON
+    -DWITH_LZ4=ON
+    -DWITH_ZSTD=ON
+    -DWITH_ZLIB=ON
+    -DUSE_RTTI=ON
+    -DFAIL_ON_WARNINGS=OFF
+    -DPORTABLE=ON
+    -DWITH_ALL_TESTS=OFF
+  )
+  cmake -S $pkgname -B build "${cmake_args[@]}"
+  cmake --build build
+}
+
+check() {
+  # Deselected test fails for some reason
+  ctest --test-dir build --output-on-failure --parallel \
+    -E OptionsSettableTest.ColumnFamilyOptionsAllFieldsSettable
+}
+
+package() {
+  DESTDIR="$pkgdir" cmake --install build
+}

@@ -1,0 +1,52 @@
+# Maintainer: AndyRTR <andyrtr@archlinux.org>
+# Contributor:  Bartłomiej Piotrowski <bpiotrowski@archlinux.org>
+# Contributor: Yue
+
+pkgbase=libetonyek
+pkgname=(libetonyek libetonyek-doc)
+pkgver=0.1.13
+pkgrel=3
+pkgdesc='Library and a set of tools for reading and converting Apple Keynote presentations'
+arch=('x86_64')
+url="https://wiki.documentfoundation.org/DLP/Libraries/libetonyek"
+license=('MPL-2.0')
+makedepends=(
+  'boost' 'cppunit' 'doxygen' 'glibc' 'glm' 'gperf' 'liblangtag'
+  'librevenge' 'libxml2' 'mdds' 'zlib'
+)
+source=(https://dev-www.libreoffice.org/src/$pkgname/$pkgname-$pkgver.tar.xz
+        mdds3.patch)
+sha256sums=('032b71cb597edd92a0b270b916188281bc35be55296b263f6817b29adbcb1709'
+            'cd390fa4280b78fd0d1a7f587ab576d8ef0c4848036c8b0c821b576c6745db17')
+
+prepare() {
+  cd $pkgbase-$pkgver
+  patch -Np0 -i ../mdds3.patch
+  autoreconf -vfi
+}
+
+build() {
+  cd $pkgbase-$pkgver
+  ./configure --prefix=/usr --with-mdds=3.0
+  make
+}
+
+check() {
+  cd $pkgbase-$pkgver
+  make check
+}
+
+package_libetonyek() {
+  depends=('libxml2' 'zlib' 'librevenge' 'liblangtag' 'libstdc++' 'libgcc' 'glibc')
+
+  cd $pkgbase-$pkgver
+  make DESTDIR="$pkgdir" install-exec install-pkgconfDATA
+  make -C inc/libetonyek DESTDIR="$pkgdir" install
+}
+
+package_libetonyek-doc() {
+  pkgdesc+=" - documentation"
+
+  cd $pkgbase-$pkgver
+  make -C docs/doxygen/ DESTDIR="$pkgdir" install
+}

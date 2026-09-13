@@ -1,0 +1,61 @@
+# Maintainer: George Rawlinson <grawlinson@archlinux.org>
+# Contributor: Anatol Pomozov <anatol.pomozov@gmail.com>
+# Contributor: Massimiliano Torromeo <massimiliano.torromeo at gmail dot com>
+# Contributor: Alexsandr Pavlov <kidoz at mail dot ru>
+# Contributor: Andreas 'Segaja' Schleifer <segaja at archlinux dot org>
+
+_gemname=rdiscount
+pkgname=ruby-$_gemname
+pkgver=2.2.7.5
+pkgrel=1
+pkgdesc="Fast Implementation of Gruber's Markdown in C"
+arch=(x86_64)
+url='https://dafoster.net/projects/rdiscount/'
+license=(BSD-3-Clause)
+depends=(ruby)
+makedepends=(git ruby-rdoc ruby-rake)
+checkdepends=(ruby-test-unit)
+options=(!emptydirs)
+source=("$pkgname::git+https://github.com/davidfstr/rdiscount#tag=$pkgver")
+sha512sums=('0084def64c941d3f44307c889b8327d77d9ba9c5e54da4415aedfd18dd6c93b78c21719bfa0029a45aecce9a5e1bcd1b1d9b02b1509de97f87650011d853a278')
+b2sums=('dc4cf8acdecc2766adf44e5511b8cfa5e5b13b2e557a7452a2eab752d1a9790e141be149393a45a0f2b0473286c4ea964b8308049edb07b2e18cc34ec46d55d4')
+
+prepare() {
+  cd "$pkgname"
+
+  # Do not rebuild extension to run test
+  sed -i -r "/task 'test:unit' => \[:build\]/d;s/=> \[:build\] (do |t|)/\1/" Rakefile
+}
+
+build() {
+  cd "$pkgname"
+
+  local _gemdir="$(ruby -e'puts Gem.default_dir')"
+  local _platform="$(gem env platform | cut -d':' -f2)"
+  local _extension_api_version="$(ruby -e'puts Gem.extension_api_version')"
+
+  gem build --verbose "${_gemname}.gemspec"
+  rake build
+
+  gem install --ignore-dependencies --no-user-install -i "tmp_install$_gemdir" -n "tmp_install/usr/bin" $_gemname-$pkgver.gem
+  rm "tmp_install/$_gemdir/cache/$_gemname-$pkgver.gem" \
+      "tmp_install/${_gemdir}/extensions/${_platform}/${_extension_api_version}/${_gemname}-${pkgver}/gem_make.out"
+  install -D -m644 "tmp_install/$_gemdir/gems/$_gemname-$pkgver/COPYING" "tmp_install/usr/share/licenses/$pkgname/COPYING"
+
+  rm -rf "tmp_install/$_gemdir/gems/$_gemname-$pkgver/ext" \
+      "tmp_install/${_gemdir}/doc/${_gemname}-${pkgver}/ri/ext"
+}
+
+check() {
+  cd "$pkgname"
+
+  local _gemdir="$(ruby -e'puts Gem.default_dir')"
+
+  GEM_HOME="tmp_install${_gemdir}" rake test
+}
+
+package() {
+  cd "$pkgname"
+
+  cp --archive --verbose tmp_install/* "${pkgdir}"
+}

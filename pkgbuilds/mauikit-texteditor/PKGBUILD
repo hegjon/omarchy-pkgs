@@ -1,0 +1,32 @@
+# Maintainer: Antonio Rojas <arojas@archlinux.org>
+
+pkgname=mauikit-texteditor
+pkgver=4.0.2
+pkgrel=2
+pkgdesc='MauiKit Text Editor components'
+url='https://mauikit.org/'
+arch=(x86_64)
+license=(LGPL-3.0-only)
+depends=(glibc
+         kcoreaddons
+         ki18n
+         libstdc++
+         mauikit
+         qt6-base
+         qt6-declarative
+         sonnet
+         syntax-highlighting)
+makedepends=(extra-cmake-modules)
+source=(https://download.kde.org/stable/maui/$pkgname/$pkgver/$pkgname-$pkgver.tar.xz{,.sig})
+sha256sums=('b2cc5943453881ba74755c09f0cd2785fa3654cd58e82121821f347bf9fcdcd5'
+            'SKIP')
+validpgpkeys=(023625C8D02C0D8C15C3BABB86C793550794FEB8) # Camilo Higuita <milo.h@aol.com>                                    
+
+build() {
+  cmake -B build -S $pkgname-$pkgver
+  cmake --build build
+}
+
+package() {
+  DESTDIR="$pkgdir" cmake --install build
+}

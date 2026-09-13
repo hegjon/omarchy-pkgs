@@ -1,0 +1,34 @@
+# Maintainer: Felix Yan <felixonmars@archlinux.org>
+
+pkgname=rime-luna-pinyin
+pkgver=0.0.0.20250131
+_commit=6c2fec6396bf1f40b2b14717aea840bd7580c616
+pkgrel=1
+pkgdesc="Luna pinyin for rime"
+arch=('x86_64')
+url="https://github.com/rime/rime-luna-pinyin"
+license=('LGPL')
+# dependency for reverse lookup
+depends=('rime-stroke')
+makedepends=('git' 'librime' 'rime-prelude' 'rime-essay')
+source=("git+https://github.com/rime/rime-luna-pinyin.git#commit=$_commit")
+sha512sums=('6afb1f02d94601d31568b46a700ba30fc6b83ea5f80b9e895ffdeced2483f1f5740d41fff6aef8174075fb3307d04b104652a0149a998ee4b1f73679ee794fbc')
+
+prepare() {
+  cd $pkgname
+  # Link essentials
+  for _f in $(pacman -Qql rime-prelude rime-essay | grep -v "/$"); do ln -sf $_f; done
+}
+
+build(){
+  cd $pkgname
+  for _s in $(ls *.schema.yaml); do rime_deployer --compile $_s; done
+}
+
+package() {
+  cd $pkgname
+  find . -type l -delete
+  rm build/*.txt
+  install -Dm644 *.yaml -t "$pkgdir"/usr/share/rime-data/
+  install -Dm644 build/* -t "$pkgdir"/usr/share/rime-data/build/
+}

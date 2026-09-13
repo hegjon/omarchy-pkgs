@@ -1,0 +1,42 @@
+# Maintainer: kpcyrd <kpcyrd[at]archlinux[dot]org>
+# Maintainer: Robin Candau <antiz@archlinux.org>
+
+pkgname=apk-tools
+pkgver=3.0.8
+pkgrel=1
+pkgdesc="Alpine Package Keeper - package manager for alpine"
+url="https://gitlab.alpinelinux.org/alpine/apk-tools"
+arch=('x86_64')
+license=('GPL-2.0-or-later')
+depends=(
+  'glibc'
+  'openssl'
+  'zlib'
+)
+makedepends=(
+  'meson'
+  'lua53'
+  'lua53-zlib'
+  'scdoc'
+  'cmocka'
+)
+source=("https://gitlab.alpinelinux.org/alpine/${pkgname}/-/archive/v${pkgver}/${pkgname}-v${pkgver}.tar.gz")
+sha256sums=('e81c64a6e7c3806d45d4622c253e757aee970be84048554fa0eed79310e9453e')
+b2sums=('06ed1daa7b4a4fc0a3fdc2afd8cf639e1f4dc324ce02fe891728d5a8007cf9ae9ca6a050851abbb074c6568530335d8e55405bed4344cfad2066b20e5fae92fb')
+
+build() {
+  arch-meson "${pkgname}-v${pkgver}" build \
+    --sbindir=/usr/bin \
+    --libdir=/usr/lib
+  meson compile -C build
+}
+
+check() {
+  meson test -C build --print-errorlogs
+}
+
+package() {
+  meson install -C build --destdir "${pkgdir}"
+}
+
+# vim: ts=2 sw=2 et:

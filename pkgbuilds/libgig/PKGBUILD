@@ -1,0 +1,56 @@
+# Maintainer: David Runge <dvzrv@archlinux.org>
+# Contributor: Ray Rashif <schiv@archlinux.org>
+# Contributor: svoufff <svoufff at gmail dot com>
+# Contributor: Shinlun Hsieh <yngwiexx@yahoo.com.tw>
+
+pkgname=libgig
+pkgver=4.6.0
+pkgrel=1
+pkgdesc="C++ library for loading, modifying and creating .gig, .ksf, .kmp, .sf2 and DLS files"
+arch=(x86_64)
+url="https://www.linuxsampler.org/libgig/"
+license=(
+  GPL-2.0-or-later
+  LGPL-2.1-or-later
+)
+depends=(
+  libgcc
+  libstdc++
+  glibc
+  util-linux-libs
+)
+makedepends=(
+  libsndfile
+  util-linux
+)
+provides=(libgig.so)
+source=(
+  https://download.linuxsampler.org/packages/$pkgname-$pkgver.tar.bz2
+  $pkgname-4.3.0-libdir.patch
+)
+sha512sums=('c5c0a4f36fd6b62baefdacbc2250a65de2f095aecd70242b860fb406a6f983a9b871096d725d4a83808e13f2522de1913eea9618abd6fea3146ee820df77eef0'
+            '7bc339ff8fddc7e35ab8a58a591038bc06b8fb3acc895b471968e8731608e1524d74c3e58f6e5cff06ca1a4fd0c09de85e6ffedff0336df31270aeaf5aef6f81')
+b2sums=('e99f137351727cbca92fdbec311e2af18998413d1192d417b6b8a9c16e961164360f7653ea95e965a50fb6017d67fbbdb75bbf554ce1e77a88fe889f56863d28'
+        '67790271997b476b4fdd6eb82c69d889de3a2d0f419d5338fa552d8ebdaef37f12596307fc1831af3e2bae1e270e714f41358a71f518d912bed2200917957c74')
+
+prepare() {
+  # install libgig.so as a globally visible shared object
+  patch -Np1 -d $pkgname-$pkgver -i ../$pkgname-4.3.0-libdir.patch
+}
+
+build() {
+  cd $pkgname-$pkgver
+  ./configure --prefix=/usr
+  # prevent excessive overlinking due to libtool
+  sed -i -e 's/ -shared / -Wl,-O1,--as-needed\0/g' libtool
+  make
+}
+
+package() {
+  depends+=(
+    libsndfile libsndfile.so
+  )
+  make DESTDIR="$pkgdir" install -C $pkgname-$pkgver
+  install -vDm 644 $pkgname-$pkgver/{AUTHORS,ChangeLog,NEWS,README,TODO} -t "$pkgdir/usr/share/doc/$pkgname/"
+}
+# vim:set ts=2 sw=2 et:

@@ -1,0 +1,174 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: chapmajs <glitch@glitchwrks.com>
+Date: Thu, 9 Oct 2025 09:09:04 -0400
+Subject: [PATCH 1/2] Merge pull request #21 from glitchwrks/glitchworks_fixup
+
+Improved fixup for `bcrypt` >= 5.0.0, `bcrypt` version detection
+
+(cherry picked from commit 0e87b6f08a3402a93485997e6d00c3a946c1ca4f)
+---
+ passlib/handlers/bcrypt.py | 23 +++++++++++++++++------
+ 1 file changed, 17 insertions(+), 6 deletions(-)
+
+diff --git a/passlib/handlers/bcrypt.py b/passlib/handlers/bcrypt.py
+index 242c568..07dc4f3 100644
+--- a/passlib/handlers/bcrypt.py
++++ b/passlib/handlers/bcrypt.py
+@@ -375,14 +375,25 @@ class _BcryptCommon(uh.SubclassBackendMixin, uh.TruncateMixin, uh.HasManyIdents,
+             NOTE: if in future we need to deliberately create hashes which have this bug,
+                   can use something like 'hashpw(repeat_string(secret[:((1+secret) % 256) or 1]), 72)'
+             """
+-            # check if it exhibits wraparound bug
++
++            # Secret which will trip the wraparound bug, if present
+             secret = (b"0123456789"*26)[:255]
+-            bug_hash = ident.encode("ascii") + b"04$R1lJ2gkNaoPGdafE.H.16.nVyh2niHsGJhayOHLMiXlI45o8/DU.6"
+-            if verify(secret, bug_hash):
+-                return True
+ 
+-            # if it doesn't have wraparound bug, make sure it *does* handle things
+-            # correctly -- or we're in some weird third case.
++            # Python bcrypt >= 5.0.0 will raise an exception on passwords greater than 72 characters,
++            # whereas earlier versions without the wraparound bug silently truncated the input to 72
++            # characters. See if the exception is generated.
++            try:
++                bug_hash = ident.encode("ascii") + b"04$R1lJ2gkNaoPGdafE.H.16.nVyh2niHsGJhayOHLMiXlI45o8/DU.6"
++
++                # If we get here, the backend auto-truncates, test for wraparound bug
++                if verify(secret, bug_hash):
++                    return True
++            except ValueError:
++                # Backend explicitly will not auto-truncate, truncate the password to 72 characters
++                secret = secret[:72]
++
++            # Check to make sure that the backend still hashes correctly; if not, we're in a failure case
++            # not related to the original wraparound bug or bcrypt >= 5.0.0 input length restriction.
+             correct_hash = ident.encode("ascii") + b"04$R1lJ2gkNaoPGdafE.H.16.1MKHPvmKwryeulRe225LKProWYwt9Oi"
+             if not verify(secret, correct_hash):
+                 raise RuntimeError("%s backend failed to verify %s wraparound hash" % (backend, ident))
+
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: loqs <loqs@users.noreply.github.com>
+Date: Thu, 13 Aug 2026 07:12:48 +0000
+Subject: [PATCH 2/2] test: fix bcrypt tests
+
+based on https://github.com/notypecheck/passlib/commit/68e583357a29dc5d93afa66c1077c73d5168afa3
+Use pytest fixture to detect if backend raises on long passwords and
+skip affected tests when backend raises.
+---
+ passlib/tests/conftest.py             | 24 ++++++++++++++++++++++++
+ passlib/tests/test_handlers_bcrypt.py | 21 +++++++++++++++++++++
+ passlib/tests/test_handlers_django.py | 12 ++++++++++++
+ 3 files changed, 57 insertions(+)
+ create mode 100644 passlib/tests/conftest.py
+
+diff --git a/passlib/tests/conftest.py b/passlib/tests/conftest.py
+new file mode 100644
+index 0000000..4c68161
+--- /dev/null
++++ b/passlib/tests/conftest.py
+@@ -0,0 +1,24 @@
++from typing import Any
++
++import pytest
++
++from passlib.handlers.bcrypt import bcrypt
++
++
++@pytest.fixture(scope="session")
++def bcrypt_backend_raises_on_wraparound() -> bool:
++    try:
++        bcrypt.hash(secret="abc" * 100)
++    except ValueError:
++        return True
++    return False
++
++
++@pytest.fixture(scope="class")
++def bcrypt_backend_raises_on_wraparound_unittest(
++    request: Any,
++    bcrypt_backend_raises_on_wraparound: bool,
++):
++    request.cls.bcrypt_backend_raises_on_wraparound = (
++        bcrypt_backend_raises_on_wraparound
++    )
+diff --git a/passlib/tests/test_handlers_bcrypt.py b/passlib/tests/test_handlers_bcrypt.py
+index 64fc8bf..d684ae0 100644
+--- a/passlib/tests/test_handlers_bcrypt.py
++++ b/passlib/tests/test_handlers_bcrypt.py
+@@ -8,6 +8,7 @@ import logging; log = logging.getLogger(__name__)
+ import os
+ import warnings
+ # site
++import pytest
+ # pkg
+ from passlib import hash
+ from passlib.handlers.bcrypt import IDENT_2, IDENT_2X
+@@ -20,6 +21,7 @@ from passlib.tests.test_handlers import UPASS_TABLE
+ #=============================================================================
+ # bcrypt
+ #=============================================================================
++@pytest.mark.usefixtures("bcrypt_backend_raises_on_wraparound_unittest")
+ class _bcrypt_test(HandlerCase):
+     """base for BCrypt test cases"""
+     handler = hash.bcrypt
+@@ -184,6 +186,22 @@ class _bcrypt_test(HandlerCase):
+         # silence this warning, will come up a bunch during testing of old 2a hashes.
+         warnings.filterwarnings("ignore", ".*backend is vulnerable to the bsd wraparound bug.*")
+ 
++        if getattr(self, 'bcrypt_backend_raises_on_wraparound', False):
++            type(self).known_correct_hashes = [
++                (s, h) for s, h in self.known_correct_hashes
++                if len(s) <= self.handler.truncate_size
++            ]
++
++    def test_secret_w_truncate_size(self):
++        if getattr(self, 'bcrypt_backend_raises_on_wraparound', False):
++            raise self.skipTest("bcrypt backend raises on passwords > 72 bytes")
++        super(_bcrypt_test, self).test_secret_w_truncate_size()
++
++    def test_77_fuzz_input(self, threaded=False):
++        if getattr(self, 'bcrypt_backend_raises_on_wraparound', False):
++            raise self.skipTest("bcrypt backend raises on passwords > 72 bytes")
++        super(_bcrypt_test, self).test_77_fuzz_input(threaded=threaded)
++
+     def populate_settings(self, kwds):
+         # builtin is still just way too slow.
+         if self.backend == "builtin":
+diff --git a/passlib/tests/test_handlers_django.py b/passlib/tests/test_handlers_django.py
+index f7c9a0d..2b09848 100644
+--- a/passlib/tests/test_handlers_django.py
++++ b/passlib/tests/test_handlers_django.py
+@@ -8,6 +8,7 @@ import logging; log = logging.getLogger(__name__)
+ import re
+ import warnings
+ # site
++import pytest
+ # pkg
+ from passlib import hash
+ from passlib.utils import repeat_string
+@@ -274,6 +275,7 @@ class django_pbkdf2_sha1_test(HandlerCase, _DjangoHelper):
+     ]
+ 
+ @skipUnless(hash.bcrypt.has_backend(), "no bcrypt backends available")
++@pytest.mark.usefixtures("bcrypt_backend_raises_on_wraparound_unittest")
+ class django_bcrypt_test(HandlerCase, _DjangoHelper):
+     """test django_bcrypt"""
+     handler = hash.django_bcrypt
+@@ -311,6 +313,16 @@ class django_bcrypt_test(HandlerCase, _DjangoHelper):
+             # XXX: enable this to check 2a / 2b?
+             return None
+ 
++    def test_secret_w_truncate_size(self):
++        if getattr(self, 'bcrypt_backend_raises_on_wraparound', False):
++            raise self.skipTest("bcrypt backend raises on passwords > 72 bytes")
++        super(django_bcrypt_test, self).test_secret_w_truncate_size()
++
++    def test_77_fuzz_input(self, threaded=False):
++        if getattr(self, 'bcrypt_backend_raises_on_wraparound', False):
++            raise self.skipTest("bcrypt backend raises on passwords > 72 bytes")
++        super(django_bcrypt_test, self).test_77_fuzz_input(threaded=threaded)
++
+ @skipUnless(hash.bcrypt.has_backend(), "no bcrypt backends available")
+ class django_bcrypt_sha256_test(HandlerCase, _DjangoHelper):
+     """test django_bcrypt_sha256"""

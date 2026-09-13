@@ -1,0 +1,58 @@
+# Maintainer: Felix Yan <felixonmars@archlinux.org>
+# Contributor: Aaron DeVore <aaron.devore@gmail.com>
+# Contributor: Cilyan Olowen <gaknar@gmail.com>
+
+pkgbase='python-webob'
+pkgname=('python-webob' 'python-webob-docs')
+pkgver=1.8.11
+pkgrel=1
+pkgdesc="WSGI request and response object"
+arch=('any')
+url="https://webob.org/"
+license=('MIT')
+depends=('python' 'python-legacy-cgi')
+makedepends=('git' 'python-setuptools' 'python-sphinx' 'python-build' 'python-installer' 'python-wheel')
+checkdepends=('python-pytest')
+optdepends=('python-webob-docs: documentation')
+source=("git+https://github.com/Pylons/webob.git#tag=$pkgver")
+sha512sums=('544ab2cff72ce467243eb86dfe09d5e97f1dca35e4853d860b05eb35fe027a59d122bc6c6391581a30fcd91aaa0709a8be49e2395df03106ca469f95ae00463e')
+
+prepare() {
+  cp -a webob webob-docs
+  sed -i -e "s/pkg_resources.get_distribution('webob').version/'$pkgver'/" \
+    -e '/import pkg_resources/d' webob-docs/docs/conf.py
+}
+
+build() {
+  cd "$srcdir"/webob
+  python -m build --wheel --no-isolation
+
+  cd "$srcdir"/webob-docs
+  PYTHONPATH="$PWD/src" make -C docs html
+}
+
+check() {
+  cd webob
+  # Deselected test fails under Python 3.14 due to DisconnectionError being
+  # raised before IOError.
+  PYTHONPATH="$PWD/src" pytest --ignore=docs \
+    --deselect=tests/test_in_wsgiref.py::test_interrupted_request
+}
+
+package_python-webob() {
+  cd webob
+  python -m installer --destdir="$pkgdir" dist/*.whl
+  install -D -m644 "docs/license.txt" \
+                   "$pkgdir"/usr/share/licenses/$pkgname/license.txt
+}
+
+package_python-webob-docs() {
+  optdepends=()
+
+  cd webob-docs
+  _doc_dir="$pkgdir"/usr/share/doc/python-webob
+  mkdir -p "$_doc_dir"
+  cp -a "docs/_build/html" "$_doc_dir"
+  install -D -m644 "docs/license.txt" \
+                   "$pkgdir"/usr/share/licenses/$pkgname/license.txt
+}

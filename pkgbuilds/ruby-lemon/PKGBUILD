@@ -1,0 +1,69 @@
+# Maintainer: Felix Yan <felixonmars@archlinux.org>
+
+pkgname=ruby-lemon
+pkgver=0.9.3
+pkgrel=1
+pkgdesc='Pucker-Strength Unit Testing'
+arch=(any)
+url='https://github.com/rubyworks/lemon'
+license=(BSD-2-Clause)
+depends=(
+  ruby
+  ruby-ae
+  ruby-ansi
+  ruby-rubytest-cli
+)
+makedepends=(
+  git
+  ruby-rdoc
+)
+checkdepends=(
+  ruby-erb
+  ruby-qed
+)
+options=(!emptydirs)
+source=(git+https://github.com/rubyworks/lemon.git#tag=v$pkgver)
+sha256sums=('6c25bcab9ac1a9e5d924c652855ec45c697682a2c29a75e76d18e25bcd6cc0f0')
+
+prepare() {
+  cd lemon
+  sed -i -e 's/rubytest/rubytest-cli/' -e 's/Test::Runner.cli(\*ARGV)/Test::CLI.run(ARGV)/' lib/lemon/cli.rb
+}
+
+build() {
+  local _gemdir="$(gem env gemdir)"
+  cd lemon
+  gem build lemon.gemspec
+  gem install \
+    --local \
+    --verbose \
+    --ignore-dependencies \
+    --no-user-install \
+    --install-dir "tmp_install/$_gemdir" \
+    --bindir "tmp_install/usr/bin" \
+    lemon-$pkgver.gem
+  find "tmp_install/$_gemdir/gems/" \
+    -type f \
+    \( \
+        -iname "*.o" -o \
+        -iname "*.c" -o \
+        -iname "*.so" -o \
+        -iname "*.time" -o \
+        -iname "gem.build_complete" -o \
+        -iname "Makefile" \
+    \) \
+    -delete
+  rm -r tmp_install/$_gemdir/cache
+}
+
+check() {
+  local _gemdir="$(gem env gemdir)"
+  cd lemon
+  PATH="$PWD/tmp_install/usr/bin:$PATH" GEM_HOME="tmp_install/$_gemdir" qed
+}
+
+package() {
+  cd lemon
+  cp -a tmp_install/* "$pkgdir"/
+  install -Dm644 LICENSE.txt -t "$pkgdir"/usr/share/licenses/$pkgname/
+}

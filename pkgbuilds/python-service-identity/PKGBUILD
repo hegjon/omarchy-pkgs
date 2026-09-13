@@ -1,0 +1,35 @@
+# Maintainer: Felix Yan <felixonmars@archlinux.org>
+
+pkgname=python-service-identity
+pkgver=26.1.0
+pkgrel=1
+pkgdesc="Service identity verification for pyOpenSSL"
+arch=('any')
+license=('MIT')
+url="https://pypi.python.org/pypi/service_identity"
+depends=('python-attrs' 'python-cryptography')
+makedepends=('git' 'python-build' 'python-installer' 'python-hatchling' 'python-hatch-fancy-pypi-readme'
+             'python-hatch-vcs')
+checkdepends=('python-pytest' 'python-idna')
+optdepends=('python-idna: for Internationalized Domain Names support')
+replaces=('python-service_identity')
+source=("git+https://github.com/pyca/service-identity.git#tag=$pkgver")
+sha512sums=('11b8883457a677280360b674a76da174bf0475be4b81b616af5e591bf943dde01da1bef0fa9f4486f12c21aca69e864efbd3596de0ab7cfedf7bbbc588281831')
+
+build() {
+  cd service-identity
+  python -m build -nw
+}
+
+check() {
+  cd service-identity
+  python -m installer --destdir=tmp_install dist/*.whl
+  local python_version=$(python -c 'import sys; print(".".join(map(str, sys.version_info[:2])))')
+  PYTHONPATH="$PWD/tmp_install/usr/lib/python${python_version}/site-packages" pytest
+}
+ 
+package() {
+  cd service-identity
+  python -m installer --destdir="$pkgdir" dist/*.whl
+  install -Dm644 LICENSE -t "$pkgdir"/usr/share/licenses/$pkgname/
+}

@@ -1,0 +1,79 @@
+# Maintainer: Alexander F. Rødseth <xyproto@archlinux.org>
+# Contributor: Gabriel Souza Franco
+# Contributor: Florian Pritz
+# Contributor: Christian Hesse <mail@eworm.de>
+# Contributor: Thomas Dziedzic <gostrc at gmail>
+# Contributor: Mickele
+# Contributor: Marcus Fritzsch <fritschy@googlemail.com>
+
+pkgname=coin
+pkgver=4.0.10
+epoch=1 # downgrade, ref https://gitlab.archlinux.org/archlinux/packaging/packages/freecad/-/issues/23
+pkgrel=1
+pkgdesc='3D graphics library compatible with Open Inventor'
+url='https://github.com/coin3d/coin'
+license=(BSD-3-Clause)
+arch=(x86_64)
+depends=(
+  sh
+  libgl
+  libx11
+  libgcc
+  libstdc++
+  glibc
+  expat
+)
+makedepends=(
+  boost
+  cmake
+  doxygen
+  git
+  glu
+  ninja
+)
+optdepends=(
+  'fontconfig: dynamic linking support'
+  'freetype2: dynamic linking support'
+  'openal: audio/dynamic linking support'
+  'zlib: dynamic linking support'
+)
+source=("$pkgname::git+$url#tag=v$pkgver")
+sha512sums=('3e8d7d63564b63c0dea83a7e10cf49064f11bf6e1b98027ecda7a4ffdc615b916c3b118561eff1ac3ea33f4a4c004d3b09df5049b089861dca6d3e6ff2afcdf9')
+b2sums=('31a1b93e5885977b048ba4816ff6381d993894dec7074c517b8d082216e2ac5bc4184d8554eb59078b8caee0d90a32f21bc256cabba8986d698fe7c43eb8e6d2')
+
+build() {
+  local cmake_options=(
+    -B build
+    -S "$pkgname"
+    -G Ninja
+    -W no-dev
+    -D CMAKE_BUILD_TYPE=Release
+    -D CMAKE_C_FLAGS="$CFLAGS -fPIC -w"
+    -D CMAKE_CXX_FLAGS="$CXXFLAGS -fPIC -w"
+    -D CMAKE_INSTALL_LIBDIR=lib
+    -D CMAKE_INSTALL_PREFIX=/usr
+    -D CMAKE_POLICY_VERSION_MINIMUM=3.10
+    -D COIN_BUILD_DOCUMENTATION=ON
+    -D COIN_BUILD_DOCUMENTATION_CHM=OFF
+    -D COIN_BUILD_DOCUMENTATION_MAN=ON
+    -D COIN_THREADSAFE=ON
+    -D USE_EXTERNAL_EXPAT=ON
+  )
+
+  cmake "${cmake_options[@]}"
+
+  cmake --build build
+}
+
+package() {
+  DESTDIR="$pkgdir" cmake --install build
+
+  # Skip the HTML documentation
+  rm -rf "$pkgdir/usr/share/doc"
+
+  # Remove an empty directory
+  rmdir "$pkgdir/usr/share/Coin/profiler"
+
+  # Package the BSD-3 license
+  install -Dm644 $pkgname/COPYING "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+}

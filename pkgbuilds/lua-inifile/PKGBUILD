@@ -1,0 +1,49 @@
+# Maintainer: Caleb Maclennan <caleb@alerque.com>
+# Contributor: Stephen Smith <stephen304@gmail.com>
+
+pkgbase=lua-inifile
+_rockname=${pkgbase#lua-}
+pkgname=("$pkgbase" "lua51-$_rockname" "lua52-$_rockname" "lua53-$_rockname" "lua54-$_rockname")
+pkgver=1.1
+pkgrel=2
+_rockrel=1
+pkgdesc='a simple, complete ini parser for lua'
+arch=(any)
+url="https://github.com/bartbes/$_rockname"
+license=(BSD)
+makedepends=(lua
+             lua51
+             lua52
+             lua53
+             lua54
+             luarocks)
+_archive="$_rockname-$pkgver"
+source=("$url/archive/v$pkgver/$_archive.tar.gz")
+sha256sums=('3beb7db2d8ade8658152329c3644c8403300dc780d2dba346e612e45ef01ac24')
+
+_package() {
+	cd "$_archive"
+	depends=("${pkgname%-*}")
+	luarocks --lua-version="$1" --tree="$pkgdir/usr/" \
+		make --deps-mode=none --no-manifest "$_rockname-$pkgver-$_rockrel.rockspec"
+}
+
+package_lua-inifile() {
+	_package 5.5
+}
+
+package_lua54-inifile() {
+	_package 5.4
+}
+
+package_lua53-inifile() {
+	_package 5.3
+}
+
+package_lua52-inifile() {
+	_package 5.2
+}
+
+package_lua51-inifile() {
+	_package 5.1
+}

@@ -1,0 +1,43 @@
+# Maintainer: Carl Smedstad <carsme@archlinux.org>
+# Contributor: Chih-Hsuan Yen <yan12125@archlinux.org>
+# Contributor: Felix Yan <felixonmars@archlinux.org>
+
+pkgname=python-openapi-spec-validator
+pkgver=0.8.4
+pkgrel=1
+pkgdesc="OpenAPI 2.0 (aka Swagger) and OpenAPI 3 spec validator"
+url="https://github.com/p1c2u/openapi-spec-validator"
+license=('Apache-2.0')
+arch=('any')
+depends=(
+  'python'
+  'python-jsonschema'
+  'python-jsonschema-path'
+  'python-lazy-object-proxy'
+  'python-openapi-schema-validator'
+  'python-pydantic'
+  'python-pydantic-settings'
+)
+makedepends=(
+  'python-build'
+  'python-installer'
+  'python-poetry-core'
+)
+checkdepends=('python-pytest')
+source=("$url/archive/$pkgver/$pkgname-$pkgver.tar.gz")
+sha512sums=('7835303ef802df6377e52bd8dedb1ce3a88d2ca0ae4224a4dfc574805524e97c51c0210b931ba31f2b8c734933dceea2dc5424bbf3839c5f4cc7cabd9f5776ab')
+
+build() {
+  cd ${pkgname#python-}-$pkgver
+  python -m build --wheel --no-isolation
+}
+
+check() {
+  cd ${pkgname#python-}-$pkgver
+  PYTHONPATH="$PWD" pytest --override-ini="addopts="
+}
+
+package() {
+  cd ${pkgname#python-}-$pkgver
+  python -m installer --destdir="$pkgdir" dist/*.whl
+}

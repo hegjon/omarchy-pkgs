@@ -1,0 +1,46 @@
+# Maintainer: Levente Polyak <anthraxx[at]archlinux[dot]org>
+# Maintainer: T.J. Townsend <blakkheim@archlinux.org>
+# Contributor: Adrian Perez de Castro <aperez@igalia.com>
+
+pkgname=signify
+pkgver=33
+pkgrel=1
+pkgdesc='OpenBSD tool to cryptographically sign and verify files'
+url='https://codeberg.org/aperezdc/signify'
+arch=('x86_64')
+license=('BSD')
+makedepends=('git')
+depends=('glibc' 'libbsd>=0.8')
+source=(git+https://codeberg.org/aperezdc/signify.git?signed#tag=v${pkgver})
+sha512sums=('04b667ba0cd356a5b31278ce0aa6ba8b9bd0c6667d8bff86d919f2018a9637d8c50ee84db2b93a63e6b6bf101c3200254ba192d74997887855249606db8af07f')
+validpgpkeys=(
+  '5AA3BC334FD7E3369E7C77B291C559DBE4C9123B' # Adrián Pérez de Castro <aperez@igalia.com>
+)
+
+prepare() {
+  cd ${pkgname}
+  # using O_NOFOLLOW doesn't lock anything down here, swapping files
+  # without symlinks is still equally open to TOCTOU and it doesn't even
+  # matter here. let's prefer supporting symlinked target files.
+  sed -E 's/\| ?O_NOFOLLOW//g' -i ./*.c
+}
+
+build () {
+  cd ${pkgname}
+  make PREFIX=/usr \
+    LTO=1 \
+    EXTRA_CFLAGS="${CFLAGS} ${CPPFLAGS}" \
+    EXTRA_LDFLAGS="${LDFLAGS}" \
+    GIT_TAG=''
+}
+
+package () {
+  cd ${pkgname}
+  make PREFIX=/usr \
+    DESTDIR="${pkgdir}" \
+    GIT_TAG='' install
+  install -Dm644 README.md CHANGELOG.md -t "${pkgdir}/usr/share/doc/${pkgname}"
+  install -Dm644 COPYING "${pkgdir}/usr/share/licenses/${pkgname}/LICENSE"
+}
+
+# vim: ts=2 sw=2 et:

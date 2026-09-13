@@ -1,0 +1,64 @@
+# Maintainer: Balló György <ballogyor+arch at gmail dot com>
+# Contributor: Jan Alexander Steffens (heftig) <jan.steffens@gmail.com>
+
+pkgbase=gom
+pkgname=(
+  gom
+  gom-docs
+)
+pkgver=0.5.6
+pkgrel=1
+pkgdesc='GObject to SQLite object mapper library'
+arch=(x86_64)
+url='https://wiki.gnome.org/Projects/Gom'
+license=(LGPL-2.1-or-later)
+depends=(
+  glib2
+  glibc
+  sqlite
+)
+makedepends=(
+  gdk-pixbuf2
+  gi-docgen
+  git
+  gobject-introspection
+  meson
+  python-gobject
+)
+source=(
+  "git+https://gitlab.gnome.org/GNOME/$pkgbase.git#tag=$pkgver"
+)
+b2sums=('48a9fbe86d54565e1585ddb653993e02dfb79f404a3223259adc2c00f265ed0827acfc9a4b3ce01abd0289626a8d18ceae7ea860d127bd84fcfdd3f17944d776')
+
+prepare() {
+  cd $pkgbase
+}
+
+build() {
+  local meson_options=(
+    -D enable-gtk-doc=true
+  )
+
+  arch-meson $pkgbase build "${meson_options[@]}"
+  meson compile -C build
+}
+
+check() {
+  meson test -C build --print-errorlogs
+}
+
+package_gom() {
+  meson install -C build --destdir "$pkgdir"
+
+  mkdir -p doc/usr/share
+  mv {"$pkgdir",doc}/usr/share/doc
+}
+
+package_gom-docs() {
+  pkgdesc+=" - documentation"
+  depends=()
+
+  mv doc/* "$pkgdir"
+}
+
+# vim:set sw=2 sts=-1 et:

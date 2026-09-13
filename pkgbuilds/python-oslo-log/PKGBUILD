@@ -1,0 +1,34 @@
+# Maintainer: Felix Yan <felixonmars@archlinux.org>
+# Contributor: Daniel Wallace <danielwallace at gtmanfred dot com>
+
+pkgname=python-oslo-log
+pkgver=8.3.2
+pkgrel=1
+pkgdesc="Oslo Logging Library"
+arch=('any')
+url="https://pypi.python.org/pypi/oslo.log/$pkgver"
+license=('Apache-2.0')
+depends=('python-pbr' 'python-oslo-config' 'python-oslo-context' 'python-oslo-i18n'
+         'python-oslo-utils' 'python-oslo-serialization' 'python-debtcollector'
+         'python-dateutil')
+makedepends=('git' 'python-build' 'python-installer')
+checkdepends=('python-stestr' 'python-testtools' 'python-oslotest' 'python-eventlet')
+source=("git+https://github.com/openstack/oslo.log.git#tag=$pkgver")
+sha512sums=('42219da7221e5ee9f5674739b2a5ebbdbfbd5a952b16a331cd23c9e928d3247416de1e1dd58726c3679de3d4056095bf90376a250dca18d097991f31939bcb14')
+
+build() {
+  cd oslo.log
+  python -m build --wheel --no-isolation
+}
+
+check() {
+  cd oslo.log
+  stestr run
+}
+
+package() {
+  cd oslo.log
+  python -m installer --destdir "$pkgdir" dist/*.whl
+}
+
+# vim:set ts=2 sw=2 et:

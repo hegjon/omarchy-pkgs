@@ -1,0 +1,29 @@
+# Maintainer: Jaroslav Lichtblau <svetlemodry@archlinux.org>
+# Contributor: Federico Cinelli <cinelli@aur.archlinux.org>
+# Contributor: Bob Finch <w9ya@arrl.net>
+
+pkgname=shapelib
+pkgver=1.6.3
+pkgrel=1
+pkgdesc='Simple C API for reading and writing ESRI Shapefiles'
+arch=('x86_64')
+url='http://shapelib.maptools.org/'
+license=('LGPL-2.0-only')
+depends=(
+  'libstdc++'
+)
+source=(https://download.osgeo.org/$pkgname/$pkgname-$pkgver.tar.gz)
+sha256sums=('3ff5ead18ca6d2fe249f0e80b361e1ad6782165115268ed4a58c780a60c1e0eb')
+
+build() {
+  cd $pkgname-$pkgver
+
+  ./configure --prefix=/usr
+  make
+}
+
+package() {
+  cd $pkgname-$pkgver
+
+  make DESTDIR="${pkgdir}" install
+}

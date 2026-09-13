@@ -1,0 +1,31 @@
+version = 1
+
+[[annotations]]
+path = [
+    "PKGBUILD",
+    "README.md",
+    "keys/**",
+    ".SRCINFO",
+    ".nvchecker.toml",
+    "*.install",
+    "*.sysusers",
+    "*.tmpfiles",
+    "*.logrotate",
+    "*.pam",
+    "*.service",
+    "*.socket",
+    "*.timer",
+    "*.desktop",
+    "*.hook",
+]
+SPDX-FileCopyrightText = "Arch Linux contributors"
+SPDX-License-Identifier = "0BSD"
+
+[[annotations]]
+path = [
+    "hipblaslt-Don-t-fetch-deps-for-rocroller.patch",
+    "rocroller-Always-fetch-libdivide-if-it-s-not-install.patch",
+    "hipblaslt-7.2.3-cstdint-include.patch",
+]
+SPDX-FileCopyrightText = "hipblaslt contributors"
+SPDX-License-Identifier = "MIT"

@@ -1,0 +1,44 @@
+# Maintainer: Antonio Rojas <arojas@archlinux.org>
+# Contributor: Rémy Oudompheng <oudomphe@clipper.ens.fr>
+# Contributor: Alessandro "jakedust" Andrioni <jakedust@gmail.com>
+
+pkgname=flint
+pkgver=3.6.0
+pkgrel=1
+pkgdesc='A C library for doing number theory'
+arch=(x86_64)
+url='http://www.flintlib.org'
+license=(LGPL-3.0-only)
+depends=(cblas
+         glibc
+         gmp
+         mpfr)
+makedepends=(cmake
+             git
+             python)
+replaces=(antic
+          arb)
+source=(git+https://github.com/flintlib/flint#tag=v$pkgver)
+sha256sums=('7fe521dc20df5e61951417aed44ed282e477399c2689a07c5c07f6878da88cc8')
+
+prepare() {
+  cd $pkgname
+  sed -e 's|NOT WIN32|FALSE|' -i CMakeLists.txt
+}
+
+build() {
+  cmake -B build -S $pkgname \
+    -DCMAKE_INSTALL_PREFIX=/usr \
+    -DENABLE_ARCH=NO \
+    -DENABLE_AVX2=OFF \
+    -DBUILD_TESTING=ON
+  cmake --build build
+}
+
+check() {
+  ctest --test-dir build
+}
+
+package() {
+  DESTDIR="$pkgdir" cmake --install build
+}

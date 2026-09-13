@@ -1,0 +1,36 @@
+# Maintainer: Anatol Pomozov
+# Maintainer: Carl Smedstad <carsme@archlinux.org>
+
+pkgname=aws-c-mqtt
+pkgver=0.15.2
+pkgrel=1
+pkgdesc='C99 implementation of the MQTT 3.1.1 specification'
+arch=(x86_64)
+url='https://github.com/awslabs/aws-c-mqtt'
+license=(Apache-2.0)
+depends=(
+  aws-c-common
+  aws-c-http
+  aws-c-io
+  glibc
+)
+makedepends=(cmake)
+source=("$url/archive/v$pkgver/$pkgname-$pkgver.tar.gz")
+b2sums=('43ff09eaec4c21c31aa6056e3e3e431596e3451ac33a6658fdf18d38ceac379ae5ce94a659c15c917560fbc4c35b79fcfa98ef00266abd405cc6278809eb80b0')
+
+build() {
+  cmake -S $pkgname-$pkgver -B build \
+    -DCMAKE_BUILD_TYPE=None \
+    -DCMAKE_INSTALL_PREFIX=/usr \
+    -Wno-dev \
+    -DBUILD_SHARED_LIBS=ON
+  cmake --build build
+}
+
+check() {
+  cmake --build build --target test
+}
+
+package() {
+  DESTDIR="$pkgdir" cmake --install build
+}

@@ -1,0 +1,67 @@
+From c3ed50dca6bb1e043d273bdefbcd0b2887255969 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Ball=C3=B3=20Gy=C3=B6rgy?= <ballogyor@gmail.com>
+Date: Thu, 19 Dec 2024 02:22:08 +0100
+Subject: [PATCH] clock: Fix tracking current location
+
+The clock->current variable was not updated when the first location was
+added to the panel, and when the current location was removed.
+---
+ modules/clock/clock-applet.c | 25 ++++++++++++++++++-------
+ 1 file changed, 18 insertions(+), 7 deletions(-)
+
+diff --git a/modules/clock/clock-applet.c b/modules/clock/clock-applet.c
+index 0449ca9f9..d3a728edb 100644
+--- a/modules/clock/clock-applet.c
++++ b/modules/clock/clock-applet.c
+@@ -927,12 +927,6 @@ locations_changed (GSettings   *settings,
+                    const gchar *key,
+                    ClockApplet *cd)
+ {
+-        if (!cd->locations) {
+-                clock_button_set_weather (CLOCK_BUTTON (cd->panel_button),
+-                                          NULL,
+-                                          NULL);
+-        }
+-
+         if (cd->map_widget)
+                 clock_map_refresh (CLOCK_MAP (cd->map_widget));
+ 
+@@ -1271,10 +1265,13 @@ run_prefs_edit_save (GtkButton   *button,
+                                weather_code,
+                                lat,
+                                lon,
+-                               cd->locations == NULL);
++                               cd->current == NULL);
+ 
+         cd->locations = g_list_append (cd->locations, loc);
+ 
++        if (cd->current == NULL && clock_location_is_current (loc))
++                cd->current = g_object_ref (loc);
++
+         g_free (city);
+ 
+         /* This will update everything related to locations to take into
+@@ -1431,6 +1428,20 @@ remove_tree_row (GtkTreeModel *model, GtkTreePath *path, GtkTreeIter *iter, gpoi
+ 
+         gtk_tree_model_get (model, iter, COL_CITY_LOC, &loc, -1);
+         cd->locations = g_list_remove (cd->locations, loc);
++
++        if (clock_location_is_current (loc)) {
++                clock_button_set_weather (CLOCK_BUTTON (cd->panel_button),
++                                          NULL,
++                                          NULL);
++
++                if (cd->locations != NULL) {
++                        clock_location_set_current (cd->locations->data, TRUE);
++                } else {
++                        g_object_unref (cd->current);
++                        cd->current = NULL;
++                }
++        }
++
+         g_object_unref (loc);
+ 
+         /* This will update everything related to locations to take into
+-- 
+GitLab
+

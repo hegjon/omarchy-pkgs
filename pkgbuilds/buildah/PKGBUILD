@@ -1,0 +1,46 @@
+# Maintainer: Morten Linderud <foxboron@archlinux.org>
+# Maintainer: George Rawlinson <grawlinson@archlinux.org>
+# Contributor: Bartłomiej Piotrowski <bpiotrowski@archlinux.org>
+
+pkgname=buildah
+epoch=1
+pkgver=1.45.0
+pkgrel=1
+pkgdesc="A tool which facilitates building OCI images"
+arch=(x86_64)
+url="https://github.com/podman-container-tools/buildah"
+license=(Apache-2.0)
+depends=(glibc oci-runtime skopeo passt libseccomp gpgme sqlite containers-common)
+makedepends=(go git bats btrfs-progs device-mapper libassuan
+             bzip2 go-md2man systemd)
+options=(!lto !debug)
+source=(git+https://github.com/containers/buildah.git#tag=v$pkgver)
+sha512sums=('794b0ef9b49ebd50d7708dfeb990648c17f922b335bb1ed63589bac1909e5f4af022fd767b067be4c53a854ba63335474e5a654b0153cae0b80bc6f847b87493')
+
+build() {
+  cd $pkgname
+  export GOFLAGS="-buildmode=pie -trimpath"
+  export CGO_LDFLAGS="${LDFLAGS}"
+  export CGO_CFLAGS="${CFLAGS}"
+  export CGO_CPPFLAGS="${CPPFLAGS}"
+  export CGO_CXXFLAGS="${CXXFLAGS}"
+  make PREFIX=/usr BUILDTAGS="containers_image_ostree_stub seccomp libsqlite3"
+}
+
+check() {
+  local container_libs_version="$(</usr/share/containers/container-libs.version)"
+  local project_container_libs_version="$(sed --regexp-extended --quiet 's|.*go.podman.io/common v(.*)|\1|p' "$pkgbase/go.mod")"
+
+  printf '%s %s (container-libs %s) - system container-libs %s\n' "$pkgname" "$pkgver" "${project_container_libs_version%.*}" "${container_libs_version%.*}"
+
+  if (( $(vercmp "${container_libs_version%.*}" "${project_container_libs_version%.*}") != 0 )); then
+    printf '%s %s requires container-libs/common in version %s but we have version %s\n' "$pkgname" "$pkgver" "${project_container_libs_version%.*}" "${container_libs_version%.*}"
+    exit 1
+  fi
+}
+
+package() {
+  cd $pkgname
+  make DESTDIR="$pkgdir" PREFIX=usr install install.completions
+  install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+}

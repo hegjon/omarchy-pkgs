@@ -1,0 +1,23 @@
+# Maintainer: Felix Yan <felixonmars@archlinux.org>
+
+pkgname=treeland-protocols
+pkgver=0.6.0
+pkgrel=1
+pkgdesc='Wayland protocols of treeland'
+arch=('any')
+url="https://github.com/linuxdeepin/treeland-protocols"
+license=('MIT' 'GPL-2.0-only')
+makedepends=('git' 'cmake' 'ninja')
+source=("git+https://github.com/linuxdeepin/treeland-protocols.git#tag=$pkgver")
+sha512sums=('73954c3894111ed186389013bfbc9985c33e948a1ccf03d3e4873d20e28ae5bced04d241f653fe63c1f5abb687a13084c2ec2bfe5ef869220f800f64f255cf00')
+
+build() {
+  cd treeland-protocols
+  cmake . -GNinja -DCMAKE_INSTALL_PREFIX=/usr
+  ninja
+}
+
+package() {
+  cd treeland-protocols
+  DESTDIR="$pkgdir" ninja install
+}

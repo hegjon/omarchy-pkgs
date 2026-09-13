@@ -1,0 +1,123 @@
+# Maintainer: Felix Yan <felixonmars@archlinux.org>
+# Contributor: ponsfoot <cabezon dot hashimoto at gmail dot com>
+
+pkgbase=marisa
+pkgname=('marisa' 'perl-marisa' 'python-marisa' 'ruby-marisa')
+pkgver=0.3.1
+pkgrel=1
+arch=('x86_64')
+url="https://github.com/s-yata/marisa-trie"
+license=('BSD-2-Clause OR LGPL-2.1-or-later')
+makedepends=('git' 'cmake' 'python' 'ruby' 'perl' 'swig' 'python-build' 'python-installer' 'python-setuptools' 'python-wheel')
+source=("git+https://github.com/s-yata/marisa-trie.git#tag=v$pkgver")
+sha512sums=('6d9e2290f6985a6e6232dd586d90c60350edd3bac7f3d145542722862750667ebcee1f69f37d035fb0632f4a111c15ff1f88805c3229eb2c3e79f474e1b589ad')
+
+prepare() {
+  cd marisa-trie
+
+  # Fix binding build after upstream exception API changes.
+  git cherry-pick -n cf4602f08df49861d987d122bd85bfdb456fe7a0
+
+  # Upstream installs targets only for the Release configuration, but Arch
+  # builds with CMAKE_BUILD_TYPE=None.
+  sed -i '/^[[:space:]]*CONFIGURATIONS Release$/d' CMakeLists.txt
+}
+
+build() {
+  cd marisa-trie
+  cmake -B build -S . \
+    -DCMAKE_BUILD_TYPE=None \
+    -DCMAKE_INSTALL_PREFIX=/usr \
+    -DBUILD_SHARED_LIBS=ON \
+    -DBUILD_TESTING=ON
+
+  cmake --build build
+
+  # Regenerate swig bindings
+  make -C bindings -j1
+
+  # Perl bindings
+  cd "$srcdir"/marisa-trie/bindings/perl
+  perl Makefile.PL \
+    INC=-I"$srcdir"/marisa-trie/include \
+    LIBS=-L"$srcdir"/marisa-trie/build \
+    INSTALLDIRS=vendor
+  make
+
+  # Python bindings
+  cd "$srcdir"/marisa-trie/bindings/python3
+  python -m build --wheel --no-isolation \
+    -C="--build-option=build_ext" \
+    -C="--build-option=--include-dirs=$srcdir/marisa-trie/include" \
+    -C="--build-option=--library-dirs=$srcdir/marisa-trie/build"
+
+  # Ruby bindings
+  cd "$srcdir"/marisa-trie/bindings/ruby
+  ruby extconf.rb \
+    --with-opt-include="$srcdir"/marisa-trie/include \
+    --with-opt-lib="$srcdir"/marisa-trie/build \
+    --vendor
+  make V=1
+}
+
+check() {
+  ctest --test-dir marisa-trie/build --output-on-failure
+}
+
+package_marisa() {
+  pkgdesc="Static and space-efficient trie data structure library"
+  depends=('gcc-libs')
+
+  cd marisa-trie
+  DESTDIR="$pkgdir" cmake --install build
+
+  install -d "$pkgdir"/usr/share/doc/$pkgbase-$pkgver
+  install -m 644 docs/* "$pkgdir"/usr/share/doc/$pkgbase-$pkgver/
+
+  install -d "$pkgdir"/usr/share/licenses/$pkgname
+  install -m 644 AUTHORS COPYING.md "$pkgdir"/usr/share/licenses/$pkgname/
+}
+
+package_perl-marisa() {
+  pkgdesc="Perl language binding for marisa"
+  depends=('perl' 'marisa')
+
+  cd marisa-trie/bindings/perl
+  make DESTDIR="$pkgdir" install
+
+  cd ../..
+  install -d "$pkgdir"/usr/share/licenses/$pkgname
+  install -m 644 AUTHORS COPYING.md "$pkgdir"/usr/share/licenses/$pkgname/
+}
+
+package_python-marisa() {
+  pkgdesc="Python language binding for marisa"
+  depends=('python' 'marisa')
+
+  cd marisa-trie/bindings/python3
+  python -m installer --destdir="$pkgdir" dist/*.whl
+
+  cd ../..
+  install -d "$pkgdir"/usr/share/licenses/$pkgname
+  install -m 644 AUTHORS COPYING.md "$pkgdir"/usr/share/licenses/$pkgname/
+}
+
+package_ruby-marisa() {
+  pkgdesc="Ruby language binding for marisa"
+  depends=('ruby' 'marisa')
+
+  # ruby version without the patch number, e.g. 2.4
+  local _rubyver=$(ruby -e"puts Gem.ruby_version.to_s.split('.')[0..1].join('.')")
+
+  cd marisa-trie/bindings/ruby
+    _hdrdir=$(pkg-config --variable=rubyhdrdir ruby-$_rubyver)
+    _arch=$(pkg-config --variable=arch ruby-$_rubyver)
+  make DESTDIR="$pkgdir" install \
+    hdrdir="$_hdrdir" \
+    arch_hdrdir="${_hdrdir}/${_arch}" \
+    rubyhdrdir="$_hdrdir"
+
+  cd ../..
+  install -d "$pkgdir"/usr/share/licenses/$pkgname
+  install -m 644 AUTHORS COPYING.md "$pkgdir"/usr/share/licenses/$pkgname/
+}

@@ -1,0 +1,86 @@
+# Maintainer: Torsten Keßler <tpkessler@archlinux.org>
+
+pkgbase=intel-pti
+# TODO Package other performance and profile tools
+pkgname=(
+	intel-pti
+	# intel-pti-tools
+	# intel-pti-samples
+)
+pkgver=0.17.0
+pkgrel=1
+_pkgdesc="Profiling Tools Interfaces for Intel GPUs"
+arch=('x86_64')
+url="https://intel.github.io/pti-gpu/"
+license=('MIT')
+depends=(
+	glibc
+	libgcc
+	libstdc++
+	spdlog
+	fmt
+	level-zero-loader
+	intel-oneapi-compiler-shared-runtime-libs
+)
+makedepends=(
+	cmake
+	ninja
+	procps-ng
+	libdrm
+	python
+	openmpi
+	onedpl
+	oneccl
+	intel-oneapi-dpcpp-cpp
+	intel-oneapi-mkl
+	intel-oneapi-mkl-sycl
+	intel-oneapi-dev-utilities
+	intel-graphics-compiler
+	intel-compute-runtime
+	level-zero-headers
+	intel-metrics-discovery
+	intel-metrics-library
+	gtpin
+)
+_git=https://github.com/intel/pti-gpu
+source=("${pkgname}-${pkgver}.tar.gz::${_git}/archive/refs/tags/pti-${pkgver}.tar.gz")
+sha256sums=('9c29c17ed4cf2da48b00df8de8a28ae3e117635e52ce6b53a0e7a7c190075ea9')
+options=(!lto)
+
+prepare() {
+	cd pti-gpu-pti-${pkgver}
+
+	# uses deprecated and eventually removed header
+	sed -i '\|add_subdirectory(samples/itt_ccl)|d' sdk/CMakeLists.txt
+}
+
+build() {
+	source /opt/intel/oneapi/setvars.sh
+	# -fcf-protection not valid with device code
+	CFLAGS+=" -fcf-protection=none"
+	CXXFLAGS+=" -fcf-protection=none"
+	# Order in MKL linking matters
+	export LDFLAGS="${LDFLAGS/-Wl,--as-needed/}"
+	local cmake_args=(
+		-Wno-dev
+		-G Ninja
+		-B build-sdk
+		-S pti-gpu-pti-${pkgver}/sdk
+		-D CMAKE_INSTALL_PREFIX=/usr
+		-D CMAKE_BUILD_TYPE=None
+		-D CMAKE_TOOLCHAIN_FILE="$srcdir"/pti-gpu-pti-${pkgver}/sdk/cmake/toolchains/icpx_toolchain.cmake
+		-D GPTIN_PATH=/opt/intel/Profilers
+	)
+	cmake "${cmake_args[@]}"
+    cmake --build build-sdk
+}
+
+package_intel-pti() {
+	pkgdesc="$_pkgdesc (SDK)"
+	depends+=(
+		level-zero-loader
+		intel-oneapi-dpcpp-cpp
+	)
+    DESTDIR="${pkgdir}" cmake --install build-sdk
+    install -Dm644 pti-gpu-pti-${pkgver}/LICENSE -t "${pkgdir}"/usr/share/licenses/${pkgname}/
+}

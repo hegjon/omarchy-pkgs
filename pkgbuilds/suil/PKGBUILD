@@ -1,0 +1,90 @@
+# Maintainer: David Runge <dvzrv@archlinux.org>
+# Contributor: Ray Rashif <schiv@archlinux.org>
+# Contributor: speps <speps at aur dot archlinux dot org>
+
+pkgbase=suil
+pkgname=(suil{,-docs})
+pkgver=0.10.26
+pkgrel=1
+pkgdesc="A lightweight C library for loading and wrapping LV2 plugin UIs"
+arch=(x86_64)
+url="https://drobilla.net/software/suil.html"
+license=(
+  0BSD
+  ISC
+)
+makedepends=(
+  doxygen
+  gtk3
+  lv2
+  meson
+  python-sphinx
+  python-sphinx-lv2-theme
+  python-sphinxygen
+  qt5-base
+  qt5-x11extras
+  qt6-base
+)
+source=(https://download.drobilla.net/$pkgname-$pkgver.tar.xz{,.sig})
+sha512sums=('82d06b4de5ac238b8e65bf7b47b4275ab5b4e5342362871ec90845fa0a5a6e86c02b3607717a7bd1948eec00596c67e9f7f7388811de79b580443d2d17ab8fc8'
+            'SKIP')
+b2sums=('d3f2ac0baf4722bbd779eb47253c326aada772c228d7a675bd16b96f8877989d4e0eb017781e483f21ed6a98486551b43042ff63daa6998a7cc9357f1ff0b91c'
+        'SKIP')
+validpgpkeys=('907D226E7E13FA337F014A083672782A9BF368F3') # David Robillard <d@drobilla.net>
+
+_pick() {
+  local p="$1" f d; shift
+  for f; do
+    d="$srcdir/$p/${f#$pkgdir/}"
+    mkdir -p "$(dirname "$d")"
+    mv "$f" "$d"
+    rmdir -p --ignore-fail-on-non-empty "$(dirname "$f")"
+  done
+}
+
+build() {
+  local meson_options=(
+    -D cocoa=disabled
+    -D gtk2=disabled
+  )
+
+  arch-meson $pkgname-$pkgver build "${meson_options[@]}"
+  meson compile -C build
+}
+
+check() {
+  meson test -C build
+}
+
+package_suil() {
+  depends=(
+    glibc
+    glib2
+    gtk3
+    libgcc
+    libstdc++
+    libx11
+    lv2
+    qt5-base
+    qt5-x11extras
+    qt6-base
+  )
+  provides=(libsuil-0.so)
+
+  meson install -C build --destdir "$pkgdir"
+  (
+    cd "$pkgdir"
+    _pick $pkgbase-docs usr/share/doc
+  )
+  install -vDm 644 $pkgbase-$pkgver/LICENSES/* -t "$pkgdir/usr/share/licenses/$pkgname/"
+  install -vDm 644 $pkgbase-$pkgver/{AUTHORS,NEWS,README.md} -t "$pkgdir/usr/share/doc/$pkgname/"
+}
+
+package_suil-docs() {
+  pkgdesc+=" - documentation"
+
+  mv -v $pkgname/* "$pkgdir"
+  mv -v "$pkgdir/usr/share/doc/$pkgbase"{-0,}
+  find "$pkgdir" -type f -iname "*.buildinfo" -delete
+  install -vDm 644 $pkgbase-$pkgver/LICENSES/* -t "$pkgdir/usr/share/licenses/$pkgname/"
+}

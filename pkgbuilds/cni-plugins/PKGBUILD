@@ -1,0 +1,66 @@
+# Maintainer: Morten Linderud <foxboron@archlinux.org>
+# Maintainer: David Runge <dvzrv@archlinux.org>
+# Contributor: Bartłomiej Piotrowski <bpiotrowski@archlinux.org>
+
+_name=plugins
+pkgname=cni-plugins
+pkgver=1.9.1
+pkgrel=1
+pkgdesc='Some standard networking plugins, maintained by the CNI team'
+arch=(x86_64)
+url="https://github.com/containernetworking/plugins"
+license=(Apache-2.0)
+depends=(glibc)
+makedepends=(go)
+provides=(container-network-stack=1)
+options=(
+  !lto  # unable to build with LTO: https://github.com/containernetworking/plugins/issues/706
+  emptydirs  # NOTE: we need /etc/cni/net.d/ for configs
+)
+source=($url/archive/v$pkgver/$_name-v$pkgver.tar.gz)
+sha512sums=('5811fb14786f1f9d9e40741ce337449ce329e14e04213bc660102eb470150f24026e59caec480572e37d0e3e6e6518737f3cc7ac462c47034d0737283ec532f9')
+b2sums=('5d2623cdf68ac0df3c9f0df2090978eaea66d329d647e265936dd937ea7493bea32c077b8e2cf5d6734d68b45e875ecdafd95d61541bd524e387be303ad443f3')
+
+prepare() {
+  mkdir -vp $_name-$pkgver/bin
+}
+
+build() {
+  cd $_name-$pkgver
+
+  export CGO_CPPFLAGS="${CPPFLAGS}"
+  export CGO_CFLAGS="${CFLAGS}"
+  export CGO_CXXFLAGS="${CXXFLAGS}"
+  export CGO_LDFLAGS="${LDFLAGS}"
+  export GOPATH="${srcdir}"
+  export GOFLAGS="-buildmode=pie -mod=readonly -modcacherw"
+
+  # custom go build calls, since build_linux.sh is not flexible enough
+  for plugin in plugins/meta/* plugins/main/* plugins/ipam/*; do
+    if [[ -d "$plugin"  && "$plugin" != *windows ]]; then
+      printf "Building plugin: %s\n" "$(basename $plugin)"
+      go build -o bin/ -ldflags "-compressdwarf=false -linkmode external" "./$plugin"
+    fi
+  done
+}
+
+# tests are broken
+# check() {
+#   cd $_name-$pkgver
+#   go test ./...
+# }
+
+package() {
+  cd $_name-$pkgver
+  install -vDm755 bin/* -t "$pkgdir/usr/lib/cni/"
+  # strip files manually because makepkg doesn't do it: https://gitlab.archlinux.org/pacman/pacman/-/merge_requests/38
+  strip "$pkgdir/usr/lib/cni/"*
+  # some applications would build their own versions of CNI plugins in
+  # /opt/cni/bin if they are not found (as non-symlink files), so we have to
+  # install them twice... ;_;
+  install -vDm755 bin/* -t "$pkgdir/opt/cni/bin/"
+  strip "$pkgdir/opt/cni/bin/"*
+  install -vdm755 "$pkgdir/etc/cni/net.d/"
+  install -vDm644 LICENSE -t "$pkgdir/usr/share/licenses/$pkgname/"
+  install -vDm644 plugins/ipam/dhcp/systemd/* -t "$pkgdir/usr/lib/systemd/system/"
+}

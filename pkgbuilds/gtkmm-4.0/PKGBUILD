@@ -1,0 +1,85 @@
+# Maintainer: Jan Alexander Steffens (heftig) <heftig@archlinux.org>
+# Contributor: Ionut Biru <ibiru@archlinux.org>
+
+pkgbase=gtkmm-4.0
+pkgname=(
+  gtkmm-4.0
+  gtkmm-4.0-docs
+)
+pkgver=4.22.0
+pkgrel=2
+pkgdesc="C++ bindings for GTK 4"
+url="https://www.gtkmm.org/"
+arch=(x86_64)
+license=(LGPL-2.1-or-later)
+depends=(
+  cairo
+  cairomm-1.16
+  gdk-pixbuf2
+  glib2
+  glibc
+  glibmm-2.68
+  graphene
+  gtk4
+  libgcc
+  libsigc++-3.0
+  libstdc++
+  pangomm-2.48
+  vulkan-icd-loader
+)
+makedepends=(
+  cairomm-1.16-docs
+  git
+  glibmm-2.68-docs
+  libsigc++-3.0-docs
+  meson
+  mm-common
+  pangomm-2.48-docs
+)
+checkdepends=(xorg-server-xvfb)
+options=(!emptydirs)
+source=("git+https://gitlab.gnome.org/GNOME/gtkmm.git#tag=$pkgver")
+b2sums=('5578ad5bf5a5186655679f91c0aba9dc64fee064a7d7f51be33231bb4076493aac915ee8a23079de48b124b1281b353a47b80d0664a7df49dc40f7528274563b')
+
+prepare() {
+  cd gtkmm
+}
+
+build() {
+  local meson_options=(
+    -D maintainer-mode=true
+  )
+
+  arch-meson gtkmm build "${meson_options[@]}"
+  meson compile -C build
+}
+
+check() {
+  xvfb-run -s '-nolisten local' meson test -C build --print-errorlogs
+}
+
+package_gtkmm-4.0() {
+  depends+=(
+    libcairomm-1.16.so
+    libglibmm-2.68.so
+    libpangomm-2.48.so
+    libsigc-3.0.so
+  )
+  provides=(libgtkmm-4.0.so)
+
+  meson install -C build --destdir "$pkgdir"
+
+  # Split -docs
+  mkdir -p docs/usr/share
+  mv -t docs/usr/share "$pkgdir"/usr/share/{devhelp,doc}
+}
+
+package_gtkmm-4.0-docs() {
+  pkgdesc+=" (documentation)"
+  depends=()
+  options=(!strip)
+
+  mv -t "$pkgdir" docs/*
+}
+
+# vim:set sw=2 sts=-1 et:

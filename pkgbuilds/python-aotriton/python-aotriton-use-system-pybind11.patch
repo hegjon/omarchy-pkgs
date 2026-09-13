@@ -1,0 +1,28 @@
+From 60fb9b497f3168f39360aac64398d971523bd808 Mon Sep 17 00:00:00 2001
+From: Lubosz Sarnecki <lubosz@gmail.com>
+Date: Tue, 18 Nov 2025 00:54:06 +0100
+Subject: [PATCH 1/2] Use system pybind11.
+
+---
+ CMakeLists.txt | 5 +----
+ 1 file changed, 1 insertion(+), 4 deletions(-)
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 0236ac1..1e33df5 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -94,10 +94,7 @@ endif()
+ # Early failure for python binding
+ if(NOT AOTRITON_NO_PYTHON)
+   find_package(Python3 ${AOTRITON_MIN_PYTHON} COMPONENTS Development REQUIRED)
+-  add_subdirectory(third_party/pybind11)
+-  if(NOT EXISTS ${CMAKE_SOURCE_DIR}/third_party/pybind11/CMakeLists.txt)
+-    message(FATAL_ERROR "third_party/pybind11 is not initialized\nRun `git submodule sync && git submodule update --init --recursive --force` to fix it.")
+-  endif()
++  find_package(pybind11)
+   if(AOTRITON_USE_TORCH)
+     message(STATUS "Python3_EXECUTABLE: ${Python3_EXECUTABLE}")
+     execute_process(COMMAND "${Python3_EXECUTABLE}" -c "import torch; from pathlib import Path; print(str(Path(torch.__file__).parent))"
+-- 
+2.51.2
+

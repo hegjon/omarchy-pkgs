@@ -1,0 +1,31 @@
+# Maintainer: Antonio Rojas <arojas@archlinux.org>
+
+pkgname=mauikit-terminal
+pkgver=4.0.2
+pkgrel=2
+pkgdesc='Terminal support components for Maui applications'
+url='https://mauikit.org/'
+arch=(x86_64)
+license=(LGPL-3.0-only)
+depends=(glibc
+         kcoreaddons
+         kpty
+         libstdc++
+         mauikit
+         qt6-5compat
+         qt6-base
+         qt6-declarative)
+makedepends=(extra-cmake-modules)
+source=(https://download.kde.org/stable/maui/$pkgname/$pkgver/$pkgname-$pkgver.tar.xz{,.sig})
+sha256sums=('278369a818179ab369c8464399e19c58c9376b50e7c7aec49960f83b5b7b93d5'
+            'SKIP')
+validpgpkeys=(023625C8D02C0D8C15C3BABB86C793550794FEB8) # Camilo Higuita <milo.h@aol.com>                                    
+
+build() {
+  cmake -B build -S $pkgname-$pkgver
+  cmake --build build
+}
+
+package() {
+  DESTDIR="$pkgdir" cmake --install build
+}

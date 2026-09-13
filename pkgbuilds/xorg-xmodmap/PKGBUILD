@@ -1,0 +1,29 @@
+# Maintainer: Andreas Radke <andyrtr@archlinux.org>
+# Contributor: Jan de Groot <jgc@archlinux.org>
+
+pkgname=xorg-xmodmap
+pkgver=1.0.12
+pkgrel=1
+pkgdesc="Utility for modifying keymaps and button mappings"
+arch=('x86_64')
+url="https://xorg.freedesktop.org/"
+license=('MIT AND MIT-open-group')
+depends=('libx11' 'glibc')
+makedepends=('xorg-util-macros')
+groups=('xorg-apps' 'xorg')
+source=(https://xorg.freedesktop.org/archive/individual/app/xmodmap-${pkgver}.tar.xz{,.sig})
+sha512sums=('2319f1b7eee54d650930c9e16c06e8db5a0c19eaef1902d6196d666bcab8bc288baaea65d3b561e117fc98b918cbcd9c2660c91c556f3fa08e0f57a8f0d38f82'
+            'SKIP')
+validpgpkeys=('3AB285232C46AE43D8E192F4DAB0F78EA6E7E2D2') # Alan Coopersmith <alan.coopersmith@oracle.com>
+
+build() {
+  cd xmodmap-${pkgver}
+  ./configure --prefix=/usr
+  make
+}
+
+package() {
+  cd xmodmap-${pkgver}
+  make DESTDIR="${pkgdir}" install
+  install -Dm644 COPYING "${pkgdir}/usr/share/licenses/${pkgname}/COPYING"
+}

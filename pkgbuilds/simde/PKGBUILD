@@ -1,0 +1,30 @@
+# Maintainer: David Runge <dvzrv@archlinux.org>
+
+pkgname=simde
+pkgver=0.8.2
+pkgrel=1
+pkgdesc="Implementations of SIMD instruction sets"
+arch=(any)
+url="https://github.com/simd-everywhere/simde"
+license=(MIT)
+makedepends=(meson)
+source=(
+  $url/archive/v$pkgver/$pkgname-v$pkgver.tar.gz
+)
+sha512sums=('4e42d7140c0afae507773527c6c0c07e6f0cdad59a1d42ebcf4bd223fc9f71e91a2e3db7746aca3c0c5ad2a13333c2322ce1e384c7d699ddfe33bed6f107aec5')
+b2sums=('55824ac6d525de475285b430e96c91d7e7cdf363cb42742e55cc8b6e44e5d59d2e07d59fe37897d4bc2023fca35bd908772e01ba95681a00c8f9464dccb0f742')
+
+build() {
+  arch-meson build $pkgname-$pkgver
+  meson compile -C build
+}
+
+check() {
+  meson test -C build --print-errorlogs
+}
+
+package() {
+  meson install -C build --destdir "$pkgdir"
+  install -vDm 644 $pkgname-$pkgver/README.md -t "$pkgdir/usr/share/doc/$pkgname/"
+  install -vDm 644 $pkgname-$pkgver/COPYING -t "$pkgdir/usr/share/licenses/$pkgname/"
+}

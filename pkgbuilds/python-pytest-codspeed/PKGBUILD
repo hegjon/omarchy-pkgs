@@ -1,0 +1,48 @@
+# Maintainer: Maxime Gauduin <alucryd@archlinux.org>
+
+pkgname=python-pytest-codspeed
+pkgver=5.0.3
+pkgrel=2
+pkgdesc='Pytest plugin to create CodSpeed benchmarks'
+arch=(any)
+url=https://github.com/CodSpeedHQ/pytest-codspeed
+license=(MIT)
+depends=(
+  python
+  python-pytest
+  python-rich
+  python-typing_extensions
+)
+optdepends=(
+  'python-pytest-benchmark: pytest compatibility mode'
+  'python-pytest-xdist: parallel test execution'
+)
+makedepends=(
+  git
+  python-build
+  python-installer
+  python-setuptools
+  python-wheel
+)
+checkdepends=(
+  python-pytest-cov
+)
+source=(git+https://github.com/CodSpeedHQ/pytest-codspeed.git#tag=v${pkgver})
+b2sums=('35ac7c15e962996c314ec01e753011458c80d399c93df7737aec0820d2c49582df4787bee50e203c97f3b2691325c818d70a767aa43b0f524cbe532329678638')
+
+build() {
+  cd pytest-codspeed
+  python -m build -wn
+}
+
+check() {
+  cd pytest-codspeed
+  PYTHONPATH="src:$PYTHONPATH" python -m pytest
+}
+
+package() {
+  python -m installer --destdir="${pkgdir}" pytest-codspeed/dist/*.whl
+  install -Dm 644 pytest-codspeed/LICENSE -t "${pkgdir}"/usr/share/licenses/python-pytest-codspeed/
+}
+
+# vim: ts=2 sw=2 et:

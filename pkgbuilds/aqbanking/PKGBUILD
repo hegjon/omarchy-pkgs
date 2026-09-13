@@ -1,0 +1,42 @@
+# Maintainer: Jaroslav Lichtblau <svetlemodry@archlinux.org>
+# Maintainer: Carl Smedstad <carsme@archlinux.org>
+# Contributor: Sergej Pupykin <pupykin.s+arch@gmail.com>
+# Contributor: David Moore <davidm@sjsoft.com>
+
+pkgname=aqbanking
+pkgver=6.9.2
+pkgrel=1
+pkgdesc="A library for online banking and financial applications"
+arch=('x86_64')
+url="https://www.aquamaniac.de/rdm/projects/aqbanking"
+license=('GPL-2.0-or-later')
+depends=(
+  'glibc'
+  'gmp'
+  'gwenhywfar'
+  'libxml2'
+  'xmlsec'
+  'zlib'
+)
+provides=('libaqbanking.so')
+source=(
+  "https://www.aquamaniac.de/rdm/attachments/download/654/$pkgname-$pkgver.tar.gz"
+  "https://www.aquamaniac.de/rdm/attachments/download/653/$pkgname-$pkgver.tar.gz.asc"
+)
+b2sums=('b4c6f988575bb4a73bdd824fd563953d0127f736e94606a2c86330507f8e8039b45efa204c203600269d5dd707d7351e478ec7d1056b4c7448063327dfcc3561'
+        'SKIP')
+validpgpkeys=('42400AF5EB2A17F0A69BB551E9899D784A977416') # AqBanking Package Key <packages@aqbanking.de>
+
+build() {
+  cd $pkgname-$pkgver
+  ./configure --prefix=/usr \
+    --enable-gwenhywfar \
+    --with-build-datetime="@$SOURCE_DATE_EPOCH"
+  sed -i -e 's/ -shared / -Wl,-O1,--as-needed\0/g' libtool
+  make
+}
+
+package() {
+  cd $pkgname-$pkgver
+  make DESTDIR="$pkgdir" install
+}

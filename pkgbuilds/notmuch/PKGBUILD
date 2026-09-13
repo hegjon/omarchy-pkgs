@@ -1,0 +1,108 @@
+# Maintainer: Daurnimator <daurnimator@archlinux.org>
+# Maintainer: Lukas Fleischer <lfleischer@archlinux.org>
+# Contributor: Maxim Baz <archlinux at maximbaz dot com>
+# Contributor: Daniel Wallace <danielwallace at gtmanfred dot com>
+# Contributor: fauno <fauno at kiwwwi.com.ar>
+# Contributor: Olivier Ramonat <olivier at ramonat dot fr>
+# Contributor: Richard Murri <admin@richardmurri.com>
+
+pkgbase=notmuch
+pkgname=('notmuch' 'notmuch-vim' 'notmuch-mutt' 'notmuch-runtime')
+pkgver=0.40
+pkgrel=2
+arch=('x86_64')
+url="https://notmuchmail.org/"
+license=('GPL3')
+makedepends=('python' 'python-build' 'python-cffi' 'python-installer' 'python-setuptools' 'python-sphinx' 'python-wheel' 'doxygen' 'emacs' 'gnupg' 'ruby' 'pkgconfig' 'xapian-core' 'gmime3' 'talloc' 'sfsexp')
+options=(!distcc !makeflags)
+source=("https://notmuchmail.org/releases/${pkgname}-${pkgver}.tar.xz"{,.asc}
+        https://github.com/felipec/notmuch-vim/commit/f72faa623fe2123ef9a2712520524ee7838ad7c2.patch)
+sha512sums=('937c72c05b00520cc3dbc7db6282ad65a621c8e102fbcbac3c9d99061ae510741b13ef9cf5c6476ba8e7fa15a6905631159477a938d1369db6d9885780b90867'
+            'SKIP'
+            'e8be631babc660bb5dac1f49e9aee400a5d60a4a4964d28ae8e851448e0a846a7af9021854fb73f0f5d16f98e3e6c1449e9bc69e93f7bbfdaec7c7fb6e99f0b7')
+validpgpkeys=('7A18807F100A4570C59684207E4E65C8720B706B') # David Bremner <bremner@debian.org>
+
+prepare() {
+    patch -d "$srcdir/$pkgbase-$pkgver/vim" -p2 \
+        -i ../../f72faa623fe2123ef9a2712520524ee7838ad7c2.patch
+}
+
+build() {
+    cd "$srcdir/$pkgbase-$pkgver"
+
+    ./configure --prefix=/usr --sysconfdir=/etc --includedir=/usr/include --zshcompletiondir=/usr/share/zsh/site-functions
+    make
+
+    make -C "contrib/${pkgbase}-mutt"
+
+    make ruby-bindings
+
+    cd "$srcdir/$pkgbase-$pkgver/bindings/python-cffi"
+    python -m build --wheel --skip-dependency-check --no-isolation
+}
+
+package_notmuch-runtime(){
+    pkgdesc="Runtime for notmuch and notmuch-mutt"
+    depends=('xapian-core' 'gmime3' 'talloc' 'sfsexp')
+
+    cd "$srcdir/$pkgbase-$pkgver"
+
+    make DESTDIR="$pkgdir/" LIBDIR_IN_LDCONFIG=0 WITH_EMACS=0 install
+    make DESTDIR="$pkgdir/" WITH_BASH=1 install-completion
+
+    # Install docs
+    make DESTDIR="$pkgdir" install-apidocs install-man
+
+    # this is provided both with and without a statically included libnotmuch.so ???
+    install -Dm755 notmuch-shared "$pkgdir/usr/bin/notmuch"
+}
+
+
+package_notmuch-vim(){
+    pkgdesc="Vim plugins for notmuch"
+    depends=('notmuch-runtime' 'ruby')
+    optdepends=('ruby-mail: for sending mail'
+                'elinks: for previewing html mail')
+
+    make -C "$srcdir/$pkgbase-$pkgver/vim" DESTDIR="$pkgdir" prefix="/usr/share/vim/vimfiles" install
+}
+
+
+package_notmuch(){
+    pkgdesc="Notmuch is not much of an email program"
+    depends=('notmuch-runtime')
+    optdepends=('emacs: for using the emacs interface'
+                'vim: for using the vim interface'
+                'python-cffi: for using the python-cffi bindings'
+                'ruby: for using the ruby bindings'
+                'gnupg: for email encryption')
+    install=notmuch.install
+
+    cd "$srcdir/$pkgbase-$pkgver"
+
+    # Install emacs parts
+    make DESTDIR="$pkgdir" install-emacs
+
+
+    # Install ruby bindings
+    sed -i 's:INSTALL = .*[^D]$:& -D:' bindings/ruby/Makefile
+    make -C bindings/ruby exec_prefix="$pkgdir"/usr install
+
+    # Install python bindings
+    cd "$srcdir/$pkgbase-$pkgver/bindings/python-cffi"
+    python -m installer --destdir="$pkgdir" dist/*.whl
+
+    # Remove mimeinfo.cache (fixes FS#53629).
+    rm "$pkgdir/usr/share/applications/mimeinfo.cache"
+}
+
+package_notmuch-mutt(){
+    pkgdesc="The mail indexer"
+    depends=('notmuch-runtime' 'perl-mailtools' 'perl-mail-box' 'perl-term-readline-gnu' 'perl-string-shellquote' 'perl-file-which')
+
+    cd "$srcdir/$pkgbase-$pkgver"
+
+    install -Dm755 "contrib/$pkgname/$pkgname" "$pkgdir/usr/bin/$pkgname"
+    install -Dm644 "contrib/$pkgname/${pkgname}.rc" "${pkgdir}/etc/Muttrc.d/${pkgname}.rc"
+    install -Dm644 "contrib/$pkgname/${pkgname}.1" "${pkgdir}/usr/share/man/man1/${pkgname}.1"
+}

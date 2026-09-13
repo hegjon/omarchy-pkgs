@@ -1,0 +1,32 @@
+# Maintainer: Bruno Pagani <archange@archlinux.org>
+# Maintainer: Jakub Klinkovský <lahwaacz at archlinux dot org>
+
+pkgname=cli11
+pkgver=2.7.2
+pkgrel=1
+pkgdesc="Command line parser for C++11"
+arch=(any)
+url="https://github.com/CLIUtils/CLI11"
+license=(BSD-3-Clause)
+makedepends=(cmake)
+source=($url/archive/v$pkgver/$pkgname-$pkgver.tar.gz)
+sha256sums=('46eef3101da70852ec7af026e09d485ccee81813331c8c6052d39344443b83da')
+
+build() {
+  local cmake_options=(
+    -B build
+    -S ${pkgname^^}-$pkgver
+    -W no-dev
+    -DCMAKE_BUILD_TYPE=None
+    -DCMAKE_INSTALL_PREFIX=/usr
+    -DCLI11_BUILD_TESTS=OFF
+    -DCLI11_BUILD_EXAMPLES=OFF
+  )
+  cmake "${cmake_options[@]}"
+  cmake --build build
+}
+
+package() {
+  DESTDIR="$pkgdir" cmake --install build
+  install -vDm 644 ${pkgname^^}-$pkgver/LICENSE -t "$pkgdir/usr/share/licenses/$pkgname/"
+}

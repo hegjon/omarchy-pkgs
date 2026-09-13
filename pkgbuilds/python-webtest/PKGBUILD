@@ -1,0 +1,38 @@
+# Maintainer: Felix Yan <felixonmars@archlinux.org>
+# Contributor: Jerome Leclanche <jerome@leclan.ch>
+
+pkgname=python-webtest
+pkgver=3.0.7
+pkgrel=1
+pkgdesc="Helper to test WSGI applications"
+arch=('any')
+url='https://docs.pylonsproject.org/projects/webtest/en/latest/'
+license=('MIT')
+depends=('python-webob' 'python-beautifulsoup4' 'python-waitress')
+optdepends=('python-pyquery: for response.pyquery'
+            'python-lxml: for response.lxml')
+makedepends=('git' 'python-build' 'python-installer' 'python-setuptools' 'python-wheel')
+checkdepends=('python-pytest' 'python-pyquery' 'python-pastedeploy' 'python-wsgiproxy2')
+source=("git+https://github.com/Pylons/webtest.git#tag=$pkgver")
+sha512sums=('f60372acfe8dfd0998e8c231a3c454d159f78b9bdccdd73a515c3a55f3e58e6c2a2927bf8dff4a51c29288ae82538081444356b296c8d944367d002f13dee724')
+
+build() {
+  cd webtest
+  python -m build --wheel --skip-dependency-check --no-isolation
+}
+
+check() {
+  cd webtest
+  pytest
+}
+
+package() {
+  cd webtest
+  python -m installer --destdir="$pkgdir" dist/*.whl
+
+  # Symlink license file
+  local site_packages=$(python -c "import site; print(site.getsitepackages()[0])")
+  install -d "$pkgdir"/usr/share/licenses/$pkgname
+  ln -s "$site_packages"/WebTest-$pkgver.dist-info/LICENSE.rst \
+    "$pkgdir"/usr/share/licenses/$pkgname/LICENSE.rst
+}

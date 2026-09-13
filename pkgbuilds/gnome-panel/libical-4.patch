@@ -1,0 +1,22 @@
+diff --git a/modules/clock/calendar-client.c b/modules/clock/calendar-client.c
+index b3c08e6f5..d4f4a346c 100644
+--- a/modules/clock/calendar-client.c
++++ b/modules/clock/calendar-client.c
+@@ -460,7 +460,7 @@ make_isodate_for_day_begin (int day,
+ static time_t
+ get_time_from_property (ICalComponent    *icomp,
+                         ICalPropertyKind  prop_kind,
+-                        ICalTime         * (* get_prop_func) (ICalProperty *prop),
++                        ICalTime         * (* get_prop_func) (const ICalProperty *prop),
+                         ICalTimezone     *default_zone)
+ {
+   ICalProperty *prop;
+@@ -622,7 +622,7 @@ get_component_is_all_day (ICalComponent *component,
+   duration = i_cal_property_get_duration (prop);
+   g_object_unref (prop);
+ 
+-  is_all_day = i_cal_duration_as_int (duration) % 86400 == 0;
++  is_all_day = i_cal_duration_as_utc_seconds (duration) % 86400 == 0;
+   g_object_unref (duration);
+ 
+   return is_all_day;

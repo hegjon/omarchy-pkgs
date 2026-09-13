@@ -1,0 +1,42 @@
+# Maintainer: George Rawlinson <grawlinson@archlinux.org>
+# Contributor: Florian Pritz <bluewind@archlinux.org>
+
+pkgname=perl-cgi
+pkgver=4.72
+pkgrel=1
+pkgdesc='Handle Common Gateway Interface requests and responses'
+arch=('any')
+url='https://metacpan.org/dist/CGI'
+license=('Artistic-2.0')
+depends=('perl>=5.8.1' 'perl-html-parser')
+checkdepends=('perl-test-nowarnings' 'perl-test-warn>=0.3')
+options=('!emptydirs')
+source=("$pkgname-$pkgver.tar.gz::https://cpan.metacpan.org/authors/id/L/LE/LEEJO/CGI-$pkgver.tar.gz")
+sha512sums=('ec7f9d3707e6fba766b147625df5c6bda325e9d9d92e677d20c550a52fba919e249ad1242277521efa75985d94685ed60979b591b48b1f02b1846ffe2db71738')
+b2sums=('4ba652057a2eb795c28b44f4e02534c9e0b172d865759b683f2f9830efc4b699e3b38dbc63ee3589e513f8e7fa1a3f3a18a3ba6533ec016fe405a576ad4c2bf4')
+
+build() {
+  cd "CGI-$pkgver"
+
+  unset PERL5LIB PERL_MM_OPT PERL_LOCAL_LIB_ROOT
+  export PERL_MM_USE_DEFAULT=1 PERL_AUTOINSTALL=--skipdeps
+  /usr/bin/perl Makefile.PL
+  make
+}
+
+check() {
+  cd "CGI-$pkgver"
+
+  unset PERL5LIB PERL_MM_OPT PERL_LOCAL_LIB_ROOT
+  export PERL_MM_USE_DEFAULT=1
+  make test
+}
+
+package() {
+  cd "CGI-$pkgver"
+
+  unset PERL5LIB PERL_MM_OPT PERL_LOCAL_LIB_ROOT
+  make install INSTALLDIRS=vendor DESTDIR="$pkgdir"
+}
+
+# vim:set ts=2 sw=2 et:

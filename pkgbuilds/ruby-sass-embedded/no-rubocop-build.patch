@@ -1,0 +1,24 @@
+diff --git i/Rakefile w/Rakefile
+index 08dcbf4..f7c5c96 100644
+--- i/Rakefile
++++ w/Rakefile
+@@ -2,9 +2,8 @@
+ 
+ require 'bundler/gem_tasks'
+ require 'rspec/core/rake_task'
+-require 'rubocop/rake_task'
+ 
+-task default: %i[compile rubocop spec]
++task default: %i[compile spec]
+ 
+ desc 'Compile all the extensions'
+ task :compile do
+@@ -22,8 +21,3 @@ task :compile do
+ end
+ 
+ RSpec::Core::RakeTask.new
+-
+-RuboCop::RakeTask.new do |task|
+-  task.formatters = ['progress']
+-  task.formatters << 'github' if ENV['GITHUB_ACTIONS'] == 'true'
+-end

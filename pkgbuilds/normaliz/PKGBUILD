@@ -1,0 +1,47 @@
+# Maintainer: Antonio Rojas <arojas@archlinux.org>
+# Contributor: Tarn Burton <twburton at gmail dot com>
+
+pkgname=normaliz
+pkgver=3.11.1
+pkgrel=4
+pkgdesc='A tool for computations in affine monoids, vector configurations, lattice polytopes, and rational cones'
+arch=(x86_64)
+url='https://www.normaliz.uni-osnabrueck.de/'
+license=(GPL-3.0-or-later)
+depends=(e-antic
+         flint
+         glibc
+         gmp
+         libgcc
+         libgomp
+         libstdc++
+         nauty)
+makedepends=(boost
+             git)
+source=(git+https://github.com/Normaliz/Normaliz#tag=v$pkgver)
+sha256sums=('6921c95c6aef4e75f080b9d0e74bc54a600a57429c6e84c78e35422d709862a8')
+
+prepare() {
+  cd Normaliz
+  autoreconf -vi
+}
+
+build() {
+  cd Normaliz
+  ./configure --prefix=/usr
+  #https://bugzilla.gnome.org/show_bug.cgi?id=655517
+  sed -i -e 's/ -shared / -Wl,-O1,--as-needed\0/g' libtool
+
+  make
+}
+
+check() {
+  cd Normaliz
+#  make check
+#  many test failures with nauty 2.9 due to different permutation order
+}
+
+package() {
+  cd Normaliz
+  make DESTDIR="$pkgdir" install
+}

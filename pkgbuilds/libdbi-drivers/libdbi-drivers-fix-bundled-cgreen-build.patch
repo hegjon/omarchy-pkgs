@@ -1,0 +1,48 @@
+diff --unified --recursive --text --new-file libdbi-drivers-0.9.0.orig/tests/cgreen/src/constraint.c libdbi-drivers-0.9.0/tests/cgreen/src/constraint.c
+--- libdbi-drivers-0.9.0.orig/tests/cgreen/src/constraint.c	2026-04-06 15:16:54.648920232 +0200
++++ libdbi-drivers-0.9.0/tests/cgreen/src/constraint.c	2026-04-06 15:20:25.403866543 +0200
+@@ -22,7 +22,7 @@
+ static double as_double(intptr_t box);
+ 
+ static int compare_using_matcher(Constraint *constraint, intptr_t actual);
+-static void test_with_matcher(Constraint *constraint, const char *function, const char* matcher_name, intptr_t actual, const char *test_file, int test_line, TestReporter *reporter);
++static void test_with_matcher(Constraint *constraint, const char *function, intptr_t actual, const char *test_file, int test_line, TestReporter *reporter);
+ 
+ 
+ void destroy_constraint(void *abstract) {
+@@ -164,19 +164,19 @@
+ }
+ 
+ static int compare_using_matcher(Constraint *constraint, intptr_t actual) {
+-	int (*matches)(const void*) = constraint->expected;
+-    return matches(actual);
++	int (*matches)(const void*) = (int (*)(const void*))constraint->expected;
++    return matches((const void*)actual);
+ }
+ 
+-static void test_with_matcher(Constraint *constraint, const char *function, const char* matcher_name, intptr_t matcher_function, const char *test_file, int test_line, TestReporter *reporter) {
++static void test_with_matcher(Constraint *constraint, const char *function, intptr_t actual, const char *test_file, int test_line, TestReporter *reporter) {
+     (*reporter->assert_true)(
+             reporter,
+             test_file,
+             test_line,
+-            (*constraint->compare)(constraint, matcher_function),
++            (*constraint->compare)(constraint, actual),
+             "Wanted parameter [%s] to match [%s] in function [%s]",
+             constraint->parameter,
+-            matcher_name,
++            constraint->name,
+             function);
+ }
+ 
+diff --unified --recursive --text --new-file libdbi-drivers-0.9.0.orig/tests/cgreen/src/unit.c libdbi-drivers-0.9.0/tests/cgreen/src/unit.c
+--- libdbi-drivers-0.9.0.orig/tests/cgreen/src/unit.c	2026-04-06 15:16:54.648745583 +0200
++++ libdbi-drivers-0.9.0/tests/cgreen/src/unit.c	2026-04-06 15:16:56.116208715 +0200
+@@ -9,6 +9,7 @@
+ #include <stdarg.h>
+ #include <unistd.h>
+ #include <signal.h>
++#include <sys/wait.h>
+ 
+ enum {test_function, test_suite};
+ 

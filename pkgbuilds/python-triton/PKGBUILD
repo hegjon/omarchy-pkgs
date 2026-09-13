@@ -1,0 +1,73 @@
+# Maintainer: Torsten Keßler <tpkessler at archlinux dot org>
+# Maintainer: Christian Heusel <gromit@archlinux.org>
+
+_pkgname=triton
+pkgname=python-${_pkgname}
+pkgver=3.5.1
+pkgrel=4
+pkgdesc="Language and compiler for writing highly efficient custom Deep-Learning primitives"
+url="https://triton-lang.org/main/index.html"
+license=(MIT)
+arch=(x86_64)
+depends=(
+	glibc
+	libgcc
+	python
+)
+makedepends=(
+	git
+	cmake
+	ninja
+	pybind11
+	python-setuptools
+	python-build
+	python-wheel
+	python-installer
+)
+_git="https://github.com/triton-lang/triton"
+_llvm="https://github.com/triton-lang/llvm-project"
+# https://github.com/triton-lang/triton/blob/v3.5.1/cmake/llvm-hash.txt
+_commit=7d5de3033187c8a3bb4d2e322f5462cdaf49808f
+source=(
+	"${pkgname}::git+${_git}#tag=v${pkgver}"
+	"${pkgname}-llvm-${pkgver}::git+${_llvm}#commit=${_commit}"
+	)
+sha256sums=('dae743cae9ab9a8af6bfb4326d7e990af19c4bd734ec584834683eb2abaee9ec'
+            '77b77b6eafa9ebc175922705ebb054067a42849ecc84f64f8a42d9d595a7683b')
+
+prepare() {
+	cd ${pkgname}
+	# We bring our own pybind11, cmake and ninja
+	sed -i '/requires = \[/s/.*/requires = \["setuptools"\]/' pyproject.toml
+	# Werror breaks build with current gcc
+	sed -i 's/-Werror//' CMakeLists.txt
+	# Some classes in python's ast module were removed as of version 3.14
+	git cherry-pick -n c44b870bdd9e1ea8933fd4057b6b59a5e6e5407b
+}
+
+build() {
+	local llvm_args=(
+		-G Ninja
+		-S "${pkgname}-llvm-${pkgver}/llvm"
+		-B build-llvm
+		-DCMAKE_BUILD_TYPE=Release
+		-DLLVM_ENABLE_ASSERTIONS=ON
+		-DLLVM_ENABLE_PROJECTS="mlir;llvm;lld"
+		-DLLVM_TARGETS_TO_BUILD="Native;NVPTX;AMDGPU"
+	)
+	cmake "${llvm_args[@]}"
+	cmake --build build-llvm
+
+	cd ${pkgname}
+	export LLVM_BUILD_DIR="${srcdir}"/build-llvm
+	LLVM_INCLUDE_DIRS="${LLVM_BUILD_DIR}"/include \
+	LLVM_LIBRARY_DIR="${LLVM_BUILD_DIR}"/lib \
+	LLVM_SYSPATH="${LLVM_BUILD_DIR}" \
+	python -m build --wheel --no-isolation
+}
+
+package() {
+	cd ${pkgname}
+	python -m installer --destdir="$pkgdir" dist/*.whl
+	install -Dm644 LICENSE "${pkgdir}"/usr/share/licenses/"${pkgname}"/LICENSE
+}

@@ -1,0 +1,77 @@
+# Maintainer: David Runge <dvzrv@archlinux.org>
+# Contributor: Lukas Fleischer <lfleischer@archlinux.org>
+# Contributor: Ray Rashif <schiv@archlinux.org>
+# Contributor: Mateusz Herych <heniekk@gmail.com>
+
+# CAUTION: introduces soname change on *every* release:
+# https://github.com/thestk/stk/issues/89
+pkgbase=stk
+pkgname=(stk stk-docs)
+pkgver=5.0.1
+_libver=5.0.0
+pkgrel=4
+pkgdesc='The Synthesis ToolKit in C++'
+arch=(x86_64)
+url="https://ccrma.stanford.edu/software/stk/"
+license=(MIT)
+makedepends=(alsa-lib doxygen glibc jack libgcc)
+source=(https://github.com/thestk/$pkgname/archive/$pkgver/$pkgname-$pkgver.tar.gz)
+sha512sums=('7b5fb9345ee6e693e52e130cf9419bbe072d8b94fbe2c76997d4e64ab5d058dbce1cc29cda77500f35e4a80f62fd4bbadd577ba1bfcfe11e8c8ee39df8c18c94')
+b2sums=('6b3a208d6f5e54019f541a29a37aeb1ad2126840d752f072b854f5a4e41ca598996796607840f498a061d4e155c08991728a62d1e59c8ae0ea814fac121de8ea')
+
+prepare() {
+  cd $pkgname-$pkgver
+  autoreconf -fiv
+}
+
+build() {
+  local configure_options=(
+    --prefix=/usr
+    --enable-shared
+    --with-alsa
+    --with-jack
+  )
+  cd $pkgname-$pkgver
+  export RAWWAVE_PATH="/usr/share/$pkgname/rawwaves/"
+  ./configure "${configure_options[@]}"
+  make
+  make -C projects/demo
+
+  cd doc/doxygen
+  doxygen
+}
+
+package_stk() {
+  depends=(
+    alsa-lib libasound.so
+    gcc-libs
+    glibc
+    jack libjack.so
+  )
+  optdepends=(
+    'stk-docs: for documentation'
+    'tk: for demos and samples'
+  )
+  provides=("libstk-$_libver.so")
+
+  cd $pkgbase-$pkgver
+  make DESTDIR="$pkgdir" install
+  # license
+  install -vDm 644 LICENSE -t "$pkgdir/usr/share/licenses/$pkgname"
+  # demo
+  install -vDm 755 projects/demo/stk-demo -t "$pkgdir/usr/bin"
+  install -vDm 644 projects/demo/tcl/*.tcl -t "$pkgdir/usr/share/$pkgname/tcl"
+  install -vDm 644 projects/demo/scores/{README,*.ski} -t "$pkgdir/usr/share/$pkgname/scores"
+  install -vDm 644 rawwaves/*.{raw,c} -t "$pkgdir/usr/share/$pkgname/rawwaves"
+}
+
+package_stk-docs() {
+  pkgdesc+=' - documentation'
+
+  cd $pkgbase-$pkgver
+  # docs
+  install -vDm 644 doc/{README-Linux,ReleaseNotes,SKINI,hierarchy}.txt -t "$pkgdir/usr/share/doc/$pkgbase"
+  install -vDm 644 doc/html/*.{html,png,js} -t "$pkgdir/usr/share/doc/$pkgbase/html"
+  # license
+  install -vDm 644 LICENSE -t "$pkgdir/usr/share/licenses/$pkgname/"
+}

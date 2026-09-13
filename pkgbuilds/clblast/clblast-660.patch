@@ -1,0 +1,13 @@
+diff --git a/src/tuning/tuning.cpp b/src/tuning/tuning.cpp
+index d8403028..0ac1b081 100644
+--- a/src/tuning/tuning.cpp
++++ b/src/tuning/tuning.cpp
+@@ -113,6 +113,8 @@ struct ThreadInfo {
+   std::vector<size_t> local;
+ };
+ 
++inline void addPrintInfo(std::string& str, const char* text) { str += text; }
++
+ template <typename... Args>
+ inline void addPrintInfo(std::string& str, const char* format, Args&&... args) {
+   const auto size = std::snprintf(nullptr, 0, format, std::forward<Args>(args)...);

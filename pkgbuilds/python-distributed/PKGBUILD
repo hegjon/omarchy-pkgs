@@ -1,0 +1,143 @@
+# Maintainer: Bruno Pagani <archange@archlinux.org>
+# Maintainer: Jakub Klinkovský <lahwaacz at archlinux dot org>
+
+_name=distributed
+pkgname=python-$_name
+pkgver=2026.8.0
+pkgrel=1
+pkgdesc="Distributed task scheduler for Dask"
+arch=(any)
+url="https://distributed.dask.org/"
+license=(BSD-3-Clause)
+depends=(
+  python
+  python-click
+  python-cloudpickle
+  python-dask
+  python-jinja
+  python-locket
+  python-msgpack
+  python-packaging
+  python-psutil
+  python-sortedcontainers
+  python-tblib
+  python-toolz
+  python-tornado
+  python-urllib3
+  python-yaml
+  python-zict
+)
+makedepends=(
+  python-build
+  python-installer
+  python-setuptools
+  python-setuptools-scm
+  python-wheel
+)
+checkdepends=(
+  ipython
+  python-pytest
+  python-pytest-repeat
+  python-pytest-timeout
+  python-pytest-xdist
+  python-flaky
+  python-blosc
+  python-cryptography
+  python-fsspec
+  python-h5py
+  python-ipykernel
+  python-ipywidgets
+  python-jsonschema
+  python-lz4
+  python-netcdf4
+  python-numpy
+  python-pandas
+  python-paramiko
+  python-prometheus_client
+  python-pyarrow
+  python-requests
+  python-scipy
+  python-snappy
+  python-zstandard
+)
+source=(https://github.com/dask/distributed/archive/$pkgver/$pkgname-$pkgver.tar.gz)
+b2sums=('63dc79fabdd31a7d33259c558911ee175549071a4c166710bb4efcca68f882bdfe9086bf56db256c81bff47d2e4255ab7efd0306c6a8d10ba01248b9a567113d')
+
+build() {
+  cd $_name-$pkgver
+  SETUPTOOLS_SCM_PRETEND_VERSION=$pkgver \
+  python -m build --wheel --no-isolation
+}
+
+check() {
+  local pytest_options=(
+    -vv
+    --override-ini="addopts="
+    -W ignore::DeprecationWarning
+    -W ignore::FutureWarning
+    -W ignore::UserWarning
+    # distribute tests across multiple CPUs
+    -n auto
+    --dist loadscope
+    # use 'signal' which only kills the offending test
+    --timeout-method signal
+    -m "not slow and not leaking and not avoid_ci and not gpu and not extra_packages"
+    # crashes the test suite
+    --deselect distributed/deploy/tests/test_old_ssh.py
+    # FileNotFoundError: [Errno 2] No such file or directory: 'dask-worker'
+    --deselect distributed/cli/tests/test_dask_worker.py::test_single_executable_deprecated
+    # AssertionError: Too many workers without keys (9 out of 12)
+    --deselect distributed/tests/test_steal.py::test_steal_twice
+    # TypeError: _FlakyPlugin._make_test_flaky() got an unexpected keyword argument 'reruns'
+    --deselect distributed/comm/tests/test_ws.py
+    --deselect distributed/deploy/tests/test_slow_adaptive.py::test_scale_up_down
+    --deselect distributed/diagnostics/tests/test_progress.py::test_many_Progress
+    --deselect distributed/diagnostics/tests/test_progress.py::test_AllProgress
+    --deselect distributed/diagnostics/tests/test_progress.py::test_AllProgress_lost_key
+    --deselect distributed/tests/test_client.py::test_profile
+    --deselect distributed/tests/test_worker.py::test_statistical_profiling
+    --deselect distributed/cli/tests/test_dask_scheduler.py::test_pid_file
+    # TimeoutError: Test timeout (30) hit after 30.000276130624115s
+    --deselect distributed/deploy/tests/test_local.py::test_defaults_5
+    --deselect distributed/deploy/tests/test_adaptive.py::test_adapt_down
+    --deselect distributed/shuffle/tests/test_merge.py::test_merge_indicator
+    # NotImplementedError: (CategoricalDtype(categories=['a', 'b'], ordered=True, categories_dtype=object), array([0, 1, 0], dtype=int8))
+    --deselect distributed/protocol/tests/test_pandas.py::test_dumps_serialize_pandas[df12]
+    --deselect distributed/protocol/tests/test_pandas.py::test_dumps_serialize_pandas[df13]
+    --deselect distributed/protocol/tests/test_pandas.py::test_dumps_serialize_pandas[df14]
+    --deselect distributed/protocol/tests/test_pandas.py::test_dumps_serialize_pandas[df22]
+    # NotImplementedError: (dtype('<M8[ns]'), array( ... ))
+    --deselect distributed/shuffle/tests/test_metrics.py::test_dataframe
+    --deselect distributed/shuffle/tests/test_shuffle.py
+    # RuntimeError: Error during deserialization of the task graph.
+    --deselect distributed/shuffle/tests/test_graph.py::test_basic_state
+    --deselect distributed/shuffle/tests/test_graph.py::test_multiple_linear
+    # assert False
+    --deselect distributed/tests/test_init.py::test_git_revision
+    # AssertionError: assert 'finished' == 'error'
+    --deselect distributed/tests/test_worker_memory.py::test_fail_to_pickle_execute_1
+    # hangs
+    --deselect distributed/tests/test_client.py::test_futures_in_subgraphs
+    # TypeError: Worker.identity() got an unexpected keyword argument 'n_workers'
+    --deselect distributed/cli/tests/test_dask_spec.py::test_text
+    # TypeError: list.extend() takes exactly one argument (2 given)
+    --deselect distributed/tests/test_core.py::test_server_listen
+    # distributed.comm.core.FatalCommClosedError
+    --deselect distributed/cli/tests/test_tls_cli.py::test_separate_key_cert
+    # TypeError: list.extend() takes exactly one argument (2 given)
+    --deselect distributed/deploy/tests/test_local.py::test_local_tls[True]
+    # TypeError: list.extend() takes exactly one argument (2 given)
+    --deselect distributed/deploy/tests/test_local.py::test_local_tls[False]
+  )
+
+  cd $_name-$pkgver
+  python -m venv --system-site-packages test-env
+  test-env/bin/python -m installer dist/*.whl
+  test-env/bin/python -m pytest "${pytest_options[@]}" distributed
+}
+
+package() {
+  cd $_name-$pkgver
+  python -m installer --destdir="$pkgdir" dist/*.whl
+  install -vDm 644 LICENSE.txt -t "$pkgdir"/usr/share/licenses/$pkgname/
+}

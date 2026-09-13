@@ -1,0 +1,43 @@
+# Maintainer: Felix Yan <felixonmars@archlinux.org>
+# Contributor: Daniel Wallace <danielwallace at gtmanfred dot com>
+
+pkgname=python-email-validator
+pkgver=2.3.0
+pkgrel=2
+pkgdesc="A robust email address syntax and deliverability validation library"
+arch=(any)
+url="https://github.com/JoshData/python-email-validator"
+license=(Unlicense)
+depends=(
+  python
+  python-dnspython
+  python-idna
+)
+makedepends=(
+  python-build
+  python-installer
+  python-setuptools
+  python-wheel
+)
+checkdepends=(python-pytest)
+source=($pkgname-$pkgver.tar.gz::$url/archive/v$pkgver.tar.gz)
+sha512sums=('bb5f33d14f69bfdf51b967778471fc261eabfd9187981e9488db7918dafc18a3e0f0528d6c394720f8222150f9ff8d2f6cc968caca9804f220dfdb7199fa15ce')
+b2sums=('d5afe29661f8d23efee48f78460f63fadce90abb7e93f1cd00f871d69faaf9df54f16b6163d4f609d9a793fae78d6f45dcc374fd151c5f7d632c0edb304d6a69')
+
+build() {
+  cd $pkgname-$pkgver
+  python -m build --wheel --no-isolation
+}
+
+check() {
+  cd $pkgname-$pkgver
+  python -m pytest
+}
+
+package() {
+  cd $pkgname-$pkgver
+  python -m installer --destdir="$pkgdir" dist/*.whl
+  install -Dm644 LICENSE -t "$pkgdir"/usr/share/licenses/$pkgname/
+}
+
+# vim:set ts=2 sw=2 et:

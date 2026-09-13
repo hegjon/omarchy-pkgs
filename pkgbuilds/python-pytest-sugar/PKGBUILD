@@ -1,0 +1,31 @@
+# Maintainer: Felix Yan <felixonmars@archlinux.org>
+
+pkgname=python-pytest-sugar
+pkgver=1.1.1
+pkgrel=2
+pkgdesc='A plugin for py.test that changes the default look and feel of py.test'
+arch=('any')
+license=('BSD-3-Clause')
+url='https://github.com/Teemu/pytest-sugar'
+depends=('python' 'python-pytest' 'python-termcolor')
+makedepends=('git' 'python-setuptools' 'python-build' 'python-installer' 'python-wheel')
+source=("git+https://github.com/Teemu/pytest-sugar.git#tag=v$pkgver")
+sha512sums=('01ebc6c61bcfd4191f81dab4c22f3a353d63e11308e82932e5075fbd510871693d794ceec15d94d56eb3b91299a43a11e33cff4b0902984d7d6d8a703d356d18')
+
+build() {
+  cd pytest-sugar
+  python -m build --wheel --no-isolation
+}
+
+check() {
+  cd pytest-sugar
+  pytest -v
+}
+
+package() {
+  cd pytest-sugar
+  python -m installer --destdir="$pkgdir" dist/*.whl
+  install -Dm644 LICENSE -t "$pkgdir"/usr/share/licenses/$pkgname/
+}
+
+# vim:set ts=2 sw=2 et:

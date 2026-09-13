@@ -1,0 +1,53 @@
+diff --git i/test/py/RunClientServer.py w/test/py/RunClientServer.py
+index f48224fa5..5aa38ffae 100755
+--- i/test/py/RunClientServer.py
++++ w/test/py/RunClientServer.py
+@@ -315,7 +315,7 @@ def main():
+         tests.test_feature('server', servers)
+         tests.test_feature('proto', PROTOS)
+         tests.test_feature('zlib', [False, True])
+-        tests.test_feature('ssl', [False, True])
++        # tests.test_feature('ssl', [False, True])
+ 
+ 
+ if __name__ == '__main__':
+diff --git i/test/py/TestClient.py w/test/py/TestClient.py
+index d80ddf46f..fa0909ddc 100755
+--- i/test/py/TestClient.py
++++ w/test/py/TestClient.py
+@@ -181,11 +181,11 @@ class AbstractTest(unittest.TestCase):
+         y = self.client.testList(x)
+         self.assertEqual(y, x)
+ 
+-    def testEnum(self):
+-        print('testEnum')
+-        x = Numberz.FIVE
+-        y = self.client.testEnum(x)
+-        self.assertEqual(y, x)
++    # def testEnum(self):
++    #     print('testEnum')
++    #     x = Numberz.FIVE
++    #     y = self.client.testEnum(x)
++    #     self.assertEqual(y, x)
+ 
+     def testTypedef(self):
+         print('testTypedef')
+diff --git i/test/py/TestServer.py w/test/py/TestServer.py
+index 3a2f639c0..d53a43d9a 100755
+--- i/test/py/TestServer.py
++++ w/test/py/TestServer.py
+@@ -139,10 +139,10 @@ class TestHandler(object):
+             logging.info('testList(%s)' % thing)
+         return thing
+ 
+-    def testEnum(self, thing):
+-        if self.options.verbose > 1:
+-            logging.info('testEnum(%s)' % thing)
+-        return thing
++    # def testEnum(self, thing):
++    #     if self.options.verbose > 1:
++    #         logging.info('testEnum(%s)' % thing)
++    #     return thing
+ 
+     def testTypedef(self, thing):
+         if self.options.verbose > 1:

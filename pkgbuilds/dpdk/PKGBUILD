@@ -1,0 +1,84 @@
+# Maintainer: Anatol Pomozov
+# Maintainer: Carl Smedstad <carsme@archlinux.org>
+
+pkgname=dpdk
+pkgver=25.11.1
+pkgrel=2
+pkgdesc="A set of libraries and drivers for fast packet processing"
+arch=(x86_64)
+url="https://dpdk.org"
+license=(
+  BSD-3-Clause
+  GPL-2.0-only
+)
+depends=(
+  bash
+  dtc
+  glibc
+  jansson
+  libarchive
+  libatomic
+  libbsd
+  libelf
+  libpcap
+  numactl
+  openssl
+  zlib
+)
+makedepends=(
+  git
+  linux-headers
+  meson
+  ninja
+  python-pyelftools
+)
+source=("git+https://dpdk.org/git/dpdk-stable#tag=v$pkgver")
+b2sums=('eb5ce563cb1bd42395ab819693009b2349237a49e4a867f3986b8bf3632e7602150d82db71aad7aad74be10a0b08bc530d5ceed181c7404481428c3c1c6e7795')
+
+build() {
+  cd dpdk-stable
+  arch-meson . build -Dplatform=generic
+  meson compile -C build
+}
+
+check() {
+  cd dpdk-stable
+  # Skip tests timing out. Not sure why.
+  local tests=$(
+    meson test -C build --suite fast-tests --list \
+      | awk '{print $3}' \
+      | grep -Ev argparse_autotest \
+      | grep -Ev bitmap_autotest \
+      | grep -Ev bpf_convert_autotest \
+      | grep -Ev byteorder_autotest \
+      | grep -Ev crc_autotest \
+      | grep -Ev debug_autotest \
+      | grep -Ev devargs_autotest \
+      | grep -Ev eventdev_common_autotest \
+      | grep -Ev hash_autotest \
+      | grep -Ev latencystats_autotest \
+      | grep -Ev lpm_autotest \
+      | grep -Ev metrics_autotest \
+      | grep -Ev net_ether_autotest \
+      | grep -Ev node_list_dump \
+      | grep -Ev pflock_autotest \
+      | grep -Ev power_autotest \
+      | grep -Ev ptr_compress_autotest \
+      | grep -Ev rcu_qsbr_autotest \
+      | grep -Ev rwlock_test1_autotest \
+      | grep -Ev seqlock_autotest \
+      | grep -Ev telemetry_json_autotest \
+      | grep -Ev ticketlock_autotest \
+      | grep -Ev trace_autotest_with_traces \
+      | grep -Ev version_autotest \
+  )
+  # shellcheck disable=SC2068
+  meson test -C build --print-errorlogs ${tests[@]}
+}
+
+package() {
+  cd dpdk-stable
+  meson install -C build --destdir="$pkgdir"
+  install -vDm644 -t "$pkgdir/usr/share/licenses/$pkgname" \
+    license/bsd-3-clause.txt
+}

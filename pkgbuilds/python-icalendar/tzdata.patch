@@ -1,0 +1,10 @@
+--- pyproject.toml~	2024-10-14 10:45:13.199039476 -0500
++++ pyproject.toml	2024-10-14 10:48:19.267594387 -0500
+@@ -73,7 +73,6 @@
+     # install requirements depending on python version, TODO: Remove with Python 3.8
+     # see https://www.python.org/dev/peps/pep-0508/#environment-markers
+     "backports.zoneinfo; python_version < '3.9'",
+-    "tzdata"
+ ]
+ 
+ version = "6.0.1"

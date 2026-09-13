@@ -1,0 +1,33 @@
+# Maintainer: Jakub Klinkovský <lahwaacz at archlinux dot org>
+
+pkgname=cutensor
+pkgver=2.8.0.6
+_cudaver=13
+pkgrel=1
+pkgdesc="High-performance CUDA library for tensor primitives"
+arch=(x86_64)
+url="https://docs.nvidia.com/cuda/cutensor/latest/index.html"
+license=(LicenseRef-NVIDIA-cuTENSOR)
+depends=(
+  "cuda>=$_cudaver"
+  glibc
+  libgcc
+)
+optdepends=(
+  'nccl: for the multi-process extension (cuTENSORMp)'
+)
+options=(!strip)
+source=(https://developer.download.nvidia.com/compute/$pkgname/redist/lib$pkgname/linux-x86_64/lib$pkgname-linux-x86_64-${pkgver}_cuda$_cudaver-archive.tar.xz)
+b2sums=('cd48780853d397d4e8a0cca83503bd36ae337e3d96e45be02152ae7a72b43f7151d413249d2a5f498fbbf283d10c88fb7d67ca801f290d79be43eadb460ff08c')
+
+package() {
+  cd lib$pkgname-linux-x86_64-${pkgver}_cuda${_cudaver}-archive
+
+  install -vdm 755 "$pkgdir"/usr/
+  cp -r lib include "$pkgdir"/usr/
+
+  # remove static libs
+  rm "$pkgdir"/usr/lib/*.a
+
+  install -vDm 644 LICENSE -t "$pkgdir"/usr/share/licenses/$pkgname/
+}

@@ -1,0 +1,61 @@
+# Maintainer: Fabian Bornschein <fabiscafe@archlinux.org>
+# Maintainer: Jan Alexander Steffens (heftig) <heftig@archlinux.org>
+
+pkgbase=msgraph
+pkgname=(
+  msgraph
+  msgraph-docs
+)
+pkgver=0.3.5
+pkgrel=1
+pkgdesc="A shared library for accessing MS Graph API"
+url="https://gitlab.gnome.org/GNOME/msgraph"
+arch=(x86_64)
+license=(LGPL-3.0-or-later)
+depends=(
+  glib2
+  glibc
+  json-glib
+  libgcc
+  libgoa
+  libsoup3
+)
+makedepends=(
+  gi-docgen
+  git
+  gobject-introspection
+  meson
+  uhttpmock
+)
+source=("git+https://gitlab.gnome.org/GNOME/msgraph.git#tag=$pkgver")
+b2sums=('bae7f57a4d1d5e2c5f6b7f6b53b0765eb886fc02b6ec18da3dcd9a305fd382551048e783544a0ca308828146064f3e0fd0c8df9dddd9131c95c3567d0e19dcfc')
+
+prepare() {
+  cd msgraph
+}
+
+build() {
+  arch-meson msgraph build
+  meson compile -C build
+}
+
+check() {
+  meson test -vC build --print-errorlogs
+}
+
+package_msgraph() {
+  meson install -C build --destdir "$pkgdir"
+  provides=('libmsgraph-1.so')
+
+  mkdir -p doc/usr/share
+  mv {"$pkgdir",doc}/usr/share/doc
+}
+
+package_msgraph-docs() {
+  pkgdesc+=" (documentation)"
+  depends=()
+
+  mv doc/* "$pkgdir"
+}
+
+# vim:set sw=2 sts=-1 et:

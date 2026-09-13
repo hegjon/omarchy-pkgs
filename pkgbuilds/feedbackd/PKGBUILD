@@ -1,0 +1,57 @@
+# Maintainer: Dan Johansen <strit@archlinux.org>
+# Contributor: Jelle van der Waa <jelle@archlinux.org>
+# Contributor: Thomas Booker (CoderThomasB) <tw.booker@outlook.com>
+# Contributor: <reg-archlinux AT klein DOT tuxli DOT ch>
+# Contributor: Philip Goto <philip.goto@gmail.com>
+# Contributor: Sam Whited <sam@samwhited.com>
+
+pkgname=feedbackd
+pkgver=0.8.9
+pkgrel=2
+pkgdesc='A daemon to provide haptic feedback on events'
+arch=(x86_64)
+url='https://gitlab.freedesktop.org/agx/feedbackd'
+license=(GPL-3.0-or-later)
+depends=(
+  dconf
+  libgcc
+  glib2
+  glibc
+  gsettings-desktop-schemas
+  gsound
+  json-glib
+  libgmobile
+  libgudev
+)
+makedepends=(
+  gi-docgen
+  git
+  glib2-devel
+  gobject-introspection
+  meson
+  python-docutils
+  umockdev
+  vala
+)
+source=("git+https://gitlab.freedesktop.org/agx/feedbackd.git?signed#tag=v$pkgver")
+b2sums=('b10b0787b1bc2f50bad5f3f00b49aaa912c5116eacaa97bb48ba16e5a11518b7bf7ac496dfd9a57b2bd8476a6a952767431462e1e2bb122a0dbf67453dbb7d4c')
+validpgpkeys=(0DB3932762F78E592F6522AFBB5A2C77584122D3) # Guido Günther <guido@xcpu.ch>
+
+prepare() {
+  cd $pkgname
+}
+
+build() {
+  arch-meson $pkgname build \
+    -D gtk_doc=true \
+    -D man=true
+  meson compile -C build
+}
+
+check() {
+  meson test -C build --print-errorlogs
+}
+
+package() {
+  meson install -C build --destdir "$pkgdir"
+}

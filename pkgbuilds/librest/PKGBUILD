@@ -1,0 +1,107 @@
+# Maintainer: Jan Alexander Steffens (heftig) <heftig@archlinux.org>
+
+pkgbase=librest
+pkgname=(
+  librest
+  librest-docs
+  librest-demos
+)
+pkgver=0.10.2
+pkgrel=1
+pkgdesc="Library for accessing RESTful web services"
+url="https://gitlab.gnome.org/GNOME/librest"
+arch=(x86_64)
+license=(LGPL-2.1-or-later)
+depends=(
+  gcc-libs
+  glib2
+  glibc
+  json-glib
+  libsoup3
+  libxml2
+)
+makedepends=(
+  gi-docgen
+  git
+  glib2-devel
+  gobject-introspection
+  gtk4
+  gtksourceview5
+  libadwaita
+  meson
+  vala
+)
+source=(
+  "git+https://gitlab.gnome.org/GNOME/librest.git#tag=$pkgver"
+)
+b2sums=('5efbae175b2559aaa7cbb402480b0374da5959da2018b27355132d7db408c34567e2d85c6c4c6377cfa25578999934c9724e2013b7e8f46616f4e14940a8bf6d')
+
+prepare() {
+  cd librest
+}
+
+build() {
+  local meson_options=(
+    -D vapi=true
+  )
+
+  arch-meson librest build "${meson_options[@]}"
+  meson compile -C build
+}
+
+check() {
+  meson test -C build --print-errorlogs
+}
+
+_pick() {
+  local p="$1" f d; shift
+  for f; do
+    d="$srcdir/$p/${f#$pkgdir/}"
+    mkdir -p "$(dirname "$d")"
+    mv "$f" "$d"
+    rmdir -p --ignore-fail-on-non-empty "$(dirname "$f")"
+  done
+}
+
+package_librest() {
+  depends+=(
+    libg{lib,object,io}-2.0.so
+    libjson-glib-1.0.so
+    libsoup-3.0.so
+    libxml2.so
+  )
+  provides+=(librest{,-extras}-1.0.so)
+
+  meson install -C build --destdir "$pkgdir"
+
+  cd "$pkgdir"
+
+  _pick docs usr/share/doc
+
+  _pick demo usr/bin/librest-demo
+  _pick demo usr/share/applications/org.gnome.RestDemo.desktop
+}
+
+package_librest-docs() {
+  pkgdesc+=" (documentation)"
+  depends=()
+  mv docs/* "$pkgdir"
+}
+
+package_librest-demos() {
+  pkgdesc+=" (demo applications)"
+  depends=(
+    gcc-libs
+    glib2
+    glibc
+    gtk4
+    gtksourceview5
+    json-glib
+    libadwaita
+    librest
+    libsoup3
+  )
+  mv demo/* "$pkgdir"
+}
+
+# vim:set sw=2 sts=-1 et:

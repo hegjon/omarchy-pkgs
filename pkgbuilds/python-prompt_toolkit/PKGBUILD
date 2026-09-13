@@ -1,0 +1,53 @@
+# Maintainer: Morten Linderud <foxboron@archlinux.org>
+# Maintainer: George Rawlinson <grawlinson@archlinux.org>
+# Maintainer: Daniel M. Capella <polyzen@archlinux.org>
+# Maintainer: Carl Smedstad <carsme@archlinux.org>
+# Contributor: Kyle Keen <keenerd@gmail.com>
+# Contributor: Andy Weidenbaum <archbaum@gmail.com>
+
+pkgname=python-prompt_toolkit
+pkgver=3.0.53
+pkgrel=1
+pkgdesc='Library for building powerful interactive command lines in Python'
+arch=(any)
+url='https://github.com/prompt-toolkit/python-prompt-toolkit'
+license=(BSD-3-Clause)
+depends=(
+  python
+  python-wcwidth
+)
+makedepends=(
+  git
+  python-build
+  python-installer
+  python-wheel
+  python-setuptools
+)
+checkdepends=(python-pytest)
+optdepends=('python-pygments: for color schemes and lexers')
+source=("$pkgname::git+$url#tag=$pkgver")
+sha512sums=('65d0e90438a372f84771180ce0f0a82e666159bee48268a131f4536352de965293ddd8532fe3f1383b2a4dbabd080d16e544cd276998de6e0b740f5216fec00f')
+b2sums=('53e8f55f696eb510ab864cf3ce4923900c6def3630f46f4c2e57560af1626e617970a943a92dbfa4cdfca218cbf274f327a270ffbbfe69d6d85e6f15a773277b')
+
+build() {
+  cd "$pkgname"
+
+  python -m build --wheel --no-isolation
+}
+
+check() {
+  cd "$pkgname"
+
+  python -m venv --system-site-packages test-env
+  test-env/bin/python -m installer dist/*.whl
+  test-env/bin/python -m pytest -v
+}
+
+package() {
+  cd "$pkgname"
+
+  python -m installer --destdir="$pkgdir" dist/*.whl
+
+  # license
+  install -vDm644 -t "$pkgdir/usr/share/licenses/$pkgname" LICENSE
+}

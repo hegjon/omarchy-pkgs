@@ -1,0 +1,55 @@
+# Maintainer: Caleb Maclennan <caleb@alerque.com>
+# Contributor: Gabriel Magno <gabrielmagno1@gmail.com>
+# Contributor: Michał Pałubicki <maln0ir@gmx.com>
+
+_pyname=agate
+pkgname=python-$_pyname
+pkgver=1.14.2
+pkgrel=1
+pkgdesc='A data analysis library that is optimized for humans instead of machines'
+arch=(any)
+url='https://agate.readthedocs.org/'
+license=(MIT)
+_pydeps=(babel
+         isodate
+         leather
+         parsedatetime
+         pytimeparse
+         slugify)
+depends=(python "${_pydeps[@]/#/python-}")
+makedepends=(python-{build,installer,wheel}
+             python-setuptools)
+checkdepends=(python-cssselect
+              python-lxml
+              python-pytest)
+optdepends=('python-pyicu: non-English locale support')
+_archive="$_pyname-$pkgver"
+source=("https://files.pythonhosted.org/packages/source/${_pyname::1}/$_pyname/$_archive.tar.gz")
+sha256sums=('7f29841c39d84b1de7fde762b8d792085371515324f3a01413b20f810398225b')
+
+prepare() {
+	cd "$_archive"
+	# Note: Upstream test suite is currently badly broken; it depends on the
+	# system local and fails on some. Part of the trouble is tracable to
+	# parsedatetime bugs so they limit allowed versions. We're going to skip
+	# known problematic tests to allow Arch's packaged version.
+	sed -i -e '/parsedatetime/s/>.*"/"/' pyproject.toml
+	# https://github.com/wireservice/agate/pull/796
+	sed -i -e '/packages.find/,+2d' pyproject.toml
+}
+
+build() {
+	cd "$_archive"
+	python -m build -wn
+}
+
+check() {
+	cd "$_archive"
+	LC_ALL=POSIX pytest -vs -k 'not test_cast_format_locale' .
+}
+
+package() {
+	cd "$_archive"
+	python -m installer -d "$pkgdir" dist/*.whl
+	install -Dm0644 -t "$pkgdir/usr/share/licenses/$pkgname/" COPYING
+}

@@ -1,0 +1,31 @@
+version = 1
+
+[[annotations]]
+path = [
+    "PKGBUILD",
+    "README.md",
+    "keys/**",
+    ".SRCINFO",
+    ".nvchecker.toml",
+    "*.install",
+    "*.sysusers",
+    "*.tmpfiles",
+    "*.logrotate",
+    "*.pam",
+    "*.service",
+    "*.socket",
+    "*.timer",
+    "*.desktop",
+    "*.hook",
+]
+SPDX-FileCopyrightText = "Arch Linux contributors"
+SPDX-License-Identifier = "0BSD"
+
+[[annotations]]
+path = [
+    "0001-Test-vcs.git.backend-tests-9507.patch",
+    "0002-tests-make-test-independent-of-git-setting-of-defaul.patch",
+    "0003-Dulwich-upgrade-10674.patch",
+]
+SPDX-FileCopyrightText = "python-poetry contributors"
+SPDX-License-Identifier = "MIT"

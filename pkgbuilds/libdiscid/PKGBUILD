@@ -1,0 +1,43 @@
+# Maintainer: Brett Cornwall <ainola@archlinux.org>
+# Contributor: Andrea Scarpino <andrea@archlinux.org>
+# Contributor: Eric Gillingham <sysrq@sysrq.tk>
+
+pkgname=libdiscid
+pkgver=0.7.0
+pkgrel=1
+pkgdesc='A Library for creating MusicBrainz DiscIDs'
+arch=(x86_64)
+url='https://musicbrainz.org/doc/libdiscid'
+license=(LGPL-2.1-or-later)
+makedepends=(git)
+source=("$pkgname::git+https://github.com/metabrainz/libdiscid#tag=v$pkgver")
+sha512sums=('2a7e1c208240544e7f6c8cf0558ac2c5e018582dd102aaf77ed467503a20517e98b44c1c440edbf4d3d4454472b155e8e87fc0c2edbf32094079681cc817d717')
+b2sums=('7e11cc364a00dc8b7b98ece9d7a72fdc77ad1ed392e9c7243baf8e3a787ef6b4fc8304850eb33c844f56f23a795a73602fc3fdb041d0a9aea1a96b85569adea8')
+
+prepare() {
+  cd "$pkgname"
+
+  autoreconf -vfi
+}
+
+build() {
+  cd "$pkgname"
+
+  ./configure --prefix=/usr
+
+  make
+}
+
+check() {
+  cd "$pkgname"
+
+  make check
+}
+
+package() {
+  depends+=(glibc)
+
+  cd "$pkgname"
+
+  make DESTDIR="$pkgdir" install
+}

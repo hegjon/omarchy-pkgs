@@ -1,0 +1,46 @@
+# Maintainer: David Runge <dvzrv@archlinux.org>
+# Maintainer: Robin Candau <antiz@archlinux.org>
+
+_name=tabulate
+pkgname=python-tabulate
+pkgver=0.10.0
+pkgrel=1
+pkgdesc="Pretty-print tabular data in Python, a library and a command-line utility."
+arch=(any)
+url="https://github.com/astanin/python-tabulate"
+license=(MIT)
+depends=(python)
+makedepends=(python-build python-installer python-setuptools-scm python-toml python-wheel)
+checkdepends=(python-numpy python-pandas python-pytest python-wcwidth)
+optdepends=(
+  'python-numpy: NumPy array support'
+  'python-pandas: pandas.DataFrame support'
+  'python-wcwidth: wide-character support'
+)
+source=(https://files.pythonhosted.org/packages/source/${_name::1}/$_name/$_name-$pkgver.tar.gz)
+sha512sums=('e101d03063366fa4ade34505d33d1c0e723fa867178a3bff23f886d8ac4f6e6534344abc0114084a6cc87ad18695f0dbfaa8d743d073f032d0bfcf5c96616f88')
+b2sums=('1ce3eccf5a7db723a9996192bea64e40ae5725068a18d9e1da2a2e63842a123d2abe11ce00a4658e6b23ccf76e5a30c8cf6af2d2d114393ba6b2a827a7aebb32')
+
+build() {
+  cd $_name-$pkgver
+  python -m build --wheel --no-isolation
+}
+
+check() {
+  local _site_packages=$(python -c "import site; print(site.getsitepackages()[0])")
+
+  cd $_name-$pkgver
+  # install to temporary location, as importlib is used
+  python -m installer --destdir=test_dir dist/*.whl
+  export PYTHONPATH="test_dir/$_site_packages:$PYTHONPATH"
+  pytest -v \
+    --deselect test/test_textwrapper.py::test_wrap_multiword_non_wide \
+    --deselect test/test_textwrapper.py::test_wrap_multiword_non_wide # https://github.com/astanin/python-tabulate/pull/387
+}
+
+package_python-tabulate() {
+  cd $_name-$pkgver
+  python -m installer --destdir="$pkgdir" dist/*.whl
+  install -vDm 644 README.md -t "$pkgdir/usr/share/doc/$pkgname/"
+  install -vDm 644 LICENSE -t "$pkgdir/usr/share/licenses/$pkgname/"
+}

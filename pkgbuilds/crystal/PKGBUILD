@@ -1,0 +1,110 @@
+# Maintainer: Anatol Pomozov <anatol.pomozov@gmail.com>
+# Contributor: Jonne Haß <me@jhass.eu>
+
+pkgbase='crystal'
+pkgname=(
+  'crystal'
+  'crystal-docs'
+)
+pkgver=1.21.0
+pkgrel=1
+pkgdesc='The Crystal Programming Language'
+arch=(x86_64)
+url='https://crystal-lang.org'
+license=(Apache-2.0)
+depends=(
+  'gc'
+  'pcre2'
+  'libevent'
+  'llvm-libs'
+)
+makedepends=(
+  'libxml2'
+  'llvm'
+  'asciidoctor'
+  'crystal'  # to compile version N we need crystal compiler of N-1 version
+)
+checkdepends=(
+  'libyaml'
+  'libxml2'
+  'gmp'
+  'inetutils'
+  'git'
+)
+optdepends=(
+  'shards: crystal language package manager'
+  'libyaml: For YAML support'
+  'gmp: For BigInt support'
+  'libxml2: For XML support'
+)
+source=(
+  "crystal-${pkgver}.tar.gz::https://github.com/crystal-lang/crystal/archive/${pkgver}.tar.gz"
+)
+sha256sums=('5e2d69f565553aa7287e76570d4540a231bfdf1a37f3be179f497ef1df8a0d9a')
+
+prepare() {
+  cd "${pkgbase}-${pkgver}"
+}
+
+build() {
+  cd "${pkgbase}-${pkgver}"
+
+  make release=1 interpreter=1 progress=1 \
+       FLAGS="--release --no-debug" \
+       CRYSTAL_CONFIG_PATH="lib:/usr/lib/crystal" \
+       CRYSTAL_CACHE_DIR="/tmp/crystal"
+
+  make docs CRYSTAL_CACHE_DIR="/tmp/crystal"
+
+  make man/
+}
+
+check() {
+  cd "${pkgbase}-${pkgver}"
+
+  return  # tests require too much RAM, disable it temporary
+
+  make spec CRYSTAL_CACHE_DIR="/tmp/crystal"
+}
+
+
+# /usr/bin/crystal                compiled executable
+# /usr/lib/crystal/               compiler src & core libs
+# /usr/share/doc/crystal/api      api docs
+# /usr/share/doc/crystal/samples/ samples
+
+package_crystal() {
+  cd "${pkgbase}-${pkgver}"
+
+  install -Dm755 ".build/crystal" "${pkgdir}/usr/bin/crystal"
+
+  install -dm755 "${pkgdir}/usr/lib" "${pkgdir}/usr/share/man/man1"
+  cp -r src "${pkgdir}/usr/lib/crystal"
+
+  for manpage in man/*.[1-9] ; do
+    n="$(awk -F'.' '{print $2}' <<< "$(basename "${manpage}")")"
+    man_dir="man${n}"
+    install -Dm644 "${manpage}" "${pkgdir}/usr/share/man/${man_dir}/"
+  done
+
+  install -Dm644 etc/completion.bash "${pkgdir}/usr/share/bash-completion/completions/crystal"
+  install -Dm644 etc/completion.zsh "${pkgdir}/usr/share/zsh/site-functions/_crystal"
+  install -Dm644 etc/completion.fish "${pkgdir}/usr/share/fish/vendor_completions.d/crystal.fish"
+
+  install -Dm644 LICENSE "${pkgdir}/usr/share/licenses/${pkgbase}/LICENSE"
+}
+
+package_crystal-docs() {
+  pkgdesc+=' (documentation)'
+  depends=()
+  optdepends=()
+
+  cd "${pkgbase}-${pkgver}"
+
+  install -dm755 "${pkgdir}/usr/share/doc/crystal"
+  cp -r docs "${pkgdir}/usr/share/doc/crystal/api"
+  cp -r samples "${pkgdir}/usr/share/doc/crystal/"
+
+  # remove source asciidoc files, we already have rendered man pages
+  rm -rf "${pkgdir}/usr/share/doc/crystal/api/doc/man"
+}

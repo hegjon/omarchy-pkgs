@@ -1,0 +1,71 @@
+# Maintainer: Felix Yan <felixonmars@archlinux.org>
+
+pkgbase=deepin-qt5platform-plugins
+pkgname=(deepin-qt5platform-plugins deepin-qt6platform-plugins)
+pkgver=6.7.49
+pkgrel=1
+pkgdesc='Qt platform plugins for DDE'
+arch=('x86_64')
+url="https://github.com/linuxdeepin/qt5platform-plugins"
+license=('LGPL-3.0-or-later')
+groups=('deepin')
+makedepends=('git' 'cmake' 'ninja' 'qt5-tools' 'qt6-tools' 'qt5-xcb-private-headers' 'qt6-xcb-private-headers'
+             'libglvnd' 'gtest' 'extra-cmake-modules' 'dtkcommon' 'cairo'
+             'qt5-base' 'qt5-x11extras' 'qt6-base')
+source=("git+https://github.com/linuxdeepin/qt5platform-plugins.git#tag=$pkgver")
+sha512sums=('b50472f90f724805abfcd3d405bde856cc8cd4faaf4b4d95d836a23798ad42eb6d59b41775a8956883d46e062a011a65ae7919ae521f03d7d9af5232357cb661')
+
+prepare() {
+  cd qt5platform-plugins
+
+  rm -r xcb/libqt5xcbqpa-dev xcb/libqt6xcbqpa-dev wayland/qtwayland-dev
+
+  cd ..
+  # Use separate source directories for Qt5 and Qt6 builds
+  mkdir -p build-qt5 build-qt6
+  cp -r qt5platform-plugins build-qt5/qt5platform-plugins
+  cp -r qt5platform-plugins build-qt6/qt5platform-plugins
+
+  # Fix Qt5 install path for Arch convention (qt/plugins instead of qt5/plugins)
+  sed -i 's|qt${QT_VERSION_MAJOR}/plugins|qt/plugins|' build-qt5/qt5platform-plugins/xcb/CMakeLists.txt
+
+  # Disable wayland for Qt5, unsupported upstream
+  sed -i '/wayland/d' build-qt5/qt5platform-plugins/CMakeLists.txt
+}
+
+build() {
+  # Build Qt5 variant
+  cd build-qt5/qt5platform-plugins
+  cmake . -GNinja \
+    -DDTK5=ON \
+    -DCMAKE_INSTALL_LIBDIR=lib \
+    -DCMAKE_INSTALL_PREFIX=/usr \
+    -DQT_XCB_PRIVATE_HEADERS=/usr/include/qtxcb-private
+  ninja
+
+  cd "$srcdir"
+  # Build Qt6 variant
+  cd build-qt6/qt5platform-plugins
+  cmake . -GNinja \
+    -DDTK5=OFF \
+    -DCMAKE_INSTALL_LIBDIR=lib \
+    -DCMAKE_INSTALL_PREFIX=/usr \
+    -DQT_XCB_PRIVATE_HEADERS=/usr/include/qt6xcb-private
+  ninja
+}
+
+package_deepin-qt5platform-plugins() {
+  pkgdesc='Qt 5 platform plugins for DDE'
+  depends=('qt5-base' 'qt5-x11extras' 'libx11' 'libxi' 'libxcb' 'xcb-util-wm' 'glibc' 'libgcc' 'libstdc++')
+
+  cd build-qt5/qt5platform-plugins
+  DESTDIR="$pkgdir" ninja install
+}
+
+package_deepin-qt6platform-plugins() {
+  pkgdesc='Qt 6 platform plugins for DDE'
+  depends=('qt6-base' 'libx11' 'libxi' 'libxcb' 'xcb-util-wm' 'xcb-util-cursor' 'glibc' 'libgcc' 'libstdc++')
+
+  cd build-qt6/qt5platform-plugins
+  DESTDIR="$pkgdir" ninja install
+}

@@ -1,0 +1,45 @@
+# Maintainer: Carl Smedstad <carsme@archlinux.org>
+# Contributor: Fabio 'Lolix' Loli <fabio.loli@disroot.org>
+# Contributor: Yunhui Fu <yhfudev at gmail dot com>
+# Contributor: Benjamin Chretien <chretien at lirmm dot fr>
+# Contributor: zarra <zarraxx@gmail.com>
+
+pkgname=python-pygccxml
+pkgver=3.0.2
+pkgrel=2
+pkgdesc="Simple framework to navigate C++ declarations, using Python classes"
+arch=(any)
+url="https://github.com/gccxml/pygccxml"
+license=(BSL-1.0)
+depends=(
+  castxml
+  python
+)
+makedepends=(
+  python-build
+  python-installer
+  python-setuptools
+  python-wheel
+)
+checkdepends=(python-pytest)
+source=("$url/archive/v$pkgver/$pkgname-$pkgver.tar.gz")
+b2sums=('add33e230db83cadd5fd394e7e65c8815227abb3d5f86e76c54bcbc13ba52ffa55698d98785802ac51d9396f009972a093476e489280548469d5000aff8aa010')
+
+build() {
+  cd ${pkgname#python-}-$pkgver
+  python -m build --wheel --no-isolation
+}
+
+check() {
+  cd ${pkgname#python-}-$pkgver
+  local site_packages=$(python -c "import site; print(site.getsitepackages()[0])")
+  python -m installer --destdir=tmp_install dist/*.whl
+  # Deselected test: https://github.com/CastXML/pygccxml/issues/205
+  PYTHONPATH="$PWD/tmp_install/$site_packages" pytest \
+    --deselect tests/test_smart_pointer.py::test_smart_pointer_value_type
+}
+
+package() {
+  cd ${pkgname#python-}-$pkgver
+  python -m installer --destdir="$pkgdir" dist/*.whl
+}

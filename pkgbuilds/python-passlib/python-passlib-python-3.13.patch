@@ -1,0 +1,16 @@
+diff --git a/passlib/tests/utils.py b/passlib/tests/utils.py
+index 79a9f9f..8a32f27 100644
+--- a/passlib/tests/utils.py
++++ b/passlib/tests/utils.py
+@@ -3360,6 +3360,11 @@ class OsCryptMixin(HandlerCase):
+         if hasattr(self.handler, "orig_prefix"):
+             raise self.skipTest("not applicable to wrappers")
+ 
++        # skip if the crypt module isn't available e.g. Python 3.13+
++        from passlib.utils import has_crypt
++        if not has_crypt:
++            raise self.skipTest("crypt module not available on this platform")
++
+         # look for first entry that matches current system
+         # XXX: append "/" + platform.release() to string?
+         # XXX: probably should rework to support rows being dicts w/ "minver" / "maxver" keys,

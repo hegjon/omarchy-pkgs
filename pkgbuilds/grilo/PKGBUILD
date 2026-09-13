@@ -1,0 +1,54 @@
+# Maintainer: Jan Alexander Steffens (heftig) <heftig@archlinux.org>
+
+pkgname=grilo
+pkgver=0.3.19
+pkgrel=2
+pkgdesc="Framework that provides access to various sources of multimedia content"
+url="https://wiki.gnome.org/Projects/Grilo"
+arch=(x86_64)
+license=(LGPL-2.1-or-later)
+depends=(
+  glib2
+  glibc
+  libgcc
+  libsoup3
+  libxml2
+  totem-pl-parser
+)
+makedepends=(
+  git
+  glib2-devel
+  gobject-introspection
+  gtk-doc
+  meson
+  vala
+)
+optdepends=(
+  'grilo-plugins: Plugins for grilo'
+)
+provides=(libgr{ilo,lnet,lpls}-0.3.so)
+source=("git+https://gitlab.gnome.org/GNOME/grilo.git#tag=grilo-$pkgver")
+b2sums=('0738ab5280c709a2bdeb3e704d41d698f66ce0a63d61c69aeec81c162ed7513dc85b5ed866554446df8209801880477e2ba9cbcf1b4efe7e9e7f4637ea8342fc')
+
+prepare() {
+  cd grilo
+}
+
+build() {
+  local meson_options=(
+    -D enable-test-ui=false
+  )
+
+  arch-meson grilo build "${meson_options[@]}"
+  meson compile -C build
+}
+
+check() {
+  meson test -C build --print-errorlogs
+}
+
+package() {
+  meson install -C build --destdir "$pkgdir"
+}
+
+# vim:set sw=2 sts=-1 et:

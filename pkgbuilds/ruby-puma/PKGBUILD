@@ -1,0 +1,125 @@
+# Maintainer: Andreas 'Segaja' Schleifer <archlinux at segaja dot de>
+
+_gemname='puma'
+pkgname="ruby-$_gemname"
+pkgver=7.1.0
+pkgrel=1
+pkgdesc='A Ruby/Rack web server built for concurrency'
+arch=('x86_64')
+url='https://puma.io/'
+license=('BSD-3-CLAUSE')
+options=(!emptydirs)
+depends=(
+  ruby
+  ruby-nio4r
+)
+makedepends=(
+  ruby-rdoc
+)
+checkdepends=(
+  ruby-bundler
+  ruby-concurrent
+  ruby-minitest
+  ruby-minitest-proveit
+  ruby-minitest-retry
+  ruby-minitest-stub-const
+  ruby-rack
+  ruby-rackup
+  ruby-rake
+  ruby-rake-compiler
+)
+source=("https://github.com/puma/puma/archive/v${pkgver}/${pkgname}-${pkgver}.tar.gz")
+sha512sums=('f00140080664e9f44181b289fb98059d1da70d6f6e555d8506a8e971954187635e36444d5aec14b9a849fec53b4e41d72961ca5550e69043dab2f211494455a5')
+b2sums=('be800a0b7ae2850ddbaac3408331956278a13150e20383270f874b404992fe6c80c430658f96fcb29f741c09a966d716f2e80e5fa757943b0bb7f1b4069f5686')
+
+prepare() {
+  cd "${_gemname}-${pkgver}"
+
+  # we built based on a tar archive, not a git repo
+  sed --in-place 's/git ls-files/find/' "${_gemname}.gemspec"
+
+  # update gemspec/Gemfile to allow newer version of the deps
+  sed --in-place --regexp-extended 's|~>|>=|g' "${_gemname}.gemspec" Gemfile
+
+  # disable m. Only required for debugging during development
+  sed --in-place "/'m'/d" Gemfile
+
+  # disable localhost. Only required for self-signed certificates during development
+  sed --in-place "/localhost/d" Gemfile
+
+  rm --verbose \
+    test/config/ssl_self_signed_config.rb \
+    test/test_preserve_bundler_env.rb \
+    test/test_puma_localhost_authority.rb \
+    test/test_worker_gem_independence.rb
+}
+
+build() {
+  cd "${_gemname}-${pkgver}"
+
+  local _gemdir="$(gem env gemdir)"
+
+  gem build --verbose "${_gemname}.gemspec"
+
+  gem install \
+    --local \
+    --verbose \
+    --ignore-dependencies \
+    --no-user-install \
+    --install-dir "tmp_install${_gemdir}" \
+    --bindir "tmp_install/usr/bin" \
+    "${_gemname}-${pkgver}.gem"
+
+  # remove unreproducible files
+  rm --force --recursive --verbose \
+    "tmp_install${_gemdir}/cache/" \
+    "tmp_install${_gemdir}/gems/${_gemname}-${pkgver}/vendor/" \
+    "tmp_install${_gemdir}/doc/${_gemname}-${pkgver}/ri/ext/"
+
+  find "tmp_install${_gemdir}/gems/" \
+    -type f \
+    \( \
+      -iname "*.o" -o \
+      -iname "*.c" -o \
+      -iname "*.so" -o \
+      -iname "*.time" -o \
+      -iname "gem.build_complete" -o \
+      -iname "Makefile" \
+    \) \
+    -delete
+
+  find "tmp_install${_gemdir}/extensions/" \
+    -type f \
+    \( \
+      -iname "mkmf.log" -o \
+      -iname "gem_make.out" \
+    \) \
+    -delete
+}
+
+# tests can be flaky with failures in TestIntegrationCluster#test_hot_restart_does_not_drop_connections_threads [test/helpers/integration.rb:490]
+# if so then just re-run the tests
+# see https://github.com/puma/puma/issues/3114
+check() {
+  cd "${_gemname}-${pkgver}"
+
+  local _gemdir="$(gem env gemdir)"
+
+  # https://github.com/puma/puma/blob/master/CONTRIBUTING.md#file-limits
+  ulimit -Sn 5000
+
+  export PUMA_NO_RUBOCOP="true"
+
+  GEM_HOME="tmp_install${_gemdir}" rake --tasks TESTOPTS="--seed=16538"
+}
+
+package() {
+  cd "${_gemname}-${pkgver}"
+
+  cp --archive --verbose tmp_install/* "${pkgdir}"
+
+  install --verbose -D --mode=0644 LICENSE --target-directory "${pkgdir}/usr/share/licenses/${pkgname}"
+  install --verbose -D --mode=0644 *.md --target-directory "${pkgdir}/usr/share/doc/${pkgname}"
+}
+
+# vim: tabstop=2 shiftwidth=2 expandtab:

@@ -1,0 +1,32 @@
+# Maintainer: Felix Yan <felixonmars@archlinux.org>
+# Contributor: Deon Spengler <deon@spengler.co.za>
+
+pkgname=ddcutil
+pkgver=3.0.0
+pkgrel=1
+pkgdesc='Query and change Linux monitor settings using DDC/CI and USB.'
+url='http://ddcutil.com/'
+arch=('x86_64')
+license=('GPL-2.0-or-later')
+depends=('glibc' 'glib2' 'i2c-tools' 'libusb' 'libdrm' 'jansson' 'libx11' 'libxext' 'libxrandr' 'systemd-libs' 'acl' 'dbus')
+makedepends=('git')
+source=(git+https://github.com/rockowitz/ddcutil.git#tag=v$pkgver)
+sha512sums=('3b01ac4ae784d4206a776c1ec610673faa0619ace84c2775d5d69f7e224f2f3b53706abc7a82d9cfb96e6c2b6f4790391c8ea207cfe7e74d7689a8a103abaea6')
+
+prepare() {
+  cd ddcutil
+  autoreconf -fiv
+}
+
+build() {
+  cd ddcutil
+  ./configure --prefix=/usr --disable-build-timestamp
+  make
+}
+
+package() {
+  cd ddcutil
+  make DESTDIR="$pkgdir" install
+}
+
+# vim: ft=sh ts=2 sw=2 et

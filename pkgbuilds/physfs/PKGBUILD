@@ -1,0 +1,40 @@
+# Maintainer: Alexander F. Rødseth <xyproto@archlinux.org>
+# Contributor: Eric Bélanger <eric@archlinux.org>
+# Contributor: Hugo Hromic <hhromic@gmail.com>
+
+pkgname=physfs
+pkgver=3.2.0
+pkgrel=5
+pkgdesc='Portable and flexible I/O abstraction for archives'
+arch=(x86_64)
+url='https://icculus.org/physfs'
+license=(Zlib)
+depends=(glibc)
+makedepends=(cmake doxygen git)
+source=("git+https://github.com/icculus/physfs#tag=release-$pkgver")
+b2sums=('052da2c42ca8334c6dbeb6ed1206d39626d5d1a19765555ac1377f8d730a8c8bdd0c08fc24e591d3adeb4983cd4b7e138e4ebfc0be7d17e65e32bbb070242800')
+
+build() {
+  cmake \
+    -B build \
+    -D CMAKE_BUILD_TYPE=Release \
+    -D CMAKE_INSTALL_PREFIX=/usr \
+    -D CMAKE_POLICY_VERSION_MINIMUM=3.5 \
+    -D PHYSFS_BUILD_STATIC=OFF \
+    -D PHYSFS_BUILD_TEST=OFF \
+    -S $pkgname
+  make -C build all docs
+}
+
+package() {
+  DESTDIR="$pkgdir" make -C build install
+  install -d "$pkgdir/usr/share/"{doc/physfs,man/man3}
+  install -m644 build/docs/html/* "$pkgdir/usr/share/doc/physfs"
+  install -m644 build/docs/man/man3/* "$pkgdir/usr/share/man/man3"
+  for name in Deinit Free Init Malloc Realloc author deprecated description \
+    extension major minor opaque patch remove url; do
+    mv "$pkgdir/usr/share/man/man3/"{,PHYSFS_}$name.3
+  done
+  install -D -m644 $pkgname/LICENSE.txt \
+    "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+}

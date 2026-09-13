@@ -1,0 +1,27 @@
+# Maintainer: Andreas Radke <andyrtr@archlinux.org>
+# Contributor: Jan de Groot <jgc@archlinux.org>
+
+pkgname=xbitmaps
+pkgver=1.1.4
+pkgrel=1
+pkgdesc="X.org Bitmap files"
+arch=('any')
+url="https://xorg.freedesktop.org/"
+license=('HPND' 'ICU')
+makedepends=('xorg-util-macros')
+source=(${url}/releases/individual/data/${pkgname}-${pkgver}.tar.xz{,.sig})
+sha512sums=('7da5e506effdfcf7344fc8209f47c1ec4c2e9f639e677f8701c36e1e5728037357478af3dd030ca93f3e36a3e1eaad1bb97596aba85868f01b52b420b825a10f'
+            'SKIP')
+validpgpkeys=('3AB285232C46AE43D8E192F4DAB0F78EA6E7E2D2') # "Alan Coopersmith <alan.coopersmith@oracle.com>"
+
+build() {
+  cd ${pkgname}-${pkgver}
+  ./configure --prefix=/usr
+  make
+}
+
+package() {
+  cd ${pkgname}-${pkgver}
+  make DESTDIR="${pkgdir}" install
+  install -Dm644 COPYING "${pkgdir}/usr/share/licenses/${pkgname}/COPYING"
+}

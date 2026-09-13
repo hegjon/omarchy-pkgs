@@ -1,0 +1,45 @@
+# Maintainer: Antonio Rojas <arojas@archlinux.org>
+# Contributor: Kyle Keen <keenerd@gmail.com>
+
+pkgname=python-ipywidgets
+_pipname=ipywidgets
+pkgver=8.1.9
+pkgrel=1
+pkgdesc='IPython HTML widgets for Jupyter'
+arch=(any)
+url='https://github.com/ipython/ipywidgets'
+license=(BSD-3-Clause)
+depends=(ipython
+         python
+         python-comm
+         python-ipykernel
+         python-matplotlib-inline
+         python-traitlets)
+makedepends=(git
+             python-build
+             python-installer
+             python-setuptools
+             python-wheel)
+optdepends=('jupyterlab-widgets: widgets for Jupyter lab')
+checkdepends=(python-ipykernel
+              python-jsonschema
+              python-pytest
+              python-pytz)
+source=(git+https://github.com/jupyter-widgets/ipywidgets#tag=$pkgver)
+sha256sums=('327c99c274edf1d287675928d1117129126ac38e54ad2abdcd42c349ac6b90dc')
+
+build() {
+  cd ipywidgets/python/ipywidgets
+  python -m build --wheel --no-isolation
+}
+
+check() {
+  cd ipywidgets/python/ipywidgets
+  pytest -v
+}
+
+package() {
+  cd ipywidgets/python/ipywidgets
+  python -m installer --destdir="$pkgdir" dist/*.whl
+  install -Dm644 LICENSE -t "$pkgdir/usr/share/licenses/$pkgname"
+}

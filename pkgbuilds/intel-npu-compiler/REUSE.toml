@@ -1,0 +1,38 @@
+version = 1
+
+[[annotations]]
+path = [
+    "PKGBUILD",
+    "README.md",
+    "keys/**",
+    ".SRCINFO",
+    ".gitignore",
+    ".nvchecker.toml",
+    "*.install",
+    "*.sysusers",
+    "*sysusers.conf",
+    "*.tmpfiles",
+    "*tmpfiles.conf",
+    "*.logrotate",
+    "*.pam",
+    "*.service",
+    "*.socket",
+    "*.timer",
+    "*.desktop",
+    "*.hook",
+]
+SPDX-FileCopyrightText = "Arch Linux contributors"
+SPDX-License-Identifier = "0BSD"
+
+[[annotations]]
+path = [
+    "010-intel-npu-compiler-llvm-disable-atomic-check.patch",
+    "010-openvino-disable-werror.patch",
+    "020-intel-npu-compiler-disable-werror.patch",
+    "020-openvino-gtest-gcc15-fix.patch",
+    "030-intel-npu-compiler-fix-install.patch",
+    "040-intel-npu-compiler-npu-plugin-elf-fix-install.patch",
+    "050-intel-npu-compiler-remove-non-existent-cmake-targets.patch",
+]
+SPDX-FileCopyrightText = "intel-npu-compiler contributors"
+SPDX-License-Identifier = "Apache-2.0"

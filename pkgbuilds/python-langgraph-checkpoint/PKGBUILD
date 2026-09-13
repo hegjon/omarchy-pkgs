@@ -1,0 +1,58 @@
+# Maintainer: Felix Yan <felixonmars@archlinux.org>
+
+pkgname=python-langgraph-checkpoint
+pkgver=4.2.0
+pkgrel=1
+pkgdesc="Library with base interfaces for LangGraph checkpoint savers"
+arch=('any')
+url="https://github.com/langchain-ai/langgraph/tree/main/libs/checkpoint"
+license=('MIT')
+depends=(
+  'python'
+  'python-langchain-core'
+  'python-ormsgpack'
+)
+makedepends=(
+  'git'
+  'python-build'
+  'python-hatchling'
+  'python-installer'
+  'python-wheel'
+)
+checkdepends=(
+  'pifpaf'
+  'python-dataclasses-json'
+  'python-numpy'
+  'python-pandas'
+  'python-pycryptodome'
+  'python-pytest'
+  'python-pytest-asyncio'
+  'python-pytest-mock'
+  'python-redis'
+  'valkey'
+)
+source=("git+https://github.com/langchain-ai/langgraph.git")
+sha512sums=('SKIP')
+
+prepare() {
+  cd langgraph
+
+  # makepkg's git fragment parser treats "=" inside tag values as separators.
+  git checkout -q "checkpoint==$pkgver"
+}
+
+build() {
+  cd langgraph/libs/checkpoint
+  python -m build --wheel --no-isolation
+}
+
+check() {
+  cd langgraph/libs/checkpoint
+  pifpaf run redis --port 6379 -- python -m pytest
+}
+
+package() {
+  cd langgraph/libs/checkpoint
+  python -m installer --destdir="$pkgdir" dist/*.whl
+  install -Dm644 LICENSE -t "$pkgdir"/usr/share/licenses/$pkgname/
+}

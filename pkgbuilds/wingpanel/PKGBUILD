@@ -1,0 +1,42 @@
+# Maintainer: Maxime Gauduin <alucryd@archlinux.org>
+
+pkgname=wingpanel
+pkgver=8.0.4
+pkgrel=3
+pkgdesc='The Pantheon Top Panel'
+arch=(x86_64)
+url=https://github.com/elementary/wingpanel
+license=(GPL-3.0-or-later)
+groups=(pantheon)
+depends=(
+  glib2
+  glibc
+  granite7
+  gtk4
+  hicolor-icon-theme
+  libgala.so
+  libgee
+  mutter
+  pantheon-notifications
+  wayland
+)
+makedepends=(
+  cmake
+  git
+  gala
+  meson
+  vala
+)
+provides=(libwingpanel-9.so)
+#source=(git+https://github.com/elementary/wingpanel.git#tag=${pkgver})
+source=(git+https://github.com/elementary/wingpanel.git#commit=8bc5eeb8f97c436494f744211046992d83a5e0b4)
+b2sums=('ec44b2c3f18ebc7ec936ace9db452186fe5e499f23ff40e33cb89034a39131ae4c5eeea5071a9a2adba2bbd1611dc8e05c049829509fd9ccd988fefca3e538a2')
+
+build() {
+  arch-meson wingpanel build
+  meson compile -C build
+}
+
+package() {
+  meson install -C build --destdir "${pkgdir}"
+}

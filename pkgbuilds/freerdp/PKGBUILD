@@ -1,0 +1,152 @@
+# Maintainer: Sergej Pupykin <pupykin.s+arch@gmail.com>
+# Contributor: David Runge <dvzrv@archlinux.org>
+# Contributor: Stijn Segers <francesco dot borromini at gmail dot com>
+
+pkgname=freerdp
+pkgver=3.31.1
+_libver=${pkgver/.*/}
+pkgrel=1
+epoch=2
+pkgdesc="Free implementation of the Remote Desktop Protocol (RDP)"
+arch=(x86_64)
+url="https://www.freerdp.com/"
+license=(Apache-2.0)
+depends=(
+  fuse3
+  glibc
+  jansson
+  libcups
+  libgcc
+  libstdc++
+  libx11
+  libxcursor
+  libxext
+  libxdamage
+  libxfixes
+  libxkbcommon
+  libxi
+  libxinerama
+  libxkbfile
+  libxrandr
+  libxrender
+  libxtst
+  sdl3
+  sdl3_ttf
+  wayland
+)
+makedepends=(
+  alsa-lib
+  cmake
+  ffmpeg
+  git
+  icu
+  krb5
+  libcbor
+  libfido2
+  libjpeg-turbo
+  libp11
+  libpng
+  libpulse
+  libusb
+  libwebp
+  ninja
+  openssl
+  pam
+  pkcs11-helper
+  xorgproto
+  zlib
+)
+provides=(
+  libfreerdp-client$_libver.so
+  libfreerdp-server-proxy$_libver.so
+  libfreerdp-server$_libver
+  libfreerdp-shadow-subsystem$_libver.so
+  libfreerdp-shadow$_libver.so
+  libfreerdp$_libver.so
+  libwinpr-tools$_libver.so
+  libwinpr$_libver.so
+)
+source=(
+  "git+https://github.com/$pkgname/$pkgname#tag=$pkgver"
+)
+sha512sums=('bbd7e16b37eb3672ce2faa64c1e2cf878efa44ec2bf4e6310d78303bd4eebe66773c6aa2276bedb0b066c52742e482472f7e6902d08e6ec5cf5a66e918202766')
+b2sums=('4b4a05161608ac98c1779145a15235c72f362339e42d89a77b457a569e7d8ff99331bbbb247225eddd9383793d690c34dfbc23f13db23a484c341a1f64c76db3')
+
+build() {
+  # gcc14 buildfix
+  export CFLAGS+=" -Wno-incompatible-pointer-types"
+  export CXXFLAGS+=" -Wno-incompatible-pointer-types"
+
+  local cmake_options=(
+    -B build
+    -D CHANNEL_RDPECAM_CLIENT=ON
+    -D CHANNEL_RDPEWA=ON
+    -D CHANNEL_RDPEWA_CLIENT=ON
+    -D CHANNEL_URBDRC_CLIENT=ON
+    -D CMAKE_BUILD_TYPE=Release
+    -D CMAKE_INSTALL_LIBDIR=lib
+    -D CMAKE_INSTALL_PREFIX=/usr
+    -D CMAKE_SKIP_INSTALL_RPATH=ON
+    -D PROXY_PLUGINDIR=/usr/lib/$pkgname/server/proxy/plugins
+    -D RDTK_FORCE_STATIC_BUILD=ON  # prevent file conflicts with freerdp2
+    -D UWAC_FORCE_STATIC_BUILD=ON  # prevent file conflicts with freerdp2
+    -D WINPR_UTILS_IMAGE_JPEG=ON
+    -D WINPR_UTILS_IMAGE_PNG=ON
+    -D WINPR_UTILS_IMAGE_WEBP=ON
+    -D WITH_ALSA=ON
+    -D WITH_BINARY_VERSIONING=ON  # prevent file conflicts with freerdp2
+    -D WITH_CHANNELS=ON
+    -D WITH_CLIENT_CHANNELS=ON
+    -D WITH_CLIENT_SDL3=ON
+    -D WITH_CLIENT_SDL2=OFF
+    -D WITH_CUPS=ON
+    -D WITH_DSP_FFMPEG=ON
+    -D WITH_FFMPEG=ON
+    -D WITH_FUSE=ON
+    -D WITH_ICU=ON
+    -D WITH_JPEG=ON
+    -D WITH_PCSC=ON
+    -D WITH_PULSE=ON
+    -D WITH_SERVER=ON
+    -D WITH_SERVER_CHANNELS=ON
+    -D WITH_SWSCALE=ON
+    -D WITH_SYSTEMD=ON
+    -D WITH_VAAPI=ON
+    -D WITH_VERBOSE_WINPR_ASSERT=OFF
+    -D WITH_WAYLAND=ON
+    -D WITH_WINPR_TOOLS=ON
+    -D WITH_X11=ON
+    -G Ninja
+    -S $pkgname
+    -W no-dev
+  )
+
+  cmake "${cmake_options[@]}"
+  cmake --build build --verbose
+}
+
+check() {
+  ctest --test-dir build --output-on-failure --stop-on-failure -j$(nproc)
+}
+
+package() {
+  depends+=(
+    alsa-lib libasound.so
+    ffmpeg libavcodec.so libavutil.so libswresample.so libswscale.so
+    icu libicuuc.so
+    krb5 libk5crypto.so libkrb5.so
+    libcbor libcbor.so
+    libfido2 libfido2.so
+    libjpeg-turbo libjpeg.so
+    libpng libpng16.so
+    libpulse libpulse.so
+    libusb libusb-1.0.so
+    libwebp libwebp.so
+    openssl libcrypto.so libssl.so
+    pam libpam.so
+    zlib libz.so
+  )
+
+  DESTDIR="$pkgdir" cmake --install build
+  install -vDm 644 $pkgname/{ChangeLog,README.md} -t "$pkgdir/usr/share/doc/$pkgname/"
+}

@@ -1,0 +1,21 @@
+version = 1
+
+[[annotations]]
+path = [
+    "PKGBUILD",
+    ".SRCINFO",
+    ".nvchecker.toml",
+]
+SPDX-FileCopyrightText = "Arch Linux contributors"
+SPDX-License-Identifier = "0BSD"
+
+[[annotations]]
+path = [
+    "python-passlib-bcrypt-fix-tests.patch",
+    "python-passlib-bcrypt.patch",
+    "python-passlib-django.patch",
+    "python-passlib-python-3.13.patch",
+    "remove-pkg_resources.patch",
+]
+SPDX-FileCopyrightText = "python-passlib contributors"
+SPDX-License-Identifier = "BSD-3-Clause"

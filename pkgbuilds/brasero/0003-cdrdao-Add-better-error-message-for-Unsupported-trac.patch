@@ -1,0 +1,31 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: sid <sidtosh4@gmail.com>
+Date: Sat, 1 Apr 2023 21:26:12 +0000
+Subject: [PATCH] cdrdao: Add better error message for "Unsupported track mode"
+ errors
+
+Add "Unsupported track mode" error to the list of supported error
+messages, so we display a better error message to the user.
+
+Fixes: #349
+---
+ plugins/cdrdao/burn-cdrdao.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/plugins/cdrdao/burn-cdrdao.c b/plugins/cdrdao/burn-cdrdao.c
+index 8ab3b6c88edd..f48eb47bb5cf 100644
+--- a/plugins/cdrdao/burn-cdrdao.c
++++ b/plugins/cdrdao/burn-cdrdao.c
+@@ -248,6 +248,12 @@ brasero_cdrdao_read_stderr (BraseroProcess *process, const gchar *line)
+ 						BRASERO_BURN_ERROR_PERMISSION,
+ 						_("You do not have the required permissions to use this drive")));
+ 	}
++	else if (strstr (line, "Unsupported track mode")) {
++		brasero_job_error (BRASERO_JOB (cdrdao),
++				   g_error_new (BRASERO_BURN_ERROR,
++						BRASERO_BURN_ERROR_GENERAL,
++						_("Unsupported track mode in TOC/CUE file")));
++	}
+ 
+ 	return BRASERO_BURN_OK;
+ }

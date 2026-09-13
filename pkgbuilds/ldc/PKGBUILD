@@ -1,0 +1,110 @@
+# Maintainer: Dan Printzell <wild@archlinux.org>
+# Contributor: Mihails Strasuns <public@dicebot.lv>
+# Contributor: Sven-Hendrik Haase <svenstaro@archlinux.org>
+
+pkgname=('ldc' 'liblphobos')
+groups=('dlang' 'dlang-ldc')
+pkgver=1.43.0
+_pkgcommit=ad42ba07be491c79a16a04e17ce54c06d8943c03
+_dversion=2.113.0
+epoch=3
+pkgrel=1
+pkgdesc="A D Compiler based on the LLVM Compiler Infrastructure including D runtime and libphobos2"
+arch=('x86_64')
+url="https://github.com/ldc-developers/ldc"
+license=('BSD-3-Clause AND BSL-1.0 AND Apache-2.0 WITH LLVM-exception')
+makedepends=('git' 'cmake' 'llvm' 'lld' 'ldc' 'ninja')
+# Disable lto as linking the ldc2 binary fails
+options=(!lto)
+
+source=(
+    "git+https://github.com/ldc-developers/ldc#commit=$_pkgcommit"
+    "ldc-phobos::git+https://github.com/ldc-developers/phobos.git"
+)
+
+sha256sums=('c994bbe93257350a9fdbb599c3ed035b5da250f30c6d818932080a2536686ccb'
+            'SKIP')
+
+prepare() {
+    cd "$srcdir/ldc"
+
+    git submodule init
+    git config submodule.phobos.url "$srcdir/ldc-phobos"
+    git -c protocol.file.allow=always submodule update
+
+    # LLVMDebuginfod required curl
+    sed -i "s/-lLLVMDebuginfod/-lLLVMDebuginfod -lcurl/" tools/CMakeLists.txt
+}
+
+build() {
+    cd "$srcdir/ldc"
+
+    mkdir -p build && cd build
+
+    cmake -GNinja \
+    -DCMAKE_INSTALL_PREFIX=/usr \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_SKIP_RPATH=ON \
+    -DINCLUDE_INSTALL_DIR=/usr/include/dlang/ldc \
+    -DBUILD_SHARED_LIBS=BOTH \
+    -DBUILD_LTO_LIBS=ON \
+    -DLDC_WITH_LLD=OFF \
+    -DD_COMPILER_FLAGS="-link-defaultlib-shared=false -linker=lld --flto=thin" \
+    -DADDITIONAL_DEFAULT_LDC_SWITCHES="\"-link-defaultlib-shared\"," \
+    ..
+    ninja
+}
+
+check() {
+    cd "$srcdir/ldc/build"
+    ninja all-test-runners
+}
+
+package_ldc() {
+    depends=('liblphobos' 'llvm-libs' 'gcc' 'compiler-rt' 'curl')
+    backup=(
+      'etc/ldc2.conf/00-docs.conf'
+      'etc/ldc2.conf/30-compiler.conf'
+      'etc/ldc2.conf/50-target-default.conf'
+      'etc/ldc2.conf/51-target-wasm-base.conf'
+      'etc/ldc2.conf/55-target-wasm-naked.conf'
+      'etc/ldc2.conf/70-compiler-rt.conf'
+    )
+    provides=("d-compiler=$_dversion")
+
+    cd "$srcdir/ldc/build"
+    DESTDIR="$pkgdir" ninja install
+
+    # move bash-completion
+    mkdir -p "$pkgdir/usr/share/bash-completion/completions/"
+    mv "$pkgdir/etc/bash_completion.d/ldc2" "$pkgdir/usr/share/bash-completion/completions/"
+    rm -rf "$pkgdir/etc/bash_completion.d"
+
+    # remove liblphobos files
+    rm -rf "$pkgdir/usr/include"
+    rm -rf "$pkgdir/usr/lib"
+
+    # symlinks
+    ln -s /usr/share/bash-completion/completions/ldc2 "$pkgdir/usr/share/bash-completion/completions/ldc"
+    ln -s /usr/bin/ldc2 "$pkgdir/usr/bin/ldc"
+    ln -s /usr/bin/ldmd2 "$pkgdir/usr/bin/ldmd"
+
+    # licenses
+    install -D -m644 "$srcdir/ldc/LICENSE" "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+}
+
+package_liblphobos() {
+    provides=('d-runtime' 'd-stdlib')
+    depends=('curl')
+    options=('staticlibs')
+
+    cd "$srcdir/ldc/build"
+    DESTDIR="$pkgdir" ninja install
+
+    # remove ldc files
+    rm -rf "$pkgdir/usr/bin/"
+    rm -rf "$pkgdir/etc/"
+
+    # licenses
+    install -D -m644 "$srcdir/ldc/LICENSE" "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+}

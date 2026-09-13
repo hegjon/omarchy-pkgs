@@ -1,0 +1,35 @@
+# Maintainer: AndyRTR <andyrtr@archlinux.org>
+# Conributor: Mélanie Chauvel (ariasuni) <perso at hack-libre dot org>
+
+pkgname=nuspell
+pkgver=5.1.9
+pkgrel=1
+pkgdesc='Fast and safe spellchecking C++ library'
+arch=('x86_64')
+url='https://nuspell.github.io/'
+license=('LGPL-3.0-or-later')
+depends=('icu' 'glibc' 'libstdc++' 'libgcc')
+makedepends=('cmake' 'pandoc' 'doxygen')
+checkdepends=('catch2' 'expat')
+source=(${pkgname}-${pkgver}.tar.gz::"https://github.com/nuspell/nuspell/archive/v${pkgver}.tar.gz")
+sha512sums=('42b00631a15777bcdd65182e9032e99f41064413d9cc5109753b435e60c92dffce495402333aae7f4a3dd67588c9b1a96294d00e212b103a85d60070cb30c7e8')
+
+# 1st rebuild enchant
+# 2nd rebuild epiphany against nuspell/enchant that checkdepens on both
+
+build() {
+  cmake -B "${pkgname}-${pkgver}"/build \
+    -S ${pkgbase}-${pkgver} \
+    -DCMAKE_INSTALL_PREFIX=/usr \
+    -DCMAKE_INSTALL_LIBDIR=/usr/lib \
+    -DBUILD_SHARED_LIBS=ON
+  cmake --build "${pkgname}-${pkgver}"/build
+}
+
+check() {
+  ctest --test-dir "${pkgname}-${pkgver}"/build
+}
+
+package() {
+  DESTDIR="${pkgdir}" cmake --install "${pkgname}-${pkgver}"/build
+}

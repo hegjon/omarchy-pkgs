@@ -1,0 +1,98 @@
+# Maintainer: Felix Yan <felixonmars@archlinux.org>
+
+pkgname=ruby-async-http
+pkgver=0.98.0
+pkgrel=1
+pkgdesc='A HTTP client and server library'
+arch=(any)
+url='https://github.com/socketry/async-http'
+license=(MIT)
+depends=(
+  ruby
+  ruby-async
+  ruby-async-pool
+  ruby-io-endpoint
+  ruby-io-stream
+  ruby-protocol-http
+  ruby-protocol-http1
+  ruby-protocol-http2
+  ruby-protocol-url
+)
+makedepends=(
+  git
+  ruby-rdoc
+)
+checkdepends=(
+  ruby-async-container
+  ruby-bake
+  ruby-bake-test
+  ruby-bake-test-external
+  ruby-bundler
+  ruby-covered
+  ruby-decode
+  ruby-localhost
+  ruby-metrics
+  ruby-rack-test
+  ruby-sus
+  ruby-sus-fixtures-async
+  ruby-sus-fixtures-async-http
+  ruby-sus-fixtures-benchmark
+  ruby-sus-fixtures-openssl
+  ruby-traces
+)
+options=(!emptydirs)
+source=(git+https://github.com/socketry/async-http.git#tag=v$pkgver)
+sha512sums=('a6dffb20d91aeb4f952247e2c88bee46615c31bd3e9246f185183953ea59f886ce4bf0a69e3db9b98d24abd01437df1b9a5da76c13f8df27fbbb69703f840782')
+b2sums=('9bb9cbd433614f037afe1eafd9eb3b9781be4f5e7c9218c9e1dfb9da96289936b1364f3f0a1d06bf619ed1324184f236cdae64281d0686d7aebe790121303995')
+
+prepare() {
+  cd async-http
+
+  sed -r \
+    -e 's|~>|>=|g' \
+    -e '/signing_key/d' \
+    -i async-http.gemspec
+
+  sed --in-place \
+    --expression '/group :maintenance/,/end/d' \
+    --expression '/rubocop/d' \
+    gems.rb
+}
+
+build() {
+  local _gemdir="$(gem env gemdir)"
+  cd async-http
+  gem build async-http.gemspec
+  gem install \
+    --local \
+    --verbose \
+    --ignore-dependencies \
+    --no-user-install \
+    --install-dir "tmp_install/$_gemdir" \
+    --bindir "tmp_install/usr/bin" \
+    async-http-$pkgver.gem
+  find "tmp_install/$_gemdir/gems/" \
+    -type f \
+    \( \
+        -iname "*.o" -o \
+        -iname "*.c" -o \
+        -iname "*.so" -o \
+        -iname "*.time" -o \
+        -iname "gem.build_complete" -o \
+        -iname "Makefile" \
+    \) \
+    -delete
+  rm -r tmp_install/$_gemdir/cache
+}
+
+check() {
+  local _gemdir="$(gem env gemdir)"
+  cd async-http
+  GEM_HOME="tmp_install/$_gemdir" bake test
+  GEM_HOME="tmp_install/$_gemdir" sus
+}
+
+package() {
+  cd async-http
+  cp -a tmp_install/* "$pkgdir"/
+}

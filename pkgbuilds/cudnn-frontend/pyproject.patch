@@ -1,0 +1,13 @@
+diff --git a/pyproject.toml b/pyproject.toml
+index 5343732..3771963 100644
+--- a/pyproject.toml
++++ b/pyproject.toml
+@@ -76,7 +76,7 @@ dev = [
+ ]
+ 
+ [build-system]
+-requires = ["setuptools>=64", "cmake>=3.18", "ninja==1.11.1.1", "pybind11[global]>=2.13,<3"]
++requires = ["setuptools>=64"]
+ build-backend = "setuptools.build_meta"
+ 
+ [tool.setuptools]

@@ -1,0 +1,50 @@
+# Maintainer: Maxime Gauduin <alucryd@archlinux.org>
+
+pkgname=python-dbus-fast
+pkgver=5.0.22
+pkgrel=1
+pkgdesc='A faster version of dbus-next'
+arch=(x86_64)
+url=https://github.com/bluetooth-devices/dbus-fast
+license=(MIT)
+depends=(
+  cython
+  dbus
+  glib2
+  glibc
+  python
+)
+makedepends=(
+  git
+  python-build
+  python-installer
+  python-poetry-core
+  python-setuptools
+  python-wheel
+)
+checkdepends=(
+  python-pytest
+  python-pytest-asyncio
+  python-pytest-codspeed
+  python-pytest-timeout
+)
+source=(git+https://github.com/Bluetooth-Devices/dbus-fast.git#tag=v${pkgver})
+b2sums=('94c4f120800418ea9d0afc0b95b142b073b7870e25e2168114000207c5bf94ef32f65af255f45fb85747d043322442b41731257c28b186e52eae97d8c1bc75eb')
+
+build() {
+  cd dbus-fast
+  python -m build --wheel --no-isolation
+}
+
+check() {
+  cd dbus-fast
+  PYTHONPATH="$PWD" \
+  dbus-run-session -- pytest -v --override-ini="addopts="
+}
+
+package() {
+  python -m installer --destdir="${pkgdir}" dbus-fast/dist/*.whl
+  install -Dm 644 dbus-fast/LICENSE -t "${pkgdir}"/usr/share/licenses/python-dbus-fast/
+}
+
+# vim: ts=2 sw=2 et:

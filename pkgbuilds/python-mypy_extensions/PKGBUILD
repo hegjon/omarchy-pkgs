@@ -1,0 +1,26 @@
+# Maintainer: Morten Linderud <foxboron@archlinux.org>
+# Contributor: icasdri <icasdri at gmail dot com>
+# Contributor: hexchain <i@hexchain.org>
+
+pkgname=python-mypy_extensions
+pkgver=1.1.0
+pkgrel=2
+pkgdesc='Experimental type system extensions for programs checked with the mypy typechecker'
+url="http://www.mypy-lang.org/"
+arch=('any')
+license=('MIT')
+depends=('python')
+makedepends=('python-build' 'python-installer' 'python-wheel' 'python-flit-core')
+source=("$pkgname-$pkgver.tar.gz::https://pypi.org/packages/source/m/mypy_extensions/mypy_extensions-$pkgver.tar.gz")
+sha256sums=('52e68efc3284861e772bbcd66823fde5ae21fd2fdb51c62a211403730b916558')
+
+build() {
+    cd "mypy_extensions-$pkgver"
+    python -m build --wheel --no-isolation
+}
+
+package() {
+    cd "mypy_extensions-$pkgver"
+    python -m installer --destdir="$pkgdir" dist/*.whl
+    install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+}

@@ -1,0 +1,108 @@
+# Maintainer: Carl Smedstad <carsme@archlinux.org>
+# Contributor: Daniele Basso <d dot bass 05 at proton dot me>
+
+pkgname=bun
+pkgver=1.4.0
+# From https://github.com/oven-sh/bun/blob/main/scripts/build/deps/webkit.ts#L6
+_webkitver=0f966e81b78c84bb23213e391bc679c4ef83e56b
+pkgrel=1
+pkgdesc="Incredibly fast JavaScript runtime, bundler, test runner, and package manager – all in one"
+arch=(x86_64 aarch64)
+url="https://github.com/oven-sh/bun"
+license=('MIT')
+depends=(
+  glibc
+  icu
+)
+makedepends=(
+  # Packaging requirements
+  git
+  unzip
+  # bun make dependencies
+  clang21
+  cmake
+  lld21
+  llvm21
+  nasm
+  ninja
+  rustup
+  # WebKit make dependencies
+  python
+  ruby
+  ruby-erb
+  ruby-getoptlong
+)
+options=('!lto')
+source=(
+  "git+$url.git#tag=bun-v$pkgver"
+  "$pkgname-WebKit::git+https://github.com/oven-sh/WebKit.git#commit=$_webkitver"
+  "$pkgname-webkit-typed-array-int32-conversion.patch"
+)
+source_x86_64=(
+  "$pkgname-bootstrap-$pkgver.zip::https://github.com/oven-sh/bun/releases/download/bun-v$pkgver/bun-linux-x64.zip"
+)
+source_aarch64=(
+  "$pkgname-bootstrap-$pkgver.zip::https://github.com/oven-sh/bun/releases/download/bun-v$pkgver/bun-linux-aarch64.zip"
+)
+b2sums=('6c77d0f09c03a950a72906558f22bdf737a54e2cfe1f7a8d1ab434a48cc3a14aad25d19f4b20c3dea841ea2e105097eac03a1fc23863463cd0bd7813d6eeb1e0'
+        '3a6fe03d65694dc47d76936d17e8abdbc67dea90eec28eb762a7e55fec4731a1eed6ec2bda69430362762898cffb8db691f022c1fdec4e9a58fbf241d09a5936'
+        'f7b41bee31d26968154501ad62d8fdc157cac9e0f895035ba9a1ddd30caa2beb83b5cf80f6a0e52dcc1acac874fb07ef7974761764929e6e782866f1aacf35c2')
+b2sums_x86_64=('e0135c11f2b74040465985a5b5ce15e14867d75b8f6e803ec1aaa3d9381d3b018df109392b04c2b0e75244d6251b63b9caae9a30052ce3cfbeafaf1df1c4d328')
+b2sums_aarch64=('e0135c11f2b74040465985a5b5ce15e14867d75b8f6e803ec1aaa3d9381d3b018df109392b04c2b0e75244d6251b63b9caae9a30052ce3cfbeafaf1df1c4d328')
+
+prepare() {
+  # Fix UB in JSC typed array int32 conversion that causes wrong values
+  # to be stored for numbers > INT32_MAX (https://github.com/oven-sh/bun/issues/28607)
+  patch -Np1 -d $pkgname-WebKit < $pkgname-webkit-typed-array-int32-conversion.patch
+
+  cd $pkgname
+
+  grep -q "WEBKIT_VERSION = \"$_webkitver\"" scripts/build/deps/webkit.ts \
+    || (echo "WebKit version mismatch"; exit 1)
+
+  # Fix compatibility with older CPUs; see
+  # https://gitlab.archlinux.org/archlinux/packaging/packages/bun/-/merge_requests/4.
+  sed -i 's/-march=nehalem/-march=x86-64/' scripts/build/flags.ts
+
+  # Place the WebKit checkout where bun's build system expects local WebKit sources
+  # See also https://bun.sh/docs/project/contributing#building-webkit-locally-+-debug-mode-of-jsc
+  mkdir -p vendor
+  cp -r "$srcdir/$pkgname-WebKit" vendor/WebKit
+}
+
+build() {
+  cd $pkgname
+
+  export PATH="/usr/lib/llvm21/bin:$PATH"
+  case "$CARCH" in
+    x86_64)  _bundir="bun-linux-x64" ;;
+    aarch64) _bundir="bun-linux-aarch64" ;;
+  esac
+  export PATH="$srcdir/$_bundir:$PATH"
+
+  bun scripts/build.ts \
+    --profile=release-local \
+    --canary=0 \
+    --baseline=on \
+    --build-dir=build/release \
+    --cache-dir="$srcdir/build-cache"
+}
+
+check() {
+  cd $pkgname
+
+  ./build/release/bun --version
+  echo 'console.log("ok")' | ./build/release/bun run -
+}
+
+package() {
+  cd $pkgname
+
+  install -vDm755 build/release/bun "$pkgdir/usr/bin/bun"
+  ln -vs /usr/bin/bun "$pkgdir/usr/bin/bunx"
+  install -vDm644 -t "$pkgdir/usr/share/licenses/$pkgname" LICENSE.md
+
+  install -vDm644 completions/bun.bash "$pkgdir/usr/share/bash-completion/completions/bun"
+  install -vDm644 completions/bun.fish "$pkgdir/usr/share/fish/vendor_completions.d/bun.fish"
+  install -vDm644 completions/bun.zsh "$pkgdir/usr/share/zsh/site-functions/_bun"
+}

@@ -1,0 +1,54 @@
+# Maintainer: Felix Yan <felixonmars@archlinux.org>
+# Contributor: Bartłomiej Piotrowski <bpiotrowski@archlinux.org>
+# Contributor: Thomas Dziedzic < gostrc at gmail >
+# Contributor: Angel Velasquez <angvp@archlinux.org>
+# Contributor: Alexander Fehr <pizzapunk gmail com>
+# Contributor: Daniel J Griffiths <ghost1227@archlinux.us>
+
+pkgname=aria2
+pkgver=1.37.0
+pkgrel=3
+pkgdesc='Download utility that supports HTTP(S), FTP, BitTorrent, and Metalink'
+arch=('x86_64')
+url='https://aria2.github.io'
+license=('GPL-2.0-only')
+depends=('gnutls' 'libxml2' 'sqlite' 'c-ares' 'ca-certificates' 'libssh2')
+checkdepends=('cppunit')
+source=("https://github.com/aria2/aria2/releases/download/release-$pkgver/aria2-$pkgver.tar.xz"
+         nettle-4.patch)
+sha512sums=('df3b8b4de8fa8d78f203ea00c059e43585e18a229009f202e42e6a9e59db67d09df0dbba8a016e99ed73c82f59e4f8b26f86c2288afdbb96a6807cbe2c56e6b3'
+            'b3c2133debdaf986568f5a2e96380a5d898074346d8a4cd9b2236d8c5c93f55a73e3db4545f17a759880e998058ad677d717cd3445ea43e91bd1b4966f7ff092')
+
+prepare() {
+  cd $pkgname-$pkgver
+  patch -p1 -i ../nettle-4.patch
+}
+
+build() {
+  cd $pkgname-$pkgver
+
+  ./configure \
+    --prefix=/usr \
+    --enable-libaria2 \
+    --with-ca-bundle=/etc/ssl/certs/ca-certificates.crt
+
+  make
+}
+
+check() {
+  cd $pkgname-$pkgver
+  # https://github.com/aria2/aria2/issues/1476
+  # Upstream states "I don't see any issues with aria2 code."
+  make check || echo "Ignoring test failures"
+}
+
+package() {
+  cd $pkgname-$pkgver
+  make DESTDIR="$pkgdir" install
+
+  # add bash completion
+  install -d "$pkgdir"/usr/share/bash-completion/completions
+  install -m644 "$pkgdir"/usr/share/doc/aria2/bash_completion/aria2c \
+    "$pkgdir"/usr/share/bash-completion/completions
+  rm -rf "$pkgdir"/usr/share/doc/aria2/bash_completion
+}

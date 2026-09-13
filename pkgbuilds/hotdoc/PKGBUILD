@@ -1,0 +1,82 @@
+# Maintainer: Carl Smedstad <carsme@archlinux.org>
+# Contributor: Eli Schwartz <eschwartz@archlinux.org>
+
+pkgname=hotdoc
+pkgver=0.18.2
+pkgrel=1
+pkgdesc="The tastiest API documentation system"
+arch=(x86_64)
+url="https://github.com/hotdoc/hotdoc"
+license=(LGPL-2.1-or-later)
+depends=(
+  bash
+  glib2
+  glibc
+  json-glib
+  libxml2
+  python
+  python-appdirs
+  python-dbus-deviation
+  python-feedgen
+  python-lxml
+  python-networkx
+  python-pkgconfig
+  python-schema
+  python-toposort
+  python-wheezy-template
+  python-yaml
+)
+makedepends=(
+  cmake
+  git
+  meson-python
+  npm
+  python-build
+  python-installer
+  python-setuptools
+  python-wheel
+)
+optdepends=(
+  'clang: for the C extension'
+  'llvm: for the C extension'
+)
+source=(
+  "git+https://github.com/hotdoc/hotdoc#tag=$pkgver"
+  "$pkgname-cmark::git+https://github.com/MathieuDuponchelle/cmark"
+  "$pkgname-prism::git+https://github.com/PrismJS/prism"
+  "$pkgname-hotdoc_bootstrap_theme::git+https://github.com/hotdoc/hotdoc_bootstrap_theme"
+)
+b2sums=('5806ae4f5db23a1a23e711c06e09253860df689d3c5c3a43fc1199210978ebcbee97e4cba2932fbff3e010922660ffdf335bd6452a44b94a7835020b217c1156'
+        'SKIP'
+        'SKIP'
+        'SKIP')
+
+prepare() {
+  cd $pkgname
+  git submodule init
+  git config submodule.cmark.url ../$pkgname-cmark
+  git config submodule.hotdoc/extensions/syntax_highlighting/prism.url ../$pkgname-prism
+  git config submodule.hotdoc/hotdoc_bootstrap_theme.url ../$pkgname-hotdoc_bootstrap_theme
+  git -c protocol.file.allow=always submodule update
+
+  # Place submodules in subprojects/ so meson doesn't clone them
+  cp -a cmark subprojects/cmark
+  cp -a hotdoc/hotdoc_bootstrap_theme subprojects/hotdoc_bootstrap_theme
+}
+
+build() {
+  cd $pkgname
+  python -m build --wheel --no-isolation
+}
+
+check() {
+  cd $pkgname
+  python -m installer -d tmp_install dist/*.whl
+  local site_packages=$(python -c "import site; print(site.getsitepackages()[0])")
+  python -m unittest discover "$PWD/tmp_install/$site_packages"
+}
+
+package() {
+  cd $pkgname
+  python -m installer --destdir="$pkgdir" dist/*.whl
+}

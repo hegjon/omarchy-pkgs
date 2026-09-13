@@ -1,0 +1,52 @@
+# Maintainer: Sven-Hendrik Haase <svenstaro@archlinux.org>
+# Contributor: Ondrej Martinak <omartinak@gmail.com>
+
+pkgname=sfml
+pkgver=3.1.0
+pkgrel=2
+pkgdesc='A simple, fast, cross-platform, and object-oriented multimedia API'
+arch=('x86_64')
+url='http://www.sfml-dev.org/'
+license=('Zlib')
+depends=('libsndfile' 'libxrandr' 'glew' 'freetype2' 'libx11' 'libxcursor' 'libxi'
+         'mbedtls3' 'harfbuzz' 'glibc' 'libstdc++' 'libgcc' 'libogg' 'flac' 'libvorbis')
+makedepends=('mesa' 'cmake' 'doxygen' 'systemd' 'ninja' 'git')
+provides=('libsfml-window.so' 'libsfml-network.so' 'libsfml-system.so'
+          'libsfml-audio.so' 'libsfml-graphics.so')
+source=(${pkgname}-${pkgver}.tar.gz::https://github.com/SFML/SFML/archive/${pkgver}.tar.gz
+        fix-mbedtls-include-dir.patch)
+sha512sums=('5fe38a11c146f5bb99d4ced8e97cd8872f384cc0531073480f7380ce19a3440b085da5ce66c7a06768728065bc645afecbeed0e1ecc88e28df1720a9cf55abdc'
+            'e0e549cfe9c7271572fb9a77e0e5045c473ff077329cb83323c80fb930457a39de1a9706e2e2fc9b9e5afd0fa947ab8a52fac57ab6b422e754f295c12a483ff8')
+
+prepare() {
+  cd SFML-$pkgver
+# Actually use the detected mbedtls include dir
+  patch -p1 -i ../fix-mbedtls-include-dir.patch
+}
+
+build() {
+  export CXXFLAGS+=" -ffat-lto-objects"
+
+  export PKG_CONFIG_PATH="/usr/lib/mbedtls3/pkgconfig/"
+  cmake \
+    -B build \
+    -S SFML-${pkgver} \
+    -G Ninja \
+    -DBUILD_SHARED_LIBS=ON \
+    -DCMAKE_INSTALL_PREFIX=/usr \
+    -DCMAKE_CXX_STANDARD=17 \
+    -DSFML_USE_SYSTEM_DEPS=ON \
+    -DSFML_BUILD_EXAMPLES=ON \
+    -DSFML_BUILD_DOC=ON \
+    -DSFML_PKGCONFIG_INSTALL_DIR=/usr/lib/pkgconfig \
+    -DSFML_INSTALL_PKGCONFIG_FILES=ON \
+    -DCURL_USE_PKGCONFIG=ON
+  ninja -C build
+  ninja -C build doc
+}
+
+package() {
+  DESTDIR="$pkgdir/" ninja -C build install
+
+  install -Dm644 SFML-${pkgver}/license.md "${pkgdir}/usr/share/licenses/${pkgname}/LICENSE"
+}

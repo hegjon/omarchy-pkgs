@@ -1,0 +1,35 @@
+# Maintainer: tobias <tobias@justdreams.de>
+# Modified by: eliott <eliott@cactuswax.net>
+# Original by Benjamin Andresen, klapmuetz [at] gmail [dot] com
+
+pkgname=fcgi
+pkgver=2.4.7
+pkgrel=1
+depends=('gcc-libs')
+pkgdesc='FASTCgi (fcgi) is a language independent, high performant extension to CGI'
+arch=('x86_64')
+license=('custom')
+options=('!makeflags')
+url='https://github.com/FastCGI-Archives/fcgi2'
+source=("${pkgname}-${pkgver}.tar.gz::https://github.com/FastCGI-Archives/fcgi2/archive/${pkgver}.tar.gz")
+sha256sums=('e41ddc3a473b555bdc0cbd80703dcb1f4610c1a7700d3b9d3d0c14a416e1074b')
+
+prepare() {
+  cd "${srcdir}/fcgi2-${pkgver}"
+
+  ./autogen.sh
+}
+
+build() {
+  cd "${srcdir}/fcgi2-${pkgver}"
+
+  ./configure --prefix=/usr
+  make
+}
+
+package() {
+  cd "${srcdir}/fcgi2-${pkgver}"
+
+  make DESTDIR="${pkgdir}" install
+  install -Dm0644 LICENSE "${pkgdir}/usr/share/licenses/${pkgname}/LICENSE"
+}

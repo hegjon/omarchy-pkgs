@@ -1,0 +1,104 @@
+# Maintainer: Jakub Klinkovský <lahwaacz at archlinux dot org>
+# Contributor: Konstantin Gizdov <arch at kge dot pw>
+
+pkgbase=python-cuda
+# NOTE: python-cuda-pathfinder and python-cuda-core are packaged separately
+pkgname=(python-cuda python-cuda-bindings)
+pkgver=13.3.1
+pkgrel=1
+pkgdesc="Python interface for CUDA provided by NVIDIA"
+arch=(x86_64)
+url="https://nvidia.github.io/cuda-python"
+license=(LicenseRef-NVIDIA)
+makedepends=(
+  cuda
+  cython
+  git
+  python-wheel
+  python-build
+  python-installer
+  python-setuptools-scm
+  python-versioneer
+  python-pyclibrary
+  python-cuda-pathfinder
+)
+checkdepends=(
+  python-pytest
+  python-pytest-benchmark
+  python-numpy
+  python-scipy
+)
+options=(!emptydirs)
+source=(
+  $pkgbase::git+https://github.com/NVIDIA/cuda-python#tag=v$pkgver
+)
+b2sums=('477bb6e2a25e6ce843fcae8d27f36eca7fa68de4fbe3bd8c35b16d06b0d36e1f9bc8ca0ba4beddeffd9c1d54bc8877ab20f3251871ab497cfce3cbb8f9fecd68')
+
+prepare() {
+  cd $pkgbase
+  # release cython constraints
+  sed -i 's|"cython>=3.0,<3.1.0"|"cython>=3.0"|' cuda_bindings/pyproject.toml
+}
+
+build() {
+  cd $pkgbase
+
+  # enable parallel build
+  export CUDA_PYTHON_PARALLEL_LEVEL=$(nproc)
+
+  pushd cuda_bindings
+  python -m build --wheel --no-isolation
+  popd
+
+  pushd cuda_python
+  python -m build --wheel --no-isolation
+  popd
+}
+
+check() {
+  cd $pkgbase
+  # cannot run tests in chroot
+  #python -m venv --system-site-packages test-env
+  #test-env/bin/python -m installer cuda_bindings/dist/*.whl
+  #test-env/bin/python -m installer cuda_python/dist/*.whl
+  #test-env/bin/python -m pytest */tests
+}
+
+package_python-cuda-bindings() {
+  depends=(
+    cuda
+    glibc
+    libgcc
+    libstdc++
+    python
+    python-cuda-pathfinder
+  )
+
+  cd $pkgbase/cuda_bindings
+
+  python -m installer --destdir="$pkgdir" dist/*.whl
+  install -vDm 644 LICENSE -t "$pkgdir"/usr/share/licenses/$pkgname/
+  install -vDm 644 ../README.md -t "$pkgdir"/usr/share/doc/$pkgname/
+}
+
+package_python-cuda() {
+  depends=(
+    python-cuda-bindings
+    python-cuda-core
+    python-cuda-pathfinder
+  )
+  optdepends=(
+    'python-cccl: cuda.coop and cuda.compute modules'
+    'python-numba-cuda: a DSL for CUDA SIMT programming model'
+    'python-cuda-tile: a DSL for CUDA Tile programming model'
+    'python-nvmath: bindings for math libraries'
+    'python-nvshmem: bindings for NVSHMEM'
+    'python-nsight: Python kernel profiling interface for performance analysis'
+  )
+
+  cd $pkgbase/cuda_python
+
+  python -m installer --destdir="$pkgdir" dist/*.whl
+  install -vDm 644 LICENSE -t "$pkgdir"/usr/share/licenses/$pkgname/
+  install -vDm 644 ../README.md -t "$pkgdir"/usr/share/doc/$pkgname/
+}

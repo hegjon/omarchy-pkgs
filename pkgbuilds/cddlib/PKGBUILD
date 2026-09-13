@@ -1,0 +1,33 @@
+# Maintainer: Antonio Rojas <arojas@archlinux.org>
+# Contributor: Rémy Oudompheng <remy@archlinux.org>
+
+pkgname=cddlib
+pkgver=0.94n
+pkgrel=1
+epoch=1
+pkgdesc='C library implementing Double Description Method for convex polyhedra'
+arch=(x86_64)
+url='https://www.inf.ethz.ch/personal/fukudak/cdd_home/'
+license=(GPL-2.0-only)
+depends=(glibc
+         gmp)
+makedepends=(git
+             texlive-latex)
+source=(git+https://github.com/cddlib/cddlib#tag=$pkgver)
+sha256sums=('57224c1b142c66ffd7503c96fb25a521b076331457a053485d210d250273ad6d')
+
+prepare() {
+  cd $pkgname
+  autoreconf -fiv
+}
+
+build() {
+  cd $pkgname
+  ./configure --prefix=/usr
+  make
+}
+
+package() {
+  cd $pkgname
+  make DESTDIR="$pkgdir" install
+}

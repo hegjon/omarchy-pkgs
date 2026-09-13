@@ -1,0 +1,12 @@
+diff --unified --recursive --text --new-file libdbi-drivers-0.9.0.orig/drivers/sqlite3/dbd_sqlite3.c libdbi-drivers-0.9.0/drivers/sqlite3/dbd_sqlite3.c
+--- libdbi-drivers-0.9.0.orig/drivers/sqlite3/dbd_sqlite3.c	2026-04-09 22:21:15.096182474 +0200
++++ libdbi-drivers-0.9.0/drivers/sqlite3/dbd_sqlite3.c	2026-04-09 22:21:57.359480468 +0200
+@@ -1451,7 +1451,7 @@
+ 		    break;
+ 		  }
+ 
+-		  word_lower[item-start+1];
++		  char word_lower[item-start+1];
+ 		  strncpy(word_lower,start,item-start);
+ 		  word_lower[item-start] = '\0';
+ 		  int i = 0;

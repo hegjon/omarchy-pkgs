@@ -1,0 +1,49 @@
+# Maintainer: Levente Polyak <anthraxx[at]archlinux[dot]org>
+
+_gemname=builder
+pkgname=ruby-${_gemname}
+pkgver=3.3.0
+pkgrel=1
+pkgdesc='Provide a simple way to create XML markup and data structures'
+url='https://github.com/rails/builder'
+arch=(any)
+license=(MIT)
+depends=(
+  ruby
+)
+makedepends=(
+  ruby-bundler
+  ruby-rake
+  ruby-rdoc
+)
+checkdepends=(
+  ruby-minitest
+)
+options=('!emptydirs')
+source=(https://github.com/rails/builder/archive/v${pkgver}/${pkgname}-v${pkgver}.tar.gz)
+sha512sums=('0392b59a4c0fd1bdfcd078fbdf14a7ec2a0226393fb290862f9088146aed6b6087aea0e4e2232d4fd1a0397fa0958a2937841194a099f024927f061f74d150ea')
+b2sums=('8733514f801f2ee9085d5978d8cb6025c5c16151e2f99f90ead6ccf445b255e527ff629b4a6872001c1c969fa885f794167e01f3a610460ef8604e3d76aac5ac')
+
+build() {
+  cd ${_gemname}-${pkgver}
+  rake builder:gem
+}
+
+check() {
+  cd ${_gemname}-${pkgver}
+  rake test
+}
+
+package() {
+  cd ${_gemname}-${pkgver}
+  local _gemdir="$(gem env gemdir)"
+  gem install --ignore-dependencies --no-user-install -i "${pkgdir}${_gemdir}" \
+    -n "${pkgdir}/usr/bin" pkg/${_gemname}-${pkgver}.gem
+
+  install -Dm 644 README.md CHANGES -t "${pkgdir}/usr/share/doc/${pkgname}"
+  install -Dm 644 MIT-LICENSE -t "${pkgdir}/usr/share/licenses/${pkgname}"
+
+  rm -r "${pkgdir}/${_gemdir}/cache"
+}
+
+# vim: ts=2 sw=2 et:

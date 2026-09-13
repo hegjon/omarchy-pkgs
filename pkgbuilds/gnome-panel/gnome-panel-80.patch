@@ -1,0 +1,207 @@
+From 8cb8b8c96ab0c01a4e21af5e304686c3f173e299 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Ball=C3=B3=20Gy=C3=B6rgy?= <ballogyor@gmail.com>
+Date: Sun, 9 Feb 2025 12:39:59 +0100
+Subject: [PATCH] clock: Add button to set timezone
+
+This makes it possible to set the system timezone separately from the
+current location. The current location is mainly used to display weather
+conditions on the panel, which is not necessary to match with the system
+timezone.
+---
+ modules/clock/clock-location-tile.c | 95 ++++++++++++++++++-----------
+ 1 file changed, 60 insertions(+), 35 deletions(-)
+
+diff --git a/modules/clock/clock-location-tile.c b/modules/clock/clock-location-tile.c
+index 6f561c7de..bab69c624 100644
+--- a/modules/clock/clock-location-tile.c
++++ b/modules/clock/clock-location-tile.c
+@@ -36,6 +36,8 @@ struct _ClockLocationTilePrivate {
+ 
+         GtkWidget *current_stack;
+         GtkWidget *current_button;
++        GtkWidget *timezone_stack;
++        GtkWidget *timezone_button;
+ 
+         GtkWidget *weather_icon;
+ 
+@@ -229,7 +231,6 @@ set_timezone_cb (GObject      *object,
+                  gpointer      user_data)
+ {
+   GError *error;
+-  ClockLocationTile *self;
+ 
+   error = NULL;
+   clock_timedate1_gen_call_set_timezone_finish (CLOCK_TIMEDATE1_GEN (object),
+@@ -242,8 +243,6 @@ set_timezone_cb (GObject      *object,
+       return;
+     }
+ 
+-  self = CLOCK_LOCATION_TILE (user_data);
+-
+   if (error != NULL)
+     {
+       GtkWidget *dialog;
+@@ -267,20 +266,12 @@ set_timezone_cb (GObject      *object,
+       g_error_free (error);
+       return;
+     }
+-
+-  clock_location_set_current (self->priv->location, TRUE);
+ }
+ 
+ static void
+-make_current (GtkWidget         *widget,
++set_timezone (GtkWidget         *widget,
+               ClockLocationTile *self)
+ {
+-  if (clock_location_is_current_timezone (self->priv->location))
+-    {
+-      clock_location_set_current (self->priv->location, TRUE);
+-      return;
+-    }
+-
+   if (self->priv->cancellable != NULL)
+     {
+       g_cancellable_cancel (self->priv->cancellable);
+@@ -297,6 +288,13 @@ make_current (GtkWidget         *widget,
+                                          self);
+ }
+ 
++static void
++make_current (GtkWidget         *widget,
++              ClockLocationTile *self)
++{
++  clock_location_set_current (self->priv->location, TRUE);
++}
++
+ static gboolean
+ enter_or_leave_tile (GtkWidget             *widget,
+                      GdkEventCrossing      *event,
+@@ -312,11 +310,17 @@ enter_or_leave_tile (GtkWidget             *widget,
+ 
+ 	if (clock_location_is_current (priv->location)) {
+ 		gtk_stack_set_visible_child_name (GTK_STACK (priv->current_stack), "marker");
+-
+-		return TRUE;
++	} else if (event->type == GDK_ENTER_NOTIFY) {
++		gtk_stack_set_visible_child_name (GTK_STACK (priv->current_stack), "button");
++	} else {
++		if (event->detail != GDK_NOTIFY_INFERIOR) {
++			gtk_stack_set_visible_child_name (GTK_STACK (priv->current_stack), "spacer");
++		}
+ 	}
+ 
+-	if (event->type == GDK_ENTER_NOTIFY) {
++	if (clock_location_is_current_timezone (priv->location)) {
++		gtk_stack_set_visible_child_name (GTK_STACK (priv->timezone_stack), "spacer");
++	} else if (event->type == GDK_ENTER_NOTIFY) {
+ 		gboolean allowed;
+ 		gboolean can_acquire;
+ 
+@@ -337,26 +341,21 @@ enter_or_leave_tile (GtkWidget             *widget,
+ 		if (allowed || can_acquire) {
+ 			const char *tooltip;
+ 
+-			if (allowed) {
+-				if (!clock_location_is_current_timezone (priv->location))
+-					tooltip = _("Set location as current location and use its timezone for this computer");
+-				else
+-					tooltip = _("Set location as current location");
+-			} else {
+-				tooltip = _("Click “Unlock” to set location as current location and use its timezone for this computer");
+-			}
+-
+-			gtk_widget_set_sensitive (priv->current_button, allowed);
+-			gtk_widget_set_tooltip_text (priv->current_button, tooltip);
+-			gtk_stack_set_visible_child_name (GTK_STACK (priv->current_stack), "button");
+-		}
+-		else {
+-			gtk_stack_set_visible_child_name (GTK_STACK (priv->current_stack), "spacer");
++			if (allowed)
++				tooltip = _("Set system timezone for this location");
++			else
++				tooltip = _("Click “Unlock” to set system timezone for this location");
++
++			gtk_widget_set_sensitive (priv->timezone_button, allowed);
++			gtk_widget_set_tooltip_text (priv->timezone_button, tooltip);
++			gtk_stack_set_visible_child_name (GTK_STACK (priv->timezone_stack), "button");
++		} else {
++			gtk_stack_set_visible_child_name (GTK_STACK (priv->timezone_stack), "spacer");
+ 		}
+ 	}
+ 	else {
+ 		if (event->detail != GDK_NOTIFY_INFERIOR) {
+-			gtk_stack_set_visible_child_name (GTK_STACK (priv->current_stack), "spacer");
++			gtk_stack_set_visible_child_name (GTK_STACK (priv->timezone_stack), "spacer");
+ 		}
+ 	}
+ 
+@@ -372,7 +371,7 @@ clock_location_tile_fill (ClockLocationTile *this)
+         GtkWidget *head_section;
+         GtkStyleContext *context;
+         GtkWidget *child;
+-        GtkWidget *label;
++        GtkWidget *image;
+ 
+         priv = this->priv;
+         priv->box = gtk_event_box_new ();
+@@ -419,11 +418,11 @@ clock_location_tile_fill (ClockLocationTile *this)
+         gtk_style_context_add_class (context, "calendar-window-button");
+         gtk_stack_add_named (GTK_STACK (priv->current_stack), priv->current_button, "button");
+         gtk_widget_set_halign (priv->current_button, GTK_ALIGN_END);
++        gtk_widget_set_tooltip_text (priv->current_button, "Set this location as source for weather information displayed on the panel");
+         gtk_widget_show (priv->current_button);
+ 
+-        label = gtk_label_new (_("Set"));
+-        gtk_container_add (GTK_CONTAINER (priv->current_button), label);
+-        gtk_widget_show (label);
++        image = gtk_image_new_from_icon_name ("weather-few-clouds-symbolic", GTK_ICON_SIZE_BUTTON);
++        gtk_button_set_image (GTK_BUTTON (priv->current_button), image);
+ 
+         child = gtk_image_new_from_icon_name ("go-home", GTK_ICON_SIZE_BUTTON);
+         gtk_stack_add_named (GTK_STACK (priv->current_stack), child, "marker");
+@@ -439,8 +438,30 @@ clock_location_tile_fill (ClockLocationTile *this)
+         else
+                 gtk_stack_set_visible_child_name (GTK_STACK (priv->current_stack), "spacer");
+ 
++        priv->timezone_stack = gtk_stack_new ();
++        gtk_box_pack_end (GTK_BOX (box), priv->timezone_stack, FALSE, FALSE, 0);
++        gtk_widget_show (priv->timezone_stack);
++
++        priv->timezone_button = gtk_button_new ();
++        context = gtk_widget_get_style_context (priv->timezone_button);
++        gtk_style_context_add_class (context, "calendar-window-button");
++        gtk_stack_add_named (GTK_STACK (priv->timezone_stack), priv->timezone_button, "button");
++        gtk_widget_set_halign (priv->timezone_button, GTK_ALIGN_END);
++        gtk_widget_show (priv->timezone_button);
++
++        image = gtk_image_new_from_icon_name ("preferences-system-time-symbolic", GTK_ICON_SIZE_BUTTON);
++        gtk_button_set_image (GTK_BUTTON (priv->timezone_button), image);
++
++        child = gtk_event_box_new ();
++        gtk_stack_add_named (GTK_STACK (priv->timezone_stack), child, "spacer");
++        gtk_widget_show (child);
++
++        gtk_stack_set_visible_child_name (GTK_STACK (priv->timezone_stack), "spacer");
++
+         g_signal_connect (priv->current_button, "clicked",
+                           G_CALLBACK (make_current), this);
++        g_signal_connect (priv->timezone_button, "clicked",
++                          G_CALLBACK (set_timezone), this);
+ 
+         priv->clock_face = clock_face_new_with_location (priv->location);
+ 
+@@ -637,6 +658,10 @@ clock_location_tile_refresh (ClockLocationTile *this, gboolean force_refresh)
+ 			gtk_stack_set_visible_child_name (stack, "spacer");
+ 	}
+ 
++	if (clock_location_is_current_timezone (priv->location)) {
++		gtk_stack_set_visible_child_name (GTK_STACK (priv->timezone_stack), "spacer");
++	}
++
+         if (clock_needs_face_refresh (this)) {
+                 clock_face_refresh (CLOCK_FACE (priv->clock_face));
+         }
+-- 
+GitLab
+

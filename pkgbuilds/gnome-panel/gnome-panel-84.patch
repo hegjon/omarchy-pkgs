@@ -1,0 +1,52 @@
+From f52431f65109aba3bf69ba2448b5e4ed4fc64b22 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Ball=C3=B3=20Gy=C3=B6rgy?= <ballogyor@gmail.com>
+Date: Thu, 16 Jul 2026 16:52:34 +0200
+Subject: [PATCH] status-notifier: validate IconPixmap type before parsing it
+
+Some StatusNotifierItem implementations may return an invalid
+IconPixmap property type.
+
+icon_pixmap_new() assumed that the variant always contained an
+'a(iiay)' value and called g_variant_iter_init() unconditionally.
+If a malformed or unexpected variant was received, GLib could abort
+inside g_variant_serialised_n_children() with:
+
+  GLib:ERROR: g_variant_serialised_n_children:
+  code should not be reached
+
+Validate the variant type before attempting to iterate over it and
+ignore invalid IconPixmap values instead of crashing the panel.
+
+Closes: https://gitlab.gnome.org/GNOME/gnome-panel/-/work_items/56
+---
+ modules/status-notifier/sn-item-v0.c | 12 +++++++++++-
+ 1 file changed, 11 insertions(+), 1 deletion(-)
+
+diff --git a/modules/status-notifier/sn-item-v0.c b/modules/status-notifier/sn-item-v0.c
+index a9e766fbf..30d200242 100644
+--- a/modules/status-notifier/sn-item-v0.c
++++ b/modules/status-notifier/sn-item-v0.c
+@@ -417,9 +417,19 @@ icon_pixmap_new (GVariant *variant)
+   gint height;
+   GVariant *value;
+ 
+-  if (variant == NULL || g_variant_iter_init (&iter, variant) == 0)
++  if (variant == NULL)
+     return NULL;
+ 
++  if (!g_variant_is_of_type (variant, G_VARIANT_TYPE ("a(iiay)")))
++    {
++      g_warning ("Type for 'IconPixmap' should be 'a(iiay)' "
++                 "but got '%s'", g_variant_get_type_string (variant));
++
++      return NULL;
++    }
++
++  g_variant_iter_init (&iter, variant);
++
+   array = g_ptr_array_new ();
+   while (g_variant_iter_next (&iter, "(ii@ay)", &width, &height, &value))
+     {
+-- 
+GitLab
+

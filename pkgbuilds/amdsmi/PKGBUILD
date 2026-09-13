@@ -1,0 +1,82 @@
+# Maintainer: Torsten Keßler <tpkessler at archlinux dot org>
+# Maintainer: Christian Heusel <gromit@archlinux.org>
+
+pkgname=amdsmi
+pkgver=7.2.4
+pkgrel=1
+pkgdesc='AMD System Management Interface library'
+arch=('x86_64')
+url='https://rocm.docs.amd.com/projects/amdsmi/en/latest/'
+license=('MIT' 'NCSA')
+depends=(
+  'rocm-core' 
+  'glibc'
+  'libgcc'
+  'libdrm'
+  'libstdc++'
+  'python'
+  'python-yaml'
+)
+makedepends=(
+  'cmake'
+  'python-wheel'
+  'python-setuptools'
+  'python-build'
+  'python-installer'
+  'python-wheel'
+)
+_git='https://github.com/ROCm/amdsmi'
+_esmi='https://github.com/amd/esmi_ib_library'
+_esmi_ver=4.2
+source=(
+  "$pkgname-$pkgver.tar.gz::$_git/archive/rocm-$pkgver.tar.gz"
+  "$pkgname-esmi-$pkgver.tar.gz::$_esmi/archive/refs/tags/esmi_pkg_ver-$_esmi_ver.tar.gz"
+  "gcc15-missing-include.patch"
+  "https://patch-diff.githubusercontent.com/raw/ROCm/amdsmi/pull/165.patch"
+)
+sha256sums=('1075067f450860313445edc97026ba430c33e93c18a9c1b1440d71a1f210d1cb'
+            'de19d222d09e2171f47f8bbd6608e5648bd547c82543379bb8fb5ed2e379e141'
+            'af704f2d65613e81719fa109488001ab5b2e5e7a529c18c84e695c002c055bce'
+            '464f520c03b592edd6d3d7e5c241197f0fc4fe27465b5478245c0fc288cda2f0')
+options=(!lto)
+_dirname="$(basename "$_git")-$(basename "${source[0]}" .tar.gz)"
+_esminame="$(basename "$_esmi")-$(basename "${source[1]}" .tar.gz)"
+
+prepare() {
+  mv "$_esminame" "$_dirname/esmi_ib_library"
+
+  cd $_dirname
+
+  # HACK from Fedora's spec: Replace git tag with version of our tar archive
+  sed -i "s/NOT latest_esmi_tag/NOT esmi_pkg_ver-$_esmi_ver/" CMakeLists.txt
+
+  patch -Np1 -i "$srcdir"/gcc15-missing-include.patch
+  patch -Np1 -i "$srcdir"/165.patch
+}
+
+build() {
+  local cmake_args=(
+    -Wno-dev
+    -S "$_dirname"
+    -B build
+    -D CMAKE_INSTALL_PREFIX=/opt/rocm
+    -D CMAKE_BUILD_TYPE=None
+    -D BUILD_TESTS=OFF
+  )
+  cmake "${cmake_args[@]}"
+  cmake --build build
+
+  cd build/py-interface/python_package
+  python -m build --wheel --no-isolation
+}
+
+package() {
+  DESTDIR="$pkgdir" cmake --install build
+  install -Dm644 "$srcdir/$_dirname/LICENSE" "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+  install -Dm644 "$srcdir/$_dirname/esmi_ib_library/License.txt" "$pkgdir/usr/share/licenses/$pkgname/esmi_ib_LICENSE"
+
+  cd build/py-interface/python_package
+  python -m installer --destdir="$pkgdir" dist/*.whl
+  # cmake also installs python package under share.
+  rm -r "${pkgdir}"/opt/rocm/share/amd_smi
+}

@@ -1,0 +1,50 @@
+# Maintainer: Christian Heusel <gromit@archlinux.org>
+
+_name=pytest-run-parallel
+pkgname=python-pytest-run-parallel
+pkgver=0.10.0
+pkgrel=1
+pkgdesc="A simple pytest plugin to run tests concurrently"
+arch=(any)
+url="https://github.com/Quansight-Labs/pytest-run-parallel"
+license=(MIT)
+depends=(
+    python
+    python-pytest
+)
+makedepends=(
+    git
+    python-build
+    python-installer
+    python-setuptools
+    python-setuptools-scm
+    python-wheel
+)
+optdepends=(
+    'python-psutil: for identifying the number of available cores'
+)
+checkdepends=(
+    python-hypothesis
+    python-pytest-order
+    python-pytest-xdist
+)
+source=("git+https://github.com/Quansight-Labs/pytest-run-parallel.git#tag=v${pkgver}")
+sha512sums=('f1b93d7c509e953bba1404d00702013bf7c3d06ceff44fed34ac7df51bc86bd5ae39508a6df5571579e86bc40e04b8764abe64769948eec6578bba27d74f96fd')
+b2sums=('5289e68480c42bf294bf3930b3b1e6dcb2ef55b6300096cd650f620ae91891a70cde280071adaa74257149d21a77df86433e4d8b2820ec417f34f0d08713a044')
+
+build() {
+    cd $_name
+    python -m build --wheel --no-isolation
+}
+
+check() {
+    cd $_name
+    PYTHONPATH="$PWD/src:$PYTHONPATH" pytest -vv
+}
+
+package() {
+    cd $_name
+
+    python -m installer --destdir="$pkgdir" dist/*.whl
+    install -Dm644 LICENSE "${pkgdir}/usr/share/licenses/${pkgname}/LICENSE"
+}

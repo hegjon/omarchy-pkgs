@@ -1,0 +1,92 @@
+# Maintainer: Torsten Keßler <tpkessler at archlinux dot org>
+# Maintainer: Christian Heusel <gromit@archlinux.org>
+# Contributor: Bob McElrath <bob.mcelrath@gmail.com>
+# Contributor: Lubosz Sarnecki <lubosz@gmail.com>
+
+pkgname=hipblaslt
+pkgver=7.2.4
+pkgrel=1
+pkgdesc='General matrix-matrix operations beyond a traditional BLAS library'
+arch=('x86_64')
+url='https://rocm.docs.amd.com/projects/hipBLASLt/en/latest/index.html'
+license=('MIT')
+depends=(
+  'glibc'
+  'hip-runtime-amd'
+  'hipblas'
+  'libgcc'
+  'msgpack-cxx'
+  'rocblas'
+  'rocm-core'
+  'rocm-smi-lib'
+  'yaml-cpp'
+)
+makedepends=(
+  'cmake'
+  'gcc-fortran'
+  'git'
+  'gtest'
+  'hipblas-common'
+  'lapack'
+  'ninja'
+  'python'
+  'python-joblib'
+  'python-msgpack'
+  'python-orjson'
+  'python-packaging'
+  'python-pyaml'
+  'python-pyyaml'
+  'python-setuptools'
+  'python-simplejson'
+  'python-ujson'
+  'rocm-cmake'
+  'rocm-toolchain'
+  'rocm-llvm'
+  'spdlog'
+)
+_git='https://github.com/ROCm/rocm-libraries'
+source=("rocm-libraries::git+$_git.git#tag=rocm-$pkgver"
+        "hipblaslt-Don-t-fetch-deps-for-rocroller.patch"
+        "rocroller-Always-fetch-libdivide-if-it-s-not-install.patch"
+        "hipblaslt-7.2.3-cstdint-include.patch")
+sha256sums=('b476acbcd0f4017c800e4b05533e6dfb875bde32242729c8df557d4624379623'
+            '81c0f9ac1872e34555c2f9d64eecec75c42fd8813c4acf54cd665b03e59cb752'
+            'b845a96fee02651f2cad2417fc9e8522ab143849b2049b0010d17401e6000e52'
+            '337feb845674f8ec6015c902b27bd01bc51f530035cda769b7dea5ad12d41920')
+_dirname="rocm-libraries/projects/$pkgname"
+
+options=(!strip)
+
+prepare() {
+  cd rocm-libraries
+  patch -Np1 -i "$srcdir/hipblaslt-Don-t-fetch-deps-for-rocroller.patch"
+  patch -Np1 -i "$srcdir/rocroller-Always-fetch-libdivide-if-it-s-not-install.patch"
+  patch -Np1 -i "$srcdir/hipblaslt-7.2.3-cstdint-include.patch"
+}
+
+build() {
+  export PATH="/opt/rocm/bin:$PATH"
+
+  local cmake_args=(
+    -Wno-dev
+    -G Ninja
+    -B build
+    -S "$_dirname"
+    -D CMAKE_BUILD_TYPE=None
+    -D CMAKE_C_COMPILER=amdclang
+    -D CMAKE_CXX_COMPILER=amdclang++
+    -D CMAKE_INSTALL_PREFIX=/opt/rocm
+    -D HIPBLASLT_ENABLE_CLIENT=OFF
+    # -D GPU_TARGETS="$(rocm-supported-gfx -e gfx906,gfx950,gfx1010,gfx1012,gfx1031,gfx1035,gfx1152,gfx1153)"
+  )
+  # -fcf-protection is not supported by HIP, see
+  # https://rocm.docs.amd.com/projects/llvm-project/en/latest/reference/rocmcc.html#support-status-of-other-clang-options
+  CXXFLAGS="${CXXFLAGS} -fcf-protection=none" cmake "${cmake_args[@]}"
+  cmake --build build
+}
+
+package() {
+  DESTDIR="$pkgdir" cmake --install build
+
+  install -Dm644 "$_dirname/LICENSE.md" "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+}

@@ -1,0 +1,96 @@
+# Maintainer: Torsten Keßler <tpkessler at archlinux dot org>
+# Maintainer: Christian Heusel <gromit@archlinux.org>
+
+pkgname=migraphx
+pkgver=7.2.3
+pkgrel=7
+pkgdesc="AMD's graph optimization engine"
+arch=('x86_64')
+url="https://rocm.docs.amd.com/projects/AMDMIGraphX/en/latest/"
+license=('MIT AND (Apache-2.0 WITH LLVM-exception OR NCSA)')
+depends=(
+  rocm-core
+  miopen-hip
+  rocblas
+  hip-runtime-amd
+  protobuf
+  msgpack-cxx
+  sqlite
+)
+makedepends=(
+  git
+  cmake
+  ninja
+  rocm-cmake
+  rocm-toolchain
+  rocm-llvm
+  half
+  nlohmann-json
+)
+_git='https://github.com/ROCm/AMDMIGraphX'
+_mlir="https://github.com/ROCm/rocMLIR"
+# HACK Commit stored in https://github.com/ROCm/AMDMIGraphX/blob/rocm-7.2.3/requirements.txt
+_mlir_commit=6671a1ee31d44e1f2f7743a26a71ffc4ce9169bf
+source=(
+  "$pkgname::git+$_git#tag=rocm-$pkgver"
+  "$pkgname-rocmlir::git+$_mlir#commit=$_mlir_commit"
+  "0001-migraphx-check-if-use_hipblaslt-before-call-gfx_defa.patch"
+)
+sha256sums=('2c30c6185c141291e041b80f3ee90b1459c731aa9f86cbc496fd32dcb253a887'
+            '674cf03c6d5d0fb65e7b57c71cb0671cc29e1672446f4abb39c13cd9296aa9ef'
+            'd1ef55d9b38e923567b8195d8e577ff59c3c939cbdf2451e27472d03ee5a851b')
+options=(!lto)
+
+prepare() {
+  cd $pkgname
+  patch -p1 -i "$srcdir"/0001-migraphx-check-if-use_hipblaslt-before-call-gfx_defa.patch
+}
+
+build() {
+  # -fcf-protection is not supported by HIP, see
+  # https://rocm.docs.amd.com/projects/llvm-project/en/latest/reference/rocmcc.html#support-status-of-other-clang-options
+  CXXFLAGS+=" -fcf-protection=none"
+  local mlir_args=(
+    -Wno-dev
+    -G Ninja
+    -B build-mlir
+    -S "$pkgname-rocmlir"
+    -D CMAKE_INSTALL_PREFIX=/usr
+    -D CMAKE_BUILD_TYPE=Release
+    -D CMAKE_C_COMPILER=amdclang
+    -D CMAKE_CXX_COMPILER=amdclang++
+    -D BUILD_FAT_LIBROCKCOMPILER=ON
+    -D BUILD_SHARED_LIBS=OFF
+  )
+  echo "Build MLIR"
+  cmake "${mlir_args[@]}"
+  cmake --build build-mlir
+  DESTDIR="$srcdir/deps" cmake --install build-mlir
+
+  local cmake_args=(
+    -Wno-dev
+    -G Ninja
+    -B build
+    -S "$pkgname"
+    -D CMAKE_INSTALL_PREFIX=/opt/rocm
+    -D CMAKE_CXX_COMPILER=amdclang++
+    -D CMAKE_BUILD_TYPE=None
+    -D Boost_USE_STATIC_LIBS=OFF
+    -D BUILD_TESTING=OFF \
+    -D CMAKE_PREFIX_PATH="${srcdir}"/deps/usr/lib/cmake
+    -D GPU_TARGETS="$(rocm-supported-gfx)"
+    -D MIGRAPHX_ENABLE_PYTHON=OFF
+    -D MIGRAPHX_USE_COMPOSABLEKERNEL=OFF
+    -D MIGRAPHX_USE_HIPBLASLT=OFF
+    -D MIOPEN_BACKEND=HIP 
+  )
+  cmake "${cmake_args[@]}"
+  cmake --build build
+}
+
+package() {
+  DESTDIR="$pkgdir" cmake --install build
+  install -Dm644 "$pkgname/LICENSE" "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+  install -Dm644 "$pkgname-rocmlir"/LICENSE.TXT "$pkgdir/usr/share/licenses/$pkgname/LICENSE.rocMLIR"
+  install -Dm644 "$pkgname-rocmlir"/external/llvm-project/LICENSE.TXT "$pkgdir/usr/share/licenses/$pkgname/LICENSE.llvm-project"
+}

@@ -1,0 +1,131 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dylan Medina <dylan@dylanmedina.com>
+Date: Fri, 20 Sep 2024 14:41:37 -0700
+Subject: [PATCH 1/2] Update for Django >= 3.2
+
+Django 3.1 deprecated sha1
+Django 3.2 increased salt entropy from 71 to 128 bits
+
+* Add django31_context that removes sha1 from tests if django >= 3.1
+* Add increase default salt length
+
+Resolves #2
+
+(cherry picked from commit 3df12fca3e9fa689c438ae4dea99de885b6303fa)
+
+ Conflicts:
+	passlib/apps.py
+	passlib/tests/test_ext_django.py
+---
+ passlib/apps.py                  |  8 ++++++++
+ passlib/tests/test_ext_django.py | 10 ++++++++--
+ 2 files changed, 16 insertions(+), 2 deletions(-)
+
+diff --git a/passlib/apps.py b/passlib/apps.py
+index 682bbff..c3edb08 100644
+--- a/passlib/apps.py
++++ b/passlib/apps.py
+@@ -154,6 +154,14 @@ _django21_schemes = list(_django_110_schemes)
+ _django21_schemes.remove("django_bcrypt")
+ django21_context = LazyCryptContext(schemes=_django21_schemes)
+ 
++#-----------------------------------------------------------------------
++# 3.1
++#-----------------------------------------------------------------------
++
++_django31_schemes = list(_django21_schemes)
++_django31_schemes.remove("django_pbkdf2_sha1")
++django31_context = LazyCryptContext(schemes=_django31_schemes)
++
+ #-----------------------------------------------------------------------
+ # latest
+ #-----------------------------------------------------------------------
+diff --git a/passlib/tests/test_ext_django.py b/passlib/tests/test_ext_django.py
+index 2a0b418..d73d556 100644
+--- a/passlib/tests/test_ext_django.py
++++ b/passlib/tests/test_ext_django.py
+@@ -182,7 +182,12 @@ def _modify_django_config(kwds, sha_rounds=None):
+ #      could then separate out "validation of djangoXX_context objects"
+ #      and "validation that individual hashers match django".
+ #      or maybe add a "get_django_context(django_version)" helper to passlib.apps?
+-if DJANGO_VERSION >= (2, 1):
++salt_size = 12
++if DJANGO_VERSION >= (3, 1):
++    stock_config = _modify_django_config(_apps.django31_context)
++    if DJANGO_VERSION >= (3, 2):
++        salt_size=22
++elif DJANGO_VERSION >= (2, 1):
+     stock_config = _modify_django_config(_apps.django21_context)
+ elif DJANGO_VERSION >= (1, 10):
+     stock_config = _modify_django_config(_apps.django110_context)
+@@ -196,7 +201,8 @@ else:
+ from passlib.hash import django_pbkdf2_sha256
+ sample_hashes = dict(
+     django_pbkdf2_sha256=("not a password", django_pbkdf2_sha256
+-                          .using(rounds=stock_config.get("django_pbkdf2_sha256__default_rounds"))
++                          .using(rounds=stock_config.get("django_pbkdf2_sha256__default_rounds"),
++                                 salt_size=salt_size)
+                           .hash("not a password"))
+ )
+ 
+-- 
+2.51.0
+
+
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Doctor <thirvondukr@gmail.com>
+Date: Wed, 11 Sep 2024 16:37:02 +0300
+Subject: [PATCH 2/2] refactor: fix some of ruff errors
+
+(cherry picked from commit 7ca7b8e863e1c0d8c233de4d1c62d29adc4ea640)
+
+ Conflicts:
+	admin/bench_pbkdf2.py
+	admin/benchmarks.py
+	docs/conf.py
+	passlib/ext/django/utils.py
+	passlib/tests/test_ext_django.py
+	passlib/tests/test_handlers_bcrypt.py
+	passlib/tests/test_handlers_django.py
+	passlib/tests/test_handlers_pbkdf2.py
+	passlib/tests/test_handlers_scrypt.py
+	passlib/tests/test_hosts.py
+	passlib/tests/test_pwd.py
+	passlib/tests/test_totp.py
+	passlib/tests/test_utils.py
+	passlib/tests/test_utils_handlers.py
+	passlib/tests/tox_support.py
+	passlib/tests/utils.py
+	passlib/totp.py
+	passlib/utils/__init__.py
+	passlib/utils/binary.py
+	passlib/utils/compat/__init__.py
+	passlib/utils/decor.py
+	passlib/utils/des.py
+	passlib/utils/handlers.py
+	passlib/utils/md4.py
+	passlib/utils/pbkdf2.py
+	pdm.lock
+	pyproject.toml
+	setup.py
+---
+ passlib/ext/django/utils.py | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/passlib/ext/django/utils.py b/passlib/ext/django/utils.py
+index 2f8a2ef..e3f1bf8 100644
+--- a/passlib/ext/django/utils.py
++++ b/passlib/ext/django/utils.py
+@@ -992,7 +992,8 @@ class _PasslibHasherWrapper(object):
+ 
+     def safe_summary(self, encoded):
+         from django.contrib.auth.hashers import mask_hash
+-        from django.utils.translation import ugettext_noop as _
++        from django.utils.translation import gettext_noop as _
++
+         handler = self.passlib_handler
+         items = [
+             # since this is user-facing, we're reporting passlib's name,
+-- 
+2.51.0
+

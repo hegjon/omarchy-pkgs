@@ -1,0 +1,51 @@
+# Maintainer: George Rawlinson <grawlinson@archlinux.org>
+
+pkgname=cl-trivial-features
+_pkgname="${pkgname#cl-}"
+pkgver=1.0.r5.g18a5cfa
+pkgrel=1
+pkgdesc='Ensure consistent features across multiple Common Lisp implementations'
+arch=(any)
+url='https://github.com/trivial-features/trivial-features'
+license=(MIT)
+depends=(common-lisp cl-asdf)
+makedepends=(git)
+checkdepends=(sbcl cl-rt cl-cffi cl-alexandria)
+_commit=18a5cfafa5ca2565f4297d1d986409facff68f00
+source=(
+  "$pkgname::git+$url#commit=$_commit"
+  run-tests.lisp
+)
+sha512sums=('1fd65c3f1080dec04539364981c7e482bd984da06f5c98dd550982970410694fbd610338bb13f8c19fb7553847ed1d294c9b1d9b8ac4e0003a259c45a2399b93'
+            '9ef992fe8ecfd1e82ecd898d2a65a9a71e93758fac91e24cba2d28bb5665eb60dcb10e63beabc3284d80ffcd8904bb63c8f624d19fa60bdb79eb8fde5a92c37d')
+b2sums=('76eff98bc2b8f23d5e65cb4070ffb5529520ead4f2f132c452fe5df0d6a6e198bdd9b3f0517724daf5840dac8b7a0efc2a9c336e4029d24028ad1d25d3b3aba4'
+        '6c7d4182131c8fea9efa23bb196200076c72b4d07caa88e01ea96a0ab9f12b8e4c20bff16fb2eec0630cb8907a274593b405a29193c7adc4bb2924a55213f4a4')
+
+pkgver() {
+  cd "$pkgname"
+
+  git describe --tags | sed -e 's/^v//' -e 's/-/.r/' -e 's/-/./g'
+}
+
+check() {
+  cd "$pkgname"
+
+  sbcl --script ../run-tests.lisp
+}
+
+package() {
+  cd "$pkgname"
+
+  # library
+  install -vd "$pkgdir/usr/share/common-lisp/source/$_pkgname"
+  cp -vr \
+    src tests \
+    ./*.{lisp,asd} \
+    "$pkgdir/usr/share/common-lisp/source/$_pkgname"
+
+  # documentation
+  install -vDm644 -t "$pkgdir/usr/share/doc/$pkgname" ./*.md
+
+  # license
+  install -vDm644 -t "$pkgdir/usr/share/licenses/$pkgname" COPYRIGHT
+}

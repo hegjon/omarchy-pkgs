@@ -1,0 +1,42 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Randy=20D=C3=B6ring?=
+ <30527984+radoering@users.noreply.github.com>
+Date: Fri, 12 Dec 2025 16:37:32 +0100
+Subject: [PATCH 2/3] tests: make test independent of git setting of default
+ branch (#10656)
+
+(cherry picked from commit c1e189dc3cf1c5f6dedb64b35419aae424b4a0cd)
+---
+ tests/vcs/git/conftest.py     | 2 +-
+ tests/vcs/git/test_backend.py | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/tests/vcs/git/conftest.py b/tests/vcs/git/conftest.py
+index 6e0c08dbb..7c1004fec 100644
+--- a/tests/vcs/git/conftest.py
++++ b/tests/vcs/git/conftest.py
+@@ -15,7 +15,7 @@ if TYPE_CHECKING:
+ @pytest.fixture()
+ def temp_repo(tmp_path: Path) -> TempRepoFixture:
+     """Temporary repository with 2 commits"""
+-    repo = dulwich.repo.Repo.init(str(tmp_path))
++    repo = dulwich.repo.Repo.init(str(tmp_path), default_branch=b"main")
+     worktree = repo.get_worktree()
+ 
+     # init commit
+diff --git a/tests/vcs/git/test_backend.py b/tests/vcs/git/test_backend.py
+index 5b242c1b7..a0c885e7f 100644
+--- a/tests/vcs/git/test_backend.py
++++ b/tests/vcs/git/test_backend.py
+@@ -276,7 +276,7 @@ def test_clone_existing_locked_tag(tmp_path: Path, temp_repo: TempRepoFixture) -
+         Git.clone(url=source_url, source_root=source_root_dir, name="clone-test")
+ 
+     expected_short = (
+-        f"Failed to clone {source_url} at 'refs/heads/master',"
++        f"Failed to clone {source_url} at 'refs/heads/main',"
+         f" unable to acquire file lock for {tag_ref}."
+     )
+     assert str(exc_info.value) == expected_short
+-- 
+2.52.0
+

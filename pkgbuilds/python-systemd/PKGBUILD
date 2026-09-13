@@ -1,0 +1,55 @@
+# Maintainer: Jan Alexander Steffens (heftig) <heftig@archlinux.org>
+
+pkgbase=python-systemd
+pkgname=(
+  python-systemd
+  python-systemd-docs
+)
+pkgver=236
+pkgrel=1
+pkgdesc="Python bindings for systemd"
+url="https://github.com/systemd/python-systemd"
+arch=(x86_64)
+license=(LGPL-2.1-or-later)
+depends=(
+  glibc
+  libgcc
+  python
+  systemd
+  systemd-libs
+)
+makedepends=(
+  git
+  meson
+  python-sphinx
+)
+source=("git+$url?signed#tag=v$pkgver")
+b2sums=('7f0d01a6cb5b40452e5578e1fdcb47145b9144e0cdfad564b246bcca7ee63f191532ce58f8b1a95bc89531389926e8447860048c97313fae436c61993b3b0d05')
+validpgpkeys=(
+  5C251B5FC54EB2F80F407AAAC54CA336CFEB557E # Zbigniew Jędrzejewski-Szmek <zbyszek@in.waw.pl>
+)
+
+prepare() {
+  cd $pkgbase
+}
+
+build() {
+  arch-meson $pkgbase build -D docs=true
+}
+
+package_python-systemd() {
+  meson install -C build --destdir "$pkgdir"
+
+  mkdir -p doc/usr/share
+  mv {"$pkgdir",doc}/usr/share/doc
+}
+
+package_python-systemd-docs() {
+  pkgdesc+=" (documentation)"
+  depends=()
+
+  mv doc/* "$pkgdir"
+  rm -r "$pkgdir"/usr/share/doc/$pkgbase/html/.{buildinfo,doctrees}
+}
+
+# vim:set sw=2 sts=-1 et:

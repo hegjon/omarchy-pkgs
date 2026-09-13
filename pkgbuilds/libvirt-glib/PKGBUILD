@@ -1,0 +1,32 @@
+# Maintainer: Christian Rebischke <chris.rebischke@archlinux.org>
+# Contributor: Sergej Pupykin <pupykin.s+arch@gmail.com>
+# Contributor: Stefano Facchini <stefano.facchini@gmail.com>
+
+pkgname=libvirt-glib
+pkgver=5.0.0
+pkgrel=3
+pkgdesc="GLib bindings for libvirt"
+arch=('x86_64')
+url="https://libvirt.org"
+license=('LGPL-2.1-or-later')
+depends=('glib2' 'glibc' 'libvirt' 'libxml2')
+makedepends=('glib2-devel' 'gobject-introspection' 'meson' 'vala')
+source=("https://libvirt.org/sources/glib/$pkgname-$pkgver.tar.xz"{,'.asc'})
+sha512sums=('bb09474c0d6d4bc00844e7a1ede882f0834d0810804b70b8f8607f2e764f72cc9da14883794e58dd53640433ffaecc13dd3c1c147b82e86fa2fdca6e5903933c'
+            'SKIP')
+validpgpkeys=('DAF3A6FDB26B62912D0E8E3FBE86EBB415104FDF') # Daniel P. Berrange <dan@berrange.com>
+
+build() {
+  arch-meson $pkgname-$pkgver build
+  meson compile -C build
+}
+
+check() {
+  meson test -C build --print-errorlogs
+}
+
+package() {
+  meson install -C build --destdir "$pkgdir"
+}
+
+# vim:set ts=2 sw=2 et:

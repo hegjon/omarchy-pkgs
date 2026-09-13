@@ -1,0 +1,70 @@
+# Maintainer: Levente Polyak <anthraxx[at]archlinux[dot]org>
+# Maintainer: Andreas 'Segaja' Schleifer <segaja at archlinux dot org>
+
+_gemname='thor'
+pkgname="ruby-${_gemname}"
+pkgver=1.5.0
+pkgrel=1
+pkgdesc='Toolkit for building powerful command-line interfaces'
+url='https://github.com/erikhuda/thor'
+arch=('any')
+license=('MIT')
+depends=(
+  ruby
+)
+makedepends=(
+  ruby-rdoc
+)
+checkdepends=(
+  ruby-bundler
+  ruby-rake
+  ruby-rspec
+  ruby-webmock
+)
+options=('!emptydirs')
+source=("${url}/archive/v${pkgver}/${pkgname}-${pkgver}.tar.gz")
+sha512sums=('48a64494eecd3ae1d1b0b7c487b639d759c38211139d96286535d96f967886e9d2eab952fd0edcf4e2ed762854fe8154a350272a2675cd1727000c7e6befedcd')
+b2sums=('804c4d7cdbdda344f9516814ee5d648107eb3867da78dcaab1ecc81db9fb819f19be88dc2b8b81cabe9a8f3f1bea4febdcf531eccfee7990d790915c37c90e98')
+
+prepare() {
+  cd "${_gemname}-${pkgver}"
+
+  # update gemspec to allow newer version of the deps
+  sed --in-place --regexp-extended 's|~>|>=|g' "${_gemname}.gemspec"
+
+  sed --in-place --regexp-extended \
+    --expression '/coveralls/Id' \
+    --expression '/SimpleCov.start do/,/end/d' \
+    --expression '/simplecov/Id' \
+    Gemfile \
+    spec/helper.rb
+
+  rm --verbose spec/quality_spec.rb
+}
+
+build() {
+  cd "${_gemname}-${pkgver}"
+
+  gem build "${_gemname}.gemspec"
+}
+
+check() {
+  cd "${_gemname}-${pkgver}"
+
+  rspec spec
+}
+
+package() {
+  cd "${_gemname}-${pkgver}"
+
+  local _gemdir="$(gem env gemdir)"
+
+  gem install --ignore-dependencies --no-user-install --install-dir "${pkgdir}${_gemdir}" --bindir "${pkgdir}/usr/bin" ${_gemname}-${pkgver}.gem
+
+  install -D --mode=644 *.md --target-directory "${pkgdir}/usr/share/doc/${pkgname}"
+  install -D --mode=644 LICENSE.md "${pkgdir}/usr/share/licenses/${pkgname}/LICENSE"
+
+  rm "${pkgdir}/${_gemdir}/cache/${_gemname}-${pkgver}.gem"
+}
+
+# vim: ts=2 sw=2 et:

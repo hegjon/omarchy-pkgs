@@ -1,0 +1,110 @@
+# Maintainer: Konstantin Gizdov <arch at kge dot pw>
+# Maintainer: Torsten Keßler <tpkessler at archlinux dot org>
+
+_pkgbase='intel-oneapi-compiler-dpcpp'
+_pkgname="${_pkgbase}-cpp"
+pkgbase="${_pkgname}-runtime"
+pkgname=("${_pkgname}-runtime" "${_pkgname}-runtime-libs")
+pkgver=2026.0.0_947
+_pkgver=$(echo $pkgver | sed 's/_/-/')
+_majmin=$(echo $pkgver | cut -d. -f1,2)
+pkgrel=2
+_pkgdesc="Intel oneAPI Data Parallel C++ compiler"
+arch=('x86_64')
+url='https://software.intel.com/content/www/us/en/develop/tools/oneapi.html'
+license=("LicenseRef-Intel-EULA-Developer-Tools")
+source=("https://apt.repos.intel.com/oneapi/pool/main/${pkgname}-${_majmin}-${_pkgver}_amd64.deb"
+        "https://apt.repos.intel.com/oneapi/pool/main/${_pkgname}-common-${_majmin}-${_pkgver}_all.deb"
+        "https://apt.repos.intel.com/oneapi/pool/main/${_pkgbase}-eclipse-cfg-${_pkgver}_all.deb"
+        "https://apt.repos.intel.com/oneapi/pool/main/intel-oneapi-icc-eclipse-plugin-cpp-${_majmin}-${_pkgver}_all.deb")
+b2sums=('fa1c078b1208099a094774d89347912f1473778df620607a972624d11b4366ca57ea9b1330df8cbc333b625270e92d5c3ab18fc7343dca01e299c07c684dc34b'
+        'fde65a9390d6b32126f1a33aa0087451862ea1fbcf03402c40efcd34e5617e60d4bbc01d099bfcada588d0d6de2377081d6e7845adab78a79a01c1655ec56529'
+        '330657bb757a4a3ba1728e1c52114b863426ea12f43679878c8f0c27766be9778164300591f483b77baabf1d70c82314dedf10be48581b42dc2571b48d30e57a'
+        '0ed06eee7b766af122a44a0410081a9324fe24f8654513913977403e64dd7a1db7df8784696405bc5af37acc83c594bd241d133055f55e12c823214d7ad78c27')
+noextract=(
+    "${pkgname}-${_majmin}-${_pkgver}_amd64.deb"
+    "${_pkgname}-common-${_majmin}-${_pkgver}_all.deb"
+    "${_pkgbase}-eclipse-cfg-${_pkgver}_all.deb"
+    "intel-oneapi-icc-eclipse-plugin-cpp-${_majmin}-${_pkgver}_all.deb"
+)
+
+build() {
+    mkdir "${_pkgbase}-${pkgver}"
+    ar x "${srcdir}/${pkgname}-${_majmin}-${_pkgver}_amd64.deb"
+	tar xvf data.tar.xz -C "${_pkgbase}-${pkgver}"
+    rm data.tar.xz
+
+    ar x "${srcdir}/${_pkgname}-common-${_majmin}-${_pkgver}_all.deb"
+    tar xvf data.tar.xz -C "${_pkgbase}-${pkgver}"
+    rm data.tar.xz
+
+    ar x "${srcdir}/${_pkgbase}-eclipse-cfg-${_pkgver}_all.deb"
+    tar xvf data.tar.xz -C "${_pkgbase}-${pkgver}"
+    rm data.tar.xz
+
+    ar x "${srcdir}/intel-oneapi-icc-eclipse-plugin-cpp-${_majmin}-${_pkgver}_all.deb"
+    tar xvf data.tar.xz -C "${_pkgbase}-${pkgver}"
+    rm data.tar.xz
+
+    mkdir "${_pkgbase}-${pkgver}-libs"
+    local _lib_path="/opt/intel/oneapi/compiler/${_majmin}"
+    install -d "${_pkgbase}-${pkgver}-libs/${_lib_path}/lib"
+    cd "${_pkgbase}-${pkgver}/${_lib_path}/lib"
+    local _lib
+    for _lib in libur_* libsycl*; do
+        mv "${_lib}" "${srcdir}/${_pkgbase}-${pkgver}-libs/${_lib_path}/lib"
+    done
+}
+
+package_intel-oneapi-compiler-dpcpp-cpp-runtime-libs() {
+    depends=(
+      'intel-oneapi-compiler-shared-runtime-libs'
+      'intel-oneapi-umf'
+      'intel-oneapi-tbb'
+      'intel-oneapi-common'
+    )
+    conflicts=('intel-oneapi-basekit')
+    pkgdesc="${_pkgdesc}: Minimal runtime libraries"
+
+    cp -a "${srcdir}/${_pkgbase}-${pkgver}-libs/opt" "${pkgdir}"
+
+    # fix ldconfig warning by adjusting the symlinks to a semver lib
+    local _lib=/opt/intel/oneapi/compiler/${_majmin}/lib/libsycl-preview.so
+    local _ver=9.0.0
+    ln -vsf "${_lib}.${_ver}" "${pkgdir}/${_lib}.${_ver%%.*}"
+
+    # allow libs to be found
+    local _lib_path='/opt/intel/oneapi/compiler'
+    local _ldso_conf="${pkgdir}"/etc/ld.so.conf.d
+    install -d "${_ldso_conf}"
+    echo "${_lib_path}/latest/linux/lib" > "${_ldso_conf}/${pkgname}.conf"
+
+    install -d "${pkgdir}"/usr/share/licenses/"${pkgname}"
+    ln -s /usr/share/licenses/intel-oneapi "${pkgdir}"/usr/share/licenses/"${pkgname}"/oneapi
+}
+
+package_intel-oneapi-compiler-dpcpp-cpp-runtime() {
+    depends=(
+      'intel-oneapi-compiler-shared-runtime'
+      'intel-oneapi-compiler-dpcpp-cpp-runtime-libs'
+      'intel-oneapi-common'
+    )
+    provides=(
+      'intel-oneapi-compiler-dpcpp-cpp-common'
+      'intel-oneapi-compiler-dpcpp-eclipse-cfg'
+      'intel-oneapi-icc-eclipse-plugin-cpp'
+    )
+    conflicts=('intel-oneapi-basekit')
+    pkgdesc="${_pkgdesc}: Full runtime libraries and header files"
+
+    cp -a "${srcdir}/${_pkgbase}-${pkgver}/opt" "${pkgdir}"
+
+    # allow libs to be found
+    local _lib_path='/opt/intel/oneapi/compiler'
+    local _ldso_conf="${pkgdir}"/etc/ld.so.conf.d
+    install -d "${_ldso_conf}"
+    echo "${_lib_path}/latest/linux/lib/x64" >> "${_ldso_conf}/${pkgname}.conf"
+
+    install -d "${pkgdir}"/usr/share/licenses/"${pkgname}"
+    ln -s /usr/share/licenses/intel-oneapi "${pkgdir}"/usr/share/licenses/"${pkgname}"/oneapi
+}

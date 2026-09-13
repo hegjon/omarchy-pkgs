@@ -1,0 +1,42 @@
+# Maintainer: Dan Johansen <strit@archlinux.org>
+# Contributor: Jelle van der Waa <jelle@archlinux.org>
+
+pkgname=libgmobile
+pkgver=0.7.3
+pkgrel=1
+pkgdesc='Functions useful in mobile related, glib based projects'
+arch=(x86_64)
+url='https://gitlab.gnome.org/World/Phosh/gmobile'
+license=('LGPL-2.1-or-later AND GPL-3.0-or-later')
+depends=(
+  libgcc
+  glib2
+  glibc
+  json-glib
+)
+makedepends=(
+  gi-docgen
+  git
+  gobject-introspection
+  meson
+  python-docutils
+  vala
+)
+source=("git+https://gitlab.gnome.org/World/Phosh/gmobile.git?signed#tag=v$pkgver")
+b2sums=('9ca5d81fb0c6edf6d551dd2142f415bfe8a3b101602c9416e4dcc8167b71366b35f06d97b0ba0e174e5d21d11c750c1486b59d29d701cbaf257971249cc011d9')
+validpgpkeys=(0DB3932762F78E592F6522AFBB5A2C77584122D3) # Guido Günther <guido@xcpu.ch>
+
+build() {
+  arch-meson gmobile build \
+    -D gtk_doc=true \
+    -D man=true
+  meson compile -C build
+}
+
+check() {
+  meson test -C build --print-errorlogs
+}
+
+package() {
+  meson install -C build --destdir "$pkgdir"
+}

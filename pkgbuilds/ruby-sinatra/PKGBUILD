@@ -1,0 +1,228 @@
+# Maintainer: Tim Meusel <tim@bastelfreak.de>
+# Maintainer: Andreas 'Segaja' Schleifer <segaja at archlinux dot org>
+
+pkgname=(ruby-sinatra ruby-sinatra-contrib ruby-rack-protection)
+pkgver=4.2.1
+pkgrel=1
+arch=('any')
+url='https://sinatrarb.com/'
+license=('MIT')
+depends=(
+  ruby
+)
+makedepends=(
+  ruby-rdoc
+)
+checkdepends=(
+  asciidoctor
+  ruby-activesupport
+  ruby-builder
+  ruby-bundler
+  ruby-childprocess
+  ruby-erubi
+  ruby-falcon
+  ruby-haml
+  ruby-kramdown
+  ruby-minitest
+  ruby-multi_json
+  ruby-mustermann
+  ruby-nokogiri
+  ruby-puma
+  ruby-rack
+  ruby-rack-session
+  ruby-rack-test
+  ruby-rackup
+  ruby-rake
+  ruby-rdiscount
+  ruby-rspec
+  ruby-sass-embedded
+  ruby-tilt
+  ruby-zeitwerk
+)
+options=('!emptydirs')
+source=("https://github.com/sinatra/sinatra/archive/v${pkgver}/sinatra-v${pkgver}.tar.gz")
+sha512sums=('fa3283635f4d66f9c12f315d7c9e9e04e25c65afa4ab4e7a42de4a73b1f17a97aba305335e7c6b6a1522979140936d681a569b24286d656c9a30ac2e4e5fc83a')
+
+prepare() {
+  cd "sinatra-${pkgver}"
+
+  # update gemspec to allow newer version of the dependencies
+  sed --in-place --regexp-extended 's|~>|>=|g' sinatra.gemspec */*.gemspec
+
+  # remove Gems from sinatra's Gemfile that are not installed and cause test failures from `require "bundler/setup"`
+  sed -i \
+         -e '/commonmarker/d' \
+         -e '/eventmachine/d' \
+         -e '/falcon/d' \
+         -e '/haml/d' \
+         -e '/liquid/d' \
+         -e '/markaby/d' \
+         -e '/pandoc-ruby/d' \
+         -e '/rabl/d' \
+         -e '/redcarpet/d' \
+         -e '/rubocop/d' \
+         -e '/simplecov/d' \
+         -e '/slim/d' \
+         -e '/yajl-ruby/d' \
+         -e '/yard/d' \
+         Gemfile
+
+  # remove unpackaged hamlet from sinatra-contribs's Gemfile that causes test failures from `require "bundler/setup"`
+  sed -i \
+    -e  '/hamlit/d' \
+      sinatra-contrib/Gemfile
+  # Also remove specs for sinatra-contrib that require hamlet
+  rm sinatra-contrib/spec/{capture_spec,content_for_spec,respond_with_spec}.rb
+
+  # Add symlink so for sinatra Gem so all Gems can be accessed in the same manner
+  ln -s "$PWD" sinatra
+}
+
+build() {
+   _build "sinatra"
+   _build "sinatra-contrib"
+   _build "rack-protection"
+}
+
+_build() {
+  local _gemdir="$(gem env gemdir)"
+  local _gemname="${1}"
+
+  cd "$srcdir/sinatra-${pkgver}/${_gemname}"
+
+  gem build --verbose "${_gemname}.gemspec"
+
+  gem install \
+    --local \
+    --verbose \
+    --ignore-dependencies \
+    --no-user-install \
+    --install-dir "tmp_install${_gemdir}" \
+    --bindir "tmp_install/usr/bin" \
+    "${_gemname}-${pkgver}.gem"
+
+  # remove unrepreducible files
+  rm --force --recursive --verbose \
+    "tmp_install${_gemdir}/cache/" \
+    "tmp_install${_gemdir}/gems/${_gemname}-${pkgver}/vendor/" \
+    "tmp_install${_gemdir}/doc/${_gemname}-${pkgver}/ri/ext/"
+
+  find "tmp_install${_gemdir}/gems/" \
+    -type f \
+    \( \
+      -iname "*.o" -o \
+      -iname "*.c" -o \
+      -iname "*.so" -o \
+      -iname "*.time" -o \
+      -iname "gem.build_complete" -o \
+      -iname "Makefile" \
+    \) \
+    -delete
+
+  find "tmp_install${_gemdir}/extensions/" \
+    -type f \
+    \( \
+      -iname "mkmf.log" -o \
+      -iname "gem_make.out" \
+    \) \
+    -delete
+}
+
+check() {
+  # cannot load such file -- coffee-script: skipping coffee tests
+  # cannot load such file -- creole: skipping creole tests
+  # cannot load such file -- erubis: skipping erubis tests
+  # cannot load such file -- haml: skipping haml tests
+  # rainbows is not installed, skipping integration tests
+  # rainbows is not installed, skipping integration tests
+  # reel is not installed, skipping integration tests
+  # HTTP is not installed, skipping integration tests
+  # cannot load such file -- less: skipping less tests
+  # cannot load such file -- liquid: skipping liquid tests
+  # cannot load such file -- markaby: skipping markaby tests
+  # cannot load such file -- pandoc-ruby: skipping markdown tests with Tilt::PandocTemplate
+  # cannot load such file -- commonmarker: skipping markdown tests with Tilt::CommonMarkerTemplate
+  # cannot load such file -- redcarpet: skipping markdown tests with Tilt::RedcarpetTemplate
+  # cannot load such file -- bluecloth: skipping markdown tests with Tilt::BlueClothTemplate
+  # cannot load such file -- wikicloth: skipping mediawiki tests
+  # cannot load such file -- rabl: skipping rabl tests
+  # cannot load such file -- radius: skipping radius tests
+  # cannot load such file -- slim: skipping slim tests
+  # cannot load such file -- stylus: skipping stylus tests
+  # cannot load such file -- redcloth: skipping textile tests
+  # cannot load such file -- wlang: skipping wlang tests
+  # cannot load such file -- yajl: skipping yajl tests
+
+  _check sinatra test rack-protection sinatra-contrib
+  _check sinatra-contrib spec sinatra rack-protection
+  _check rack-protection spec sinatra sinatra-contrib
+}
+
+_check() {
+  local _gemdir="$(gem env gemdir)"
+  local _gemname="${1}"
+  local _rake_target="${2}"
+  local _deps="${@:3}"
+
+  local _gempath="$srcdir/sinatra-${pkgver}/${_gemname}/tmp_install${_gemdir}"
+  for _dep in $_deps;
+  do
+    _gempath+=":$srcdir/sinatra-${pkgver}/${_dep}/tmp_install${_gemdir}"
+  done
+
+  cd "$srcdir/sinatra-${pkgver}/${_gemname}"
+
+  echo ">> running tests for ${_gemname} ..."
+  GEM_PATH="${_gempath}" rake "${_rake_target}"
+}
+
+package_ruby-sinatra() {
+  pkgdesc='Classy web-development dressed in a DSL'
+  depends=(
+    ruby
+    ruby-mustermann
+    ruby-rack
+    ruby-rack-protection
+    ruby-rack-session
+    ruby-tilt
+  )
+
+  _package "sinatra" "LICENSE"
+}
+
+package_ruby-sinatra-contrib() {
+  pkgdesc='Collection of useful Sinatra extensions'
+  depends=(
+    ruby
+    ruby-multi_json
+    ruby-mustermann
+    ruby-rack-protection
+    ruby-sinatra
+    ruby-tilt
+  )
+
+  _package "sinatra-contrib" "LICENSE"
+}
+
+package_ruby-rack-protection() {
+  pkgdesc='Protect against typical web attacks, works with all Rack apps, including Rails'
+  depends=(
+    ruby
+    ruby-base64
+    ruby-rack
+  )
+
+  _package "rack-protection" "License"
+}
+
+_package() {
+  local _gemname="${1}"
+  local _licensefile="${2}"
+
+  cd "$srcdir/sinatra-${pkgver}/${_gemname}"
+
+  cp --archive --verbose tmp_install/* "${pkgdir}"
+
+  install --verbose -D --mode=0644 "${_licensefile}" --target-directory "${pkgdir}/usr/share/licenses/ruby-${_gemname}/"
+  install --verbose -D --mode=0644 *.md --target-directory "${pkgdir}/usr/share/doc/ruby-${_gemname}"
+}

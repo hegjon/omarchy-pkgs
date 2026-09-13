@@ -1,0 +1,32 @@
+# Maintainer: Bruno Pagani <archange@archlinux.org>
+# Maintainer: Jakub Klinkovský <lahwaacz at archlinux dot org>
+# Contributor: Dmitriy Morozov <foxcub>
+# Contributor: Kyle Keen <keenerd@gmail.com>
+
+pkgname=cgal
+pkgver=6.2.1
+pkgrel=1
+pkgdesc="Computational Geometry Algorithms Library"
+arch=(any)
+url="https://www.cgal.org"
+license=(GPL-3.0-or-later LGPL-3.0-or-later)
+depends=(boost eigen gmp mpfr)
+makedepends=(cmake)
+source=(https://github.com/CGAL/cgal/releases/download/v$pkgver/CGAL-$pkgver.tar.xz)
+sha256sums=('b6be77c60765a8456335de991eeaf6ffec55256984e4a9ecc6a97c37bbfe85bf')
+
+build() {
+  local cmake_options=(
+    -B build
+    -S CGAL-$pkgver
+    -W no-dev
+    -DCMAKE_INSTALL_PREFIX=/usr
+  )
+  cmake "${cmake_options[@]}"
+  cmake --build build
+}
+
+package() {
+  DESTDIR="$pkgdir" cmake --install build
+  mv "$pkgdir"/usr/share/doc/{CGAL,cgal}
+}

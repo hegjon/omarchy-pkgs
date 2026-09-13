@@ -1,0 +1,60 @@
+# Maintainer: Alad
+# Contributor: Timothy Redaelli <timothy.redaelli@gmail.com>
+# Contributor: Sébastien Luttringer
+# Contributor: kevku <kevku@msn.com>
+
+pkgname=opensc
+pkgver=0.27.1
+pkgrel=2
+pkgdesc='Tools and libraries for smart cards'
+arch=('x86_64')
+url='https://github.com/OpenSC/OpenSC/wiki'
+license=('LGPL')
+depends=(
+  glib2
+  openpace
+  pcsclite
+)
+makedepends=(
+  docbook-xsl
+  git
+)
+backup=('etc/opensc.conf')
+options=(!emptydirs !lto)
+source=("git+https://github.com/OpenSC/OpenSC.git#tag=${pkgver}")
+sha512sums=('67fca998cd4915ea85db87db1f7d99dc3e4f2d85273bea69edbd7d702882b8a1fbfb19c4dbeaf594271edafd1af8d815f9e487a76bf5361382e7de742711d158')
+
+build() {
+  cd OpenSC
+
+  _sheetdir=(/usr/share/xml/docbook/xsl-stylesheets-*-nons)
+
+  ./bootstrap
+  ./configure \
+    --prefix=/usr \
+    --sysconfdir=/etc \
+    --with-completiondir=/usr/share/bash-completion/completions \
+    --enable-man \
+    --enable-doc \
+    --enable-readline \
+    --enable-openpace \
+    --enable-openssl \
+    --enable-pcsc \
+    --enable-zlib \
+    --enable-sm \
+    --with-xsl-stylesheetsdir="$_sheetdir"
+
+  sed -i -e 's/ -shared / -Wl,-O1,--as-needed\0/g' libtool
+
+  make
+}
+
+package(){
+  cd OpenSC
+
+  make DESTDIR="$pkgdir" install
+
+  install -D -m644 etc/opensc.conf "$pkgdir/etc/opensc.conf"
+}
+
+# vim:set ts=2 sw=2 et:

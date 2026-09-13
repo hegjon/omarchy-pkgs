@@ -1,0 +1,49 @@
+diff --git a/cmake/helpers.cmake b/cmake/helpers.cmake
+index df40711..968979c 100644
+--- a/cmake/helpers.cmake
++++ b/cmake/helpers.cmake
+@@ -247,27 +247,27 @@ function(activate_compute_backend MODULES_PATH COMPUTE_BACKEND)
+     list(APPEND CMAKE_MODULE_PATH "${MODULES_PATH}")
+ 
+     if(COMPUTE_BACKEND STREQUAL "dpcpp")
+-        message ("COMPUTE_BACKEND=${COMPUTE_BACKEND} requested. Using DPC++ provider")
+-        SET (COMPUTE_BACKEND_LOAD_MODULE "IntelSYCL_level_zero"
+-                CACHE STRING
+-             "COMPUTE_BACKEND=${COMPUTE_BACKEND} requested. Using DPC++ provider")
+-
+-        find_package(${COMPUTE_BACKEND_LOAD_MODULE} REQUIRED)
++        if(NOT TARGET Intel::SYCL)
++            add_library(Intel::SYCL INTERFACE IMPORTED)
++            target_compile_options(Intel::SYCL INTERFACE -fsycl)
++            target_link_libraries(Intel::SYCL INTERFACE -fsycl)
++        endif()
+ 
+-        if(NOT IntelSYCL_level_zero_FOUND)
+-            message(FATAL_ERROR "Failed to find IntelSYCL_level_zero")
++        find_library(ZE_LOADER_LIB NAMES ze_loader)
++        if(NOT ZE_LOADER_LIB)
++            message(FATAL_ERROR "Level Zero loader (libze_loader.so) not found.")
+         endif()
+ 
+-        # remember compilation flags, because flag required for OBJECTS target
+-        # but if we use `target_link_libraries`, then these flags applied to all compiler options
+-        # for c & cxx. But we need special flags for cxx only
+-        # So set it manually
+-        set (COMPUTE_BACKEND_CXXFLAGS_LOCAL "${COMPUTE_BACKEND_CXXFLAGS_LOCAL} ${INTEL_SYCL_FLAGS}")
++        if(NOT TARGET Intel::SYCL_level_zero)
++            add_library(Intel::SYCL_level_zero INTERFACE IMPORTED)
++            target_link_libraries(Intel::SYCL_level_zero INTERFACE Intel::SYCL ${ZE_LOADER_LIB})
++            # Add an empty include directory property so get_target_property doesn't fail
++            set_target_properties(Intel::SYCL_level_zero PROPERTIES INTERFACE_INCLUDE_DIRECTORIES "")
++        endif()
+ 
+-        # remember current target for `target_link_libraries` in ccl
+-        set (COMPUTE_BACKEND_TARGET_NAME Intel::SYCL_level_zero)
+-        set (COMPUTE_BACKEND_TARGET_NAME Intel::SYCL_level_zero PARENT_SCOPE)
+-        message (STATUS "COMPUTE_BACKEND_TARGET_NAME: ${COMPUTE_BACKEND_TARGET_NAME} requested. Using DPC++ provider")
++        set(COMPUTE_BACKEND_CXXFLAGS_LOCAL "${COMPUTE_BACKEND_CXXFLAGS_LOCAL} -fsycl")
++        set(COMPUTE_BACKEND_TARGET_NAME Intel::SYCL_level_zero)
++        set(COMPUTE_BACKEND_TARGET_NAME Intel::SYCL_level_zero PARENT_SCOPE)
+     endif()
+ 
+     # extract target properties

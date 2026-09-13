@@ -1,0 +1,35 @@
+# Maintainer: Christian Hesse <mail@eworm.de>
+# Maintainer: Christian Heusel <gromit@archlinux.org>
+# Contributor: Daniel Isenmann <daniel@archlinux.org>
+
+pkgname=babl
+pkgver=0.1.128
+pkgrel=1
+pkgdesc='Dynamic, any to any, pixel format conversion library'
+arch=('x86_64')
+url='https://gegl.org/babl/'
+license=('LGPL-3.0-or-later')
+depends=('glibc' 'lcms2')
+makedepends=(
+    'git'
+    'meson'
+    'gobject-introspection'
+    'vala'
+    'gi-docgen'
+)
+provides=('libbabl-0.1.so')
+source=("git+https://gitlab.gnome.org/GNOME/babl.git#tag=BABL_${pkgver//./_}")
+sha256sums=('9078294b47e179db6767aed37cbdd1837cbe35a2568ee12d0016b2cc9f88816d')
+
+build() {
+  arch-meson "${pkgname}" build
+  ninja -C build
+}
+
+check() {
+  meson test -C build --print-errorlogs
+}
+
+package() {
+  DESTDIR="${pkgdir}" meson install -C build
+}

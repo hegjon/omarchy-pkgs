@@ -1,0 +1,62 @@
+# Maintainer: Felix Yan <felixonmars@archlinux.org>
+
+pkgname=ruby-minitest-hooks
+pkgver=1.5.4
+pkgrel=1
+pkgdesc='Around and before_all/after_all/around_all hooks for Minitest'
+arch=(any)
+url='https://github.com/jeremyevans/minitest-hooks'
+license=(MIT)
+depends=(
+  ruby
+  ruby-minitest
+)
+makedepends=(
+  git
+  ruby-minitest-global_expectations
+  ruby-rake
+  ruby-rdoc
+  ruby-sequel
+  ruby-sqlite3
+)
+options=(!emptydirs)
+source=(git+https://github.com/jeremyevans/minitest-hooks.git#tag=$pkgver)
+sha256sums=('a43af4253dd17a667528870c2358c623c3e48a361e96f10430429378d2deaed6')
+
+build() {
+  local _gemdir="$(gem env gemdir)"
+  cd minitest-hooks
+  gem build minitest-hooks.gemspec
+  gem install \
+    --local \
+    --verbose \
+    --ignore-dependencies \
+    --no-user-install \
+    --install-dir "tmp_install/$_gemdir" \
+    --bindir "tmp_install/usr/bin" \
+    minitest-hooks-$pkgver.gem
+  find "tmp_install/$_gemdir/gems/" \
+    -type f \
+    \( \
+        -iname "*.o" -o \
+        -iname "*.c" -o \
+        -iname "*.so" -o \
+        -iname "*.time" -o \
+        -iname "gem.build_complete" -o \
+        -iname "Makefile" \
+    \) \
+    -delete
+  rm -r tmp_install/$_gemdir/cache
+}
+
+check() {
+  local _gemdir="$(gem env gemdir)"
+  cd minitest-hooks
+  GEM_HOME="tmp_install/$_gemdir" rake
+}
+
+package() {
+  cd minitest-hooks
+  cp -a tmp_install/* "$pkgdir"/
+  install -Dm644 MIT-LICENSE -t "$pkgdir"/usr/share/licenses/$pkgname/
+}

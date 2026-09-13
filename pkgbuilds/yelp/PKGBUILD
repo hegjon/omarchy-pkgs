@@ -1,0 +1,57 @@
+# Maintainer: Jan Alexander Steffens (heftig) <heftig@archlinux.org>
+# Contributor: Jan de Groot <jgc@archlinux.org>
+
+pkgname=yelp
+pkgver=49.2
+pkgrel=1
+pkgdesc="Get help with GNOME"
+url="https://apps.gnome.org/Yelp"
+license=(GPL-2.0-or-later)
+arch=(x86_64)
+depends=(
+  bzip2
+  dconf
+  glib2
+  glibc
+  gtk4
+  hicolor-icon-theme
+  libadwaita
+  libxml2
+  libxslt
+  sqlite
+  webkitgtk-6.0
+  xz
+  yelp-xsl
+)
+makedepends=(
+  git
+  glib2-devel
+  itstool
+  meson
+)
+optdepends=('man-db: View manual pages')
+provides=(libyelp-1.so)
+groups=(gnome)
+source=(
+  "git+https://gitlab.gnome.org/GNOME/yelp.git#tag=${pkgver/[a-z]/.&}"
+)
+b2sums=('797f50c2210b88db0d192e0fd2822551e0017b91ebf9c0ad511580a04b453ed30ac095c4b26f7aabca320e000d0c8c67e983264c020dc862bdfb389408f7f3b2')
+
+prepare() {
+  cd yelp
+}
+
+build() {
+  arch-meson yelp build
+  meson compile -C build
+}
+
+check() {
+  meson test -C build --print-errorlogs
+}
+
+package() {
+  meson install -C build --destdir "$pkgdir"
+}
+
+# vim:set sw=2 sts=-1 et:

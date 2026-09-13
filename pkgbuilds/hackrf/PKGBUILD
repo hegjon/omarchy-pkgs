@@ -1,0 +1,49 @@
+# Maintainer: Carl Smedstad <carsme@archlinux.org>
+# Contributor: Kyle Keen <keenerd@gmail.com>
+# Contributor: Dominik Heidler <dheidler@gmail.com>
+
+pkgname=hackrf
+pkgver=2026.01.3
+pkgrel=1
+pkgdesc="Driver for HackRF, allowing general purpose software defined radio (SDR)"
+arch=(x86_64)
+url="https://github.com/greatscottgadgets/hackrf"
+license=('GPL-2.0-or-later')
+depends=(
+  fftw
+  glibc
+  libusb
+)
+makedepends=(cmake)
+source=(
+  "$url/releases/download/v$pkgver/hackrf-$pkgver.tar.xz"
+  'hackrf.conf'
+)
+b2sums=('e861d2250c59006fa42b63666c629bca2186d79a408dd7d0615023790434c3c06611e985da5a6c4bcbb776017d46ba7b90ba1d99825caa018318e361dbb0741f'
+        'bf20da7bb04ee17a435651e3b15fffdec167700fb85925f5e7ac592ffd978f7102a95a41d32d014b4e46dc076c9e83e5bf7db07a502a9b2438e13e1eeb015ace')
+
+prepare() {
+  cd $pkgname-$pkgver
+  # FS#41895
+  sed -i 's|MODE.*$|TAG+="uaccess"|' host/libhackrf/53-hackrf.rules*
+}
+
+build() {
+  cd $pkgname-$pkgver
+  export CMAKE_POLICY_VERSION_MINIMUM=3.5
+  cmake -S host -B build \
+    -DCMAKE_BUILD_TYPE=None \
+    -DCMAKE_INSTALL_PREFIX=/usr \
+    -Wno-dev
+  cmake --build build
+}
+
+package() {
+  cd $pkgname-$pkgver
+  DESTDIR="$pkgdir" cmake --install build
+  install -vDm644 -t "$pkgdir/usr/lib/udev/rules.d" host/libhackrf/53-hackrf.rules
+  for file in firmware-bin/*.{bin,dfu}; do
+    install -vDm644 -t "$pkgdir/usr/share/hackrf" "$file"
+  done
+  install -vDm644 -t "$pkgdir/usr/lib/modprobe.d" "$srcdir/hackrf.conf"
+}

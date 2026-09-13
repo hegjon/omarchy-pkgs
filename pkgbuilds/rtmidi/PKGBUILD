@@ -1,0 +1,70 @@
+# Maintainer: David Runge <dvzrv@archlinux.org>
+# Contributor: Llewelyn Trahaearn <WoefulDerelict at GMail dot com>
+# Contributor: rtfreedman  <rob dot til dot freedman at gmail dot com>
+# Contributor: speps <speps at aur dot archlinux dot org> 
+
+pkgbase=rtmidi
+pkgname=(
+  rtmidi
+  rtmidi-docs
+)
+pkgver=6.0.0
+pkgrel=3
+pkgdesc="A set of C++ classes that provides a common API for realtime MIDI input/output."
+arch=(x86_64)
+url="https://github.com/thestk/rtmidi"
+license=(LicenseRef-RtMidi)
+makedepends=(
+  alsa-lib
+  doxygen
+  glibc
+  jack
+  libgcc
+  libstdc++
+)
+source=($url/archive/$pkgver/$pkgname-$pkgver.tar.gz)
+sha512sums=('7ff7f85ff86fc019ab7906a46efc986b2a340b2f9a9d504bda85d0afc75921b905b32cb37f87e30ab9d1f13e62587c4ade736dad1609a0880eeab3fe5a936acb')
+b2sums=('19055aa14a961b303049a965776dc6b02a3f492806484b017cbd991131a5bcf33c481d49e58b6be4d52ff46887e475d6697ddd0924058e7c776c22f799d63698')
+
+prepare() {
+  cd $pkgname-$pkgver
+  autoreconf -fiv
+}
+
+build() {
+  local configure_options=(
+    --prefix=/usr
+    --with-alsa
+    --with-jack
+  )
+
+  cd $pkgname-$pkgver
+  ./configure "${configure_options[@]}"
+  # prevent overlinking due to libtool
+  sed -i -e 's/ -shared / -Wl,-O1,--as-needed\0/g' libtool
+  make
+}
+
+package_rtmidi() {
+  depends=(
+    alsa-lib
+    glibc
+    libgcc
+    libstdc++
+    jack
+  )
+  optdepends=('rtmidi-docs: for documentation')
+  provides=(librtmidi.so)
+
+  make DESTDIR="$pkgdir" install -C $pkgbase-$pkgver
+  install -vDm 644 $pkgbase-$pkgver/LICENSE -t "$pkgdir/usr/share/licenses/$pkgname/"
+}
+
+package_rtmidi-docs() {
+  pkgdesc+=" - documentation"
+
+  install -vDm 644 $pkgbase-$pkgver/{README.md,doc/release.txt} -t "$pkgdir/usr/share/doc/$pkgbase/"
+  install -vDm 644 $pkgbase-$pkgver/doc/html/* -t "$pkgdir/usr/share/doc/$pkgbase/html"
+  install -vDm 644 $pkgbase-$pkgver/doc/images/* -t "$pkgdir/usr/share/doc/$pkgbase/images"
+  install -vDm 644 $pkgbase-$pkgver/LICENSE -t "$pkgdir/usr/share/licenses/$pkgname/"
+}
