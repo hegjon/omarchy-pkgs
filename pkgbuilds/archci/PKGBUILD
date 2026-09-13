@@ -15,7 +15,7 @@
 pkgbase=archci
 pkgname=(archci archci-master archci-worker archci-signer archci-sourcer archci-remote-logging
          archci-worker-qemu-aarch64 archci-worker-qemu-riscv64)
-pkgver=0.4.19
+pkgver=0.4.20
 pkgrel=1
 pkgdesc='Headless build farm for Arch Linux packages: builds a PKGBUILD repository into a signed pacman repository'
 arch=(any)
@@ -24,7 +24,7 @@ license=(MIT)
 makedepends=(gnupg)
 checkdepends=(ruby jq git rsync openssh gnupg zstd shellcheck attr procps-ng)
 source=("https://github.com/hegjon/archci/archive/refs/tags/v${pkgver}.tar.gz")
-sha256sums=('e61a13e0fa9e44d892f32aaa96ee0e83eee5df026470806fd20a221f7833f812')
+sha256sums=('91612c6c2959389c85a1680eeb8520b32eba3cb74d012349a785872bad1eac18')
 _src="archci-$pkgver"
 
 _libdir=/usr/lib/archci
@@ -98,7 +98,7 @@ package_archci-master() {
 
 package_archci-worker() {
   pkgdesc='Headless build farm for Arch Linux packages (worker: builds jobs in clean devtools chroots)'
-  depends=("archci=$pkgver-$pkgrel" "archci-remote-logging=$pkgver-$pkgrel" devtools rsync openssh gnupg btrfs-progs)
+  depends=("archci=$pkgver-$pkgrel" "archci-remote-logging=$pkgver-$pkgrel" devtools rsync openssh gnupg btrfs-progs nftables)
   conflicts=(archci-sourcer)   # one role's /usr/bin/archci per host
 
   _install_role worker archci-worker@.service archci-build@.service archci-worker-setup.service
