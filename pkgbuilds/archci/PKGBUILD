@@ -15,7 +15,7 @@
 pkgbase=archci
 pkgname=(archci archci-master archci-worker archci-signer archci-sourcer archci-remote-logging
          archci-worker-qemu-aarch64 archci-worker-qemu-riscv64)
-pkgver=0.4.22
+pkgver=0.4.23
 pkgrel=1
 pkgdesc='Headless build farm for Arch Linux packages: builds a PKGBUILD repository into a signed pacman repository'
 arch=(any)
@@ -24,7 +24,7 @@ license=(MIT)
 makedepends=(gnupg)
 checkdepends=(ruby jq git rsync openssh gnupg zstd shellcheck attr procps-ng)
 source=("https://github.com/hegjon/archci/archive/refs/tags/v${pkgver}.tar.gz")
-sha256sums=('b11512f80cb9ed1a6d50d45474fd3cf5b2155c62f5879b634bb88c2b21810f4f')
+sha256sums=('cc6e16d6d3cfec2f14117639cff4ee799d6fe8cec4b4a97835199f11caa13eea')
 _src="archci-$pkgver"
 
 _libdir=/usr/lib/archci
@@ -83,7 +83,7 @@ package_archci-master() {
   conflicts=(archci-signer)
   optdepends=('libmicrohttpd: receive worker journals with systemd-journal-remote')
 
-  _install_role master archci-scan.service archci-scan.timer \
+  _install_role master archci-master.target archci-scan.service archci-scan.timer \
     archci-housekeeping.service archci-housekeeping.timer archci-stage.service archci-stage.timer \
     archci-signer-status.service archci-signer-status.timer
   _install_cli master
