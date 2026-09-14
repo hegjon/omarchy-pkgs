@@ -411,6 +411,11 @@ build_package() {
       ln -sf omarchy-build.db.tar.zst omarchy-build.db || return 1
     fi
 
+    # A release may publish successful builds even when a peer fails. Record
+    # outputs only after this package's entire split build has completed.
+    mkdir -p "$BUILD_PLAN_DIR/artifacts" || return 1
+    printf '%s\n' "${new_pkgs[@]}" > "$BUILD_PLAN_DIR/artifacts/$pkg" || return 1
+
     echo "    Successfully built $pkg"
     return 0
   else

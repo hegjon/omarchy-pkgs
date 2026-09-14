@@ -128,6 +128,14 @@ bin/repo advance --from edge --to rc
 
 The release command is smart and **incremental** - it only builds packages that have changed or are missing. You generally don't need to specify a package manually unless you are debugging a specific failure.
 
+When a package fails, a completed build run still signs and publishes the packages
+that succeeded. Failed packages and their blocked dependents remain queued with
+failure backoff; retries compare against the updated repository and skip the
+published versions. Only artifacts recorded by fully completed package builds
+are eligible for a partial release. An interrupted build, a failed publication
+step, or an incomplete pair using deferred runtime dependencies still stops the
+release. Reports distinguish partial publication from complete success.
+
 ```bash
 # Build changed/new packages, sign, promote, clean, update, and sync
 bin/repo release

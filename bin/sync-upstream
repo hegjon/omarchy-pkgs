@@ -757,6 +757,9 @@ EOF
   mkdir -p "$one_root"
   cp -a "$BUILD_ROOT/pkgbuilds/1password" "$one_root/1password"
   one_dir="$one_root/1password"
+  # Keep the real recipe shape, but make the fixture's starting version stable.
+  # Otherwise a routine package update can outrun the mocked release below.
+  sed -i -e 's/^pkgver=.*/pkgver=8.12.34/' -e 's/^pkgrel=.*/pkgrel=2/' "$one_dir/PKGBUILD"
   debian_fetch_packages() {
     printf 'Package: 1password\nVersion: %s\n' "$one_version"
   }
