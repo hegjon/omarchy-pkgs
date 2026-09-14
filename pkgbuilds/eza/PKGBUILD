@@ -4,7 +4,7 @@
 
 pkgname=eza
 pkgver=0.23.5
-pkgrel=2
+pkgrel=2.1
 pkgdesc="A modern replacement for ls (community fork of exa)"
 url="https://github.com/eza-community/$pkgname"
 arch=(x86_64)
@@ -24,7 +24,6 @@ b2sums=('dd5c8d231210000db2a9bbe3d4063eb1b6a00fd3336c8424861664250dd2948a4d3b1f3
 
 _srcenv() {
 	cd "$_archive"
-	export CARGO_HOME="$srcdir"
 	export CARGO_PROFILE_RELEASE_DEBUG=2
 	export CARGO_PROFILE_RELEASE_STRIP=false
 	export CARGO_PROFILE_RELEASE_LTO=true

@@ -1,0 +1,18 @@
+Leave CARGO_HOME to the environment.
+
+Arch's PKGBUILD points CARGO_HOME at $srcdir so the fetch stays inside the
+build tree. On the farm the sourcer captures prepare()'s fetch into the
+source package through CARGO_HOME, and the worker replays it offline the
+same way; this export overrides both, so the crates land in a tree that is
+thrown away and the offline build has nothing to fetch from. With it gone
+the fetch goes to cargo's registry cache as for every other Rust package.
+
+--- a/PKGBUILD
++++ b/PKGBUILD
+@@ -26,7 +26,6 @@
+ _srcenv() {
+ 	cd "$_archive"
+-	export CARGO_HOME="$srcdir"
+ 	export CARGO_PROFILE_RELEASE_DEBUG=2
+ 	export CARGO_PROFILE_RELEASE_STRIP=false
+ 	export CARGO_PROFILE_RELEASE_LTO=true
