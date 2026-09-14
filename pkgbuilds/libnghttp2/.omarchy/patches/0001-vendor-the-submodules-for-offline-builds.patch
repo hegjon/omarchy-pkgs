@@ -1,0 +1,26 @@
+--- a/PKGBUILD
++++ b/PKGBUILD
+@@ -16,10 +16,12 @@
+ source=("git+https://github.com/nghttp2/nghttp2.git?signed#tag=v${pkgver}"
+         'git+https://github.com/ngtcp2/munit.git'
+         'git+https://github.com/mruby/mruby.git'
+-        'git+https://github.com/tatsuhiro-t/neverbleed.git')
++        'git+https://github.com/tatsuhiro-t/neverbleed.git'
++        'git+https://github.com/ngtcp2/urlparse.git')
+ sha512sums=('48f3bf6748abf46e9b1a2cfcfc4053ef8a7d532898da854d508c520c7adcca3a8690f81d2683d14398cf937a3f7c9276000c569ccc1183bbf20d449e64f5c315'
+             'SKIP'
+             'SKIP'
++            'SKIP'
+             'SKIP')
+ 
+ prepare() {
+@@ -27,7 +29,8 @@
+ 
+   git config --file=.gitmodules submodule.tests/munit.url ../munit/
+   git config --file=.gitmodules submodule.third-party/mruby.url ../mruby/
+-  git config --file=.gitmodules submodule.tests/neverbleed.url ../neverbleed/
++  git config --file=.gitmodules submodule.third-party/neverbleed.url ../neverbleed/
++  git config --file=.gitmodules submodule.third-party/urlparse.url ../urlparse/
+ 
+   git submodule init
+   git -c protocol.file.allow=always submodule update
