@@ -37,7 +37,10 @@ build() {
 }
 
 check() {
-  cargo test \
+  # the build chroot runs with TERM=dumb, which starship self-disables on
+  # ("Starship disabled due to TERM=dumb"), failing its prompt-rendering
+  # tests; give the tests a real terminal, as starship's own CI does
+  TERM=xterm-256color cargo test \
     --frozen \
     --manifest-path starship/Cargo.toml
 }
