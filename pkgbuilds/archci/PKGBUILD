@@ -15,7 +15,7 @@
 pkgbase=archci
 pkgname=(archci archci-master archci-worker archci-signer archci-sourcer archci-remote-logging
          archci-worker-qemu-aarch64 archci-worker-qemu-riscv64)
-pkgver=0.5.17
+pkgver=0.6.0
 pkgrel=1
 pkgdesc='Headless build farm for Arch Linux packages: builds a PKGBUILD repository into a signed pacman repository'
 arch=(any)
@@ -24,7 +24,7 @@ license=(MIT)
 makedepends=(gnupg)
 checkdepends=(ruby jq git rsync openssh gnupg zstd shellcheck attr procps-ng)
 source=("https://github.com/hegjon/archci/archive/refs/tags/v${pkgver}.tar.gz")
-sha256sums=('990785297231a41b61d8665613728ebb7ee0c74ff0e2e4be7308afc5a59aa93e')
+sha256sums=('e1c6c69923cd6cfe44932962ad79805feac28c200c2369afa9b5b9a869c1d2aa')
 _src="archci-$pkgver"
 
 _libdir=/usr/lib/archci
@@ -51,7 +51,7 @@ check() {
 
 package_archci() {
   pkgdesc='Headless build farm for Arch Linux packages (shared library, config and user)'
-  depends=(bash git)
+  depends=(bash git ruby)   # ruby: the master's scripts, and the journal record sender every role uses
   backup=(etc/archci/archci.conf)
 
   cd "$srcdir/$_src"
@@ -77,15 +77,14 @@ _install_cli() {
 }
 
 package_archci-master() {
-  pkgdesc='Headless build farm for Arch Linux packages (master: sync the PKGBUILD repository, hand out jobs, stage results)'
-  depends=("archci=$pkgver-$pkgrel" bash-completion ruby jq rsync openssh rclone attr btrfs-progs)
+  pkgdesc='Headless build farm for Arch Linux packages (master: sync the PKGBUILD repository, hand out jobs, index and publish the release)'
+  depends=("archci=$pkgver-$pkgrel" bash-completion ruby jq rsync openssh rclone attr btrfs-progs libarchive zstd)
   # the release key is never on the master
   conflicts=(archci-signer)
   optdepends=('libmicrohttpd: receive worker journals with systemd-journal-remote')
 
   _install_role master archci-master.target archci-scan.service archci-scan.timer \
-    archci-housekeeping.service archci-housekeeping.timer archci-stage.service archci-stage.timer \
-    archci-signer-status.service archci-signer-status.timer
+    archci-housekeeping.service archci-housekeeping.timer archci-publish.service archci-publish.timer
   _install_cli master
   cd "$srcdir/$_src"
   install -Dm644 config/systemd/master/archci-journal-remote.service \
@@ -150,7 +149,7 @@ package_archci-worker-qemu-riscv64() {
 
 package_archci-sourcer() {
   pkgdesc='Headless build farm for Arch Linux packages (sourcer: fetches upstream sources into source packages for the workers)'
-  depends=("archci=$pkgver-$pkgrel" "archci-remote-logging=$pkgver-$pkgrel" devtools git gnupg openssh rsync btrfs-progs)
+  depends=("archci=$pkgver-$pkgrel" "archci-remote-logging=$pkgver-$pkgrel" devtools git gnupg openssh rsync btrfs-progs zstd libarchive)
   conflicts=(archci-worker)   # one role's /usr/bin/archci per host
 
   _install_role sourcer archci-sourcer.service
@@ -169,8 +168,8 @@ package_archci-remote-logging() {
 }
 
 package_archci-signer() {
-  pkgdesc='Headless build farm for Arch Linux packages (signer: verify builder signatures, release-sign, publish)'
-  depends=("archci=$pkgver-$pkgrel" bash-completion rclone gnupg)
+  pkgdesc='Headless build farm for Arch Linux packages (signer: verify builder signatures, release-sign, return the signatures)'
+  depends=("archci=$pkgver-$pkgrel" bash-completion gnupg openssh rsync)
   conflicts=(archci-master)
   backup=(etc/archci/release-gnupg/gpg-agent.conf)
 
