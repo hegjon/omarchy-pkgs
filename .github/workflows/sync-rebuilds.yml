@@ -1,9 +1,9 @@
 name: Sync Rebuild Triggers
 
 on:
-  schedule:
-    # Every 6 hours, off the hour to dodge the scheduling backlog at :00
-    - cron: '40 */6 * * *'
+  # The schedule is off: the runs failed for days (sync-arch times out fetching
+  # from gitlab.archlinux.org on a GitHub runner; sync-upstream may not open PRs;
+  # sync-aur's patch no longer applies). Run by hand from Actions, or locally.
   workflow_dispatch:
     inputs:
       packages:
