@@ -8,7 +8,7 @@ pkgname=(
   libcap-ng
   python-capng
 )
-pkgver=0.9.5
+pkgver=0.9.6
 pkgrel=1
 pkgdesc='A library for Linux that makes using posix capabilities easy'
 arch=(x86_64)
@@ -26,8 +26,8 @@ makedepends=(
 source=(
   https://github.com/stevegrubb/libcap-ng/archive/v${pkgver}/${pkgname}-${pkgver}.tar.gz
 )
-sha512sums=('eca44c680ea6104c59591ee19ae9136ed1f4d0437877a1c16f5fb5d546466ff99d52fe45daa081bc6dde15abbb3902528b7bf6fade4845d0c13756d426e21db7')
-b2sums=('ddfe7b6975747963a2eb53485481c55f5638a06f119260e34619336445321d41b1531e4b78593aab9267a463e08641eb666f58ca6dc19fabf776995a4579e072')
+sha512sums=('77bc255688606cbc3a9d40cc1d417ebf748d04b8d837d793708b58431857ebfaa077f00cebfcf03c58ce56985feb63f9f8eb70cce21ba304ca3418a0fe1b61d1')
+b2sums=('64599a9405895e4b2ec3275cbc58c137be025d6dd11ff51219254495d1370e3dc92a97017fa8651c59426ac81a16660d6194ce0a17b02c502cd85bf44adb7e90')
 
 _pick() {
   local p="$1" f d; shift

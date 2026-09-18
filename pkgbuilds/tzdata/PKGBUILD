@@ -1,9 +1,9 @@
 # Maintainer: Andreas Radke <andyrtr@archlinux.org>
 
 pkgname=tzdata
-pkgver=2026c
-_tzcode=2026c
-_tzdata=2026c
+pkgver=2026d
+_tzcode=2026d
+_tzdata=2026d
 pkgrel=1
 pkgdesc="Sources for time zone and daylight saving time data"
 arch=('x86_64')
@@ -14,9 +14,9 @@ optdepends=('bash: for tzselect'
 options=('!emptydirs')
 source=(https://www.iana.org/time-zones/repository/releases/tzcode${_tzcode}.tar.gz{,.asc}
         https://www.iana.org/time-zones/repository/releases/${pkgname}${_tzdata}.tar.gz{,.asc})
-sha512sums=('ad1aadf26b9aaca487a4f780d7a8ebf1d7383472ce587b06cb63852d4eb030dbd190b537e393e75d59530318581e9d3f492ff5f97bbac78f548d0755c4f7257f'
+sha512sums=('42d4b37549a35893187851187cae93c811928f808c24ac0003bf0b782837d0934f2f7da7e93a0417273c7e0a66f79e9d512290ae4811cb73a7d02b62b3f0fed1'
             'SKIP'
-            'e0b4b7044b66fbc27bc21d13d18063abcdf78ab58d5ba5fd64bd1a88d86e9d495f45add4d8e65bb6c40249f9c94ca29b72c8ebba8d0e4c468f2965ac77932ef0'
+            '1a27de5af50bbc28a2f64c506ab3678b09d9e5ab6c118f39eb38bb823aa8f57069bf5e465848e71df8274c6b8bcd0fc736a88107e5792d816a1db5d867cbc219'
             'SKIP')
 validpgpkeys=('7E3792A9D8ACF7D633BC1588ED97E90E62AA7E34') # Paul Eggert <eggert@cs.ucla.edu>
 
