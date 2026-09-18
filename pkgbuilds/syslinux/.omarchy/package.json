@@ -1,5 +1,6 @@
 {
   "source": "arch",
   "upstream_commit": "1985ba657134ceca6ee8882ad1715204c585ec1a",
-  "arch_repo": "core"
+  "arch_repo": "core",
+  "network": "full"
 }

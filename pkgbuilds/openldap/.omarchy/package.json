@@ -1,5 +1,6 @@
 {
   "source": "arch",
   "upstream_commit": "cfcf49ea88e2bc5c63878820a488942d9b1a2308",
-  "arch_repo": "core"
+  "arch_repo": "core",
+  "network": "loopback"
 }
